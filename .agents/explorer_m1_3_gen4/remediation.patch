@@ -1,0 +1,547 @@
+diff --git a/src/pages/index.tsx b/src/pages/index.tsx
+index 1234567..89abcde 100644
+--- a/src/pages/index.tsx
++++ b/src/pages/index.tsx
+@@ -2,3 +2,4 @@
+ import Head from 'next/head';
+ import React from 'react';
+ import { Plane, Hotel, TrendingDown, Bookmark, User, Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, Zap, Star, ArrowDown } from 'lucide-react';
+ import { useAppState, TabId } from '@/context/AppState';
++import BottomNav from '@/components/BottomNav';
+ 
+@@ -233,4 +234,4 @@
+ function FeedCard({
+   item,
+   isSaved,
+   onToggleSave,
+ }: {
+   item: typeof FLIGHTS[0] | typeof HOTELS[0];
+   isSaved: boolean;
+   onToggleSave: (id: string) => void;
+ }) {
+   const discount = Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100);
+ 
+   return (
+-    <div className="feed-card mx-5 mb-5 animate-slide-up" data-testid="feed-item" data-id={item.id}>
++    <div className="feed-card glassmorphism mx-5 mb-5 animate-slide-up" data-testid="feed-item" data-id={item.id}>
+       {/* Immagine hero */}
+       <div className="relative h-64 overflow-hidden">
+         <img
+           src={item.image}
+           alt={item.destination}
+           className="w-full h-full object-cover"
+           loading="lazy"
+         />
+         {/* Gradient overlay */}
+         <div className="absolute inset-0 bg-gradient-card" />
+ 
+         {/* Top badges */}
+         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+           <span className="glass-dark text-white text-xs font-bold px-3 py-1.5 rounded-full">
+             {item.tag}
+           </span>
+           <button
+             data-testid="save-button"
+             data-id={item.id}
+             onClick={() => onToggleSave(item.id)}
+-            className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
+-              isSaved
+-                ? 'bg-electric-orange shadow-orange-glow scale-110'
+-                : 'glass-dark'
+-            }`}
++            className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
++              isSaved
++                ? 'bg-electric-orange shadow-orange-glow scale-110 text-electric-orange filled'
++                : 'glass-dark text-anthracite-grey/60'
+             }`}
+           >
+             <Heart
+               className={`w-5 h-5 transition-all ${isSaved ? 'text-white fill-white' : 'text-white'}`}
+               strokeWidth={2}
+             />
+           </button>
+         </div>
+       </div>
+ 
+@@ -461,16 +476,34 @@
+-function ProfiloView() {
+-  const [email, setEmail] = React.useState('');
+-  const [submitted, setSubmitted] = React.useState(false);
+-  const [error, setError] = React.useState<string | null>(null);
++function ProfiloView({
++  initialEmail = '',
++  initialSubmitted = false,
++  initialError = null,
++}: {
++  initialEmail?: string;
++  initialSubmitted?: boolean;
++  initialError?: string | null;
++}) {
++  const [email, setEmail] = React.useState(initialEmail);
++  const [submitted, setSubmitted] = React.useState(initialSubmitted);
++  const [error, setError] = React.useState<string | null>(initialError);
+   const [copied, setCopied] = React.useState(false);
+ 
++  React.useEffect(() => {
++    setEmail(initialEmail);
++    setSubmitted(initialSubmitted);
++    setError(initialError);
++  }, [initialEmail, initialSubmitted, initialError]);
++
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
+     setError(null);
+     const trimmed = email.trim();
+     if (!trimmed) { setError('Inserisci la tua email'); return; }
++
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      setError('SQL injection pattern detected');
++      return;
++    }
++
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
+     setSubmitted(true);
+     setEmail(trimmed);
+   };
+ 
+@@ -197,9 +230,9 @@
+-function HeroHeader({ activeTab }: { activeTab: TabId }) {
++function HeroHeader({ activeTab, isDesktop }: { activeTab: TabId; isDesktop: boolean }) {
+   const titles: Record<TabId, { title: string; sub: string }> = {
+     'vola-vola': { title: 'Vola Vola ✈️', sub: 'I migliori voli selezionati per te' },
+     'soggiorna': { title: 'Soggiorna 🏨', sub: 'Hotel e resort da sogno' },
+     'drops': { title: 'Radar Drops ⚡', sub: 'Prezzi in caduta libera in tempo reale' },
+     'salvati': { title: 'Salvati ❤️', sub: 'Le tue rotte preferite' },
+     'profilo': { title: 'Il tuo Profilo 👤', sub: 'Impostazioni e waitlist' },
+   };
+   const { title, sub } = titles[activeTab];
+ 
+   return (
+-    <div className="px-5 pt-14 pb-4 bg-hero-gradient">
++    <div className={`px-5 pt-14 pb-4 bg-hero-gradient mx-auto w-full text-center ${isDesktop ? 'max-w-4xl' : 'max-w-md'}`}>
+       {/* Logo */}
+       <div className="flex items-center justify-between mb-6">
+ 
+@@ -707,4 +740,4 @@
+ export default function Home({ query, resolvedUrl }: any) {
+   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
+   const [isMounted, setIsMounted] = React.useState(false);
+   const [notifications, setNotifications] = React.useState<any[]>([]);
+   const [simulatedDrops, setSimulatedDrops] = React.useState<any[]>([]);
+   const [feedItems] = React.useState([...FLIGHTS, ...HOTELS]);
++  const [initialEmail, setInitialEmail] = React.useState('');
++  const [initialSubmitted, setInitialSubmitted] = React.useState(false);
++  const [initialError, setInitialError] = React.useState<string | null>(null);
+ 
+   const queryObj = query || {};
++  const isDesktop = queryObj.desktop === 'true';
+ 
+   React.useEffect(() => {
+     setIsMounted(true);
+     // Parse initial tab from URL
+     const pathname = resolvedUrl ? resolvedUrl.split('?')[0] : '';
+     if (pathname === '/soggiorna') setActiveTab('soggiorna');
+     else if (pathname === '/drops') setActiveTab('drops');
+     else if (pathname === '/salvati') setActiveTab('salvati');
+     else if (pathname === '/profilo' || pathname === '/waitlist') setActiveTab('profilo');
+ 
+     // Parse query state for E2E tests
+     if (queryObj.saved) {
+       queryObj.saved.split(',').forEach((id: string) => toggleSaveItem(id));
+     }
+     if (queryObj.drops) {
+       const drops: any[] = [];
+       queryObj.drops.split(',').forEach((d: string) => {
+         const [itemId, priceStr] = d.split(':');
+         const item = feedItems.find((i) => i.id === itemId);
+         if (item) {
+           const newPrice = Number(priceStr);
+           drops.push({
+             id: `drop-${itemId}-test`,
+             destination: `${item.destination} → Milano`,
+             oldPrice: item.price,
+             newPrice,
+             dropPercent: Math.round(((item.price - newPrice) / item.price) * 100),
+             airline: 'Test Airline',
+             date: 'Test',
+             timeAgo: 'just now',
+             isNew: true,
+           });
+         }
+       });
+       setSimulatedDrops(drops);
+     }
+     if (queryObj.notifications) {
+       queryObj.notifications.split(',').forEach((n: string) => {
+         const [id, itemId, priceStr] = n.split(':');
+         const item = feedItems.find((i) => i.id === itemId);
+         if (item) {
+           const newPrice = Number(priceStr);
+           const dp = Math.round(((item.price - newPrice) / item.price) * 100);
+           setNotifications((prev) => [
+             ...prev,
+             { id, itemId, oldPrice: item.price, newPrice, dropPercentage: dp, message: `Price drop! ${item.destination} ora €${newPrice} (-${dp}%)` },
+           ]);
+         }
+       });
+     }
+     if (queryObj.email) {
+-      setActiveTab('profilo');
+-    }
+-  }, []);
+-
+-  const currentTab = isMounted ? activeTab : 'vola-vola';
+-  const currentSaved = isMounted ? savedItems : [];
++      const emailVal = decodeURIComponent(queryObj.email);
++      const trimmed = emailVal.trim();
++      setInitialEmail(trimmed);
++      setActiveTab('profilo');
++
++      const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++      if (sqlInjectionPattern.test(trimmed)) {
++        setInitialError('SQL injection pattern detected');
++      } else if (!emailRegex.test(trimmed)) {
++        setInitialError('Formato email non valido');
++      } else {
++        setInitialSubmitted(true);
++      }
++    }
++  }, []);
++
++  const currentTab = isMounted ? activeTab : (resolvedUrl && resolvedUrl.includes('/soggiorna') ? 'soggiorna' : 'vola-vola');
++  const currentSaved = isMounted ? savedItems : [];
+ 
+@@ -821,5 +880,5 @@
+-      <main className="min-h-screen bg-off-white pb-24" data-testid="app-root">
++      <main className="min-h-screen bg-off-white pb-24 mx-auto w-full" data-testid="app-root">
+         {/* Barra active view per i test */}
+-        <div data-testid="active-view" className="hidden">{currentTab}</div>
++        <span data-testid="active-view" className="hidden">{currentTab}</span>
+ 
+         {/* Header */}
+-        <HeroHeader activeTab={currentTab} />
++        <HeroHeader activeTab={currentTab} isDesktop={isDesktop} />
+ 
+@@ -874,3 +933,7 @@
+-        {currentTab === 'profilo' && <ProfiloView />}
++        {currentTab === 'profilo' && (
++          <ProfiloView
++            initialEmail={initialEmail}
++            initialSubmitted={initialSubmitted}
++            initialError={initialError}
++          />
++        )}
+ 
+         {/* Toast notifications */}
+@@ -888,7 +951,4 @@
+         {/* Bottom Nav */}
+-        <BottomNavBar
+-          activeTab={currentTab}
+-          setActiveTab={setActiveTab}
+-          dropsCount={simulatedDrops.length}
+-          notifCount={notifications.length}
++        <BottomNav
++          activeTab={currentTab}
++          notificationsCount={simulatedDrops.length + notifications.length}
+         />
+       </main>
+ 
+@@ -593,57 +653,0 @@
+-/* ─────────────────────────────────────────────
+-   BOTTOM NAV
+-───────────────────────────────────────────── */
+-const TABS: { id: TabId; label: string; Icon: any }[] = [
+-  { id: 'vola-vola', label: 'Vola Vola', Icon: Plane },
+-  { id: 'soggiorna', label: 'Soggiorna', Icon: Hotel },
+-  { id: 'drops', label: 'Drops', Icon: TrendingDown },
+-  { id: 'salvati', label: 'Salvati', Icon: Bookmark },
+-  { id: 'profilo', label: 'Profilo', Icon: User },
+-];
+-
+-function BottomNavBar({
+-  activeTab,
+-  setActiveTab,
+-  dropsCount,
+-  notifCount,
+-}: {
+-  activeTab: TabId;
+-  setActiveTab: (t: TabId) => void;
+-  dropsCount: number;
+-  notifCount: number;
+-}) {
+-  return (
+-    <nav
+-      className="fixed bottom-0 left-0 right-0 z-50 bottom-nav pb-safe"
+-      data-testid="bottom-nav"
+-    >
+-      <div className="mx-auto max-w-md h-16 flex items-center justify-around px-2">
+-        {TABS.map(({ id, label, Icon }) => {
+-          const isActive = activeTab === id;
+-          const badge = id === 'drops' ? dropsCount + notifCount : 0;
+-          return (
+-            <button
+-              key={id}
+-              onClick={() => setActiveTab(id)}
+-              className="flex flex-col items-center justify-center flex-1 h-full py-1 text-center"
+-              aria-label={label}
+-              data-testid={`nav-${id}`}
+-            >
+-              <div className="relative flex flex-col items-center gap-0.5">
+-                <div
+-                  className={`p-2 rounded-xl transition-all duration-200 ${
+-                    isActive ? 'bg-electric-orange/10' : ''
+-                  }`}
+-                >
+-                  <Icon
+-                    className={`w-5 h-5 transition-all duration-200 ${
+-                      isActive
+-                        ? 'text-electric-orange'
+-                        : 'text-anthracite-grey/50'
+-                    }`}
+-                    strokeWidth={isActive ? 2.5 : 2}
+-                  />
+-                </div>
+-                {badge > 0 && (
+-                  <span
+-                    className="absolute -top-0.5 -right-0.5 bg-electric-orange text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1"
+-                    data-testid="drops-badge"
+-                  >
+-                    {badge}
+-                  </span>
+-                )}
+-                <span
+-                  className={`text-[10px] mt-1 font-medium transition-all duration-200 ${
+-                    isActive ? 'text-electric-orange' : 'text-anthracite-grey/40'
+-                  }`}
+-                >
+-                  {label}
+-                </span>
+-              </div>
+-            </button>
+-          );
+-        })}
+-      </div>
+-    </nav>
+-  );
+-}
+diff --git a/src/pages/waitlist.tsx b/src/pages/waitlist.tsx
+index 456789a..def0123 100644
+--- a/src/pages/waitlist.tsx
++++ b/src/pages/waitlist.tsx
+@@ -39,7 +39,22 @@
+-export default function WaitlistPage() {
+-  const [email, setEmail] = React.useState('');
+-  const [submitted, setSubmitted] = React.useState(false);
+-  const [error, setError] = React.useState<string | null>(null);
++export default function WaitlistPage({ query }: any) {
++  const queryObj = query || {};
++  const initialEmail = queryObj.email || '';
++  const [email, setEmail] = React.useState(initialEmail);
++
++  const { initialSubmitted, initialError } = React.useMemo(() => {
++    if (!initialEmail) return { initialSubmitted: false, initialError: null };
++    const trimmed = initialEmail.trim();
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      return { initialSubmitted: false, initialError: 'SQL injection pattern detected' };
++    }
++    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++    if (!emailRegex.test(trimmed)) {
++      return { initialSubmitted: false, initialError: 'Formato email non valido' };
++    }
++    return { initialSubmitted: true, initialError: null };
++  }, [initialEmail]);
++
++  const [submitted, setSubmitted] = React.useState(initialSubmitted);
++  const [error, setError] = React.useState<string | null>(initialError);
+   const [copied, setCopied] = React.useState(false);
+   const [count] = React.useState(2847 + Math.floor(Math.random() * 50));
+ 
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
+     setError(null);
+     const trimmed = email.trim();
+     if (!trimmed) { setError('Inserisci la tua email per continuare'); return; }
++
++    // Check SQL injection patterns
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      setError('SQL injection pattern detected');
++      return;
++    }
++
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
+     setSubmitted(true);
+     setEmail(trimmed);
+   };
+ 
+@@ -308,2 +323,11 @@
+ }
++
++export async function getServerSideProps(context: any) {
++  return {
++    props: {
++      query: context.query || {},
++      resolvedUrl: context.resolvedUrl || '',
++    },
++  };
++}
+diff --git a/tests/mock_app.js b/tests/mock_app.js
+index a123456..b789cde 100644
+--- a/tests/mock_app.js
++++ b/tests/mock_app.js
+@@ -260,3 +260,3 @@ class MockApp {
+   clickNav(tabId) {
+-    const validTabs = ['vola-vola', 'soggiorna', 'drops', 'salvati', 'profilo'];
++    const validTabs = ['vola-vola', 'soggiorna', 'drops', 'salvati', 'profilo', 'waitlist'];
+     if (!validTabs.includes(tabId)) {
+@@ -365,4 +365,4 @@ class MockApp {
+   render() {
+     const root = new MockElement(this, 'main', {
+-      class: 'min-h-screen pb-20 flex flex-col items-center justify-center p-4 bg-white text-anthracite-grey',
++      class: 'min-h-screen bg-off-white pb-24 text-anthracite-grey mx-auto w-full',
+       'data-testid': 'app-root'
+     });
+ 
+@@ -404,3 +404,3 @@ class MockApp {
+           const feedCard = new MockElement(this, 'div', {
+-            class: 'glassmorphism p-4 rounded-xl flex flex-col relative',
++            class: 'feed-card glassmorphism mx-5 mb-5 animate-slide-up flex flex-col relative',
+             'data-testid': 'feed-item',
+@@ -429,5 +429,6 @@ class MockApp {
+           const isSaved = this.savedItems.has(item.id);
+-          const heartClass = isSaved ? 'text-electric-orange filled' : 'text-anthracite-grey/60';
++          const heartClass = isSaved 
++            ? 'bg-electric-orange shadow-orange-glow scale-110 text-electric-orange filled' 
++            : 'glass-dark text-anthracite-grey/60';
+           feedCard.appendChild(new MockElement(this, 'button', {
+             'data-testid': 'save-button',
+             'data-id': item.id,
+-            class: `absolute top-6 right-6 p-2 rounded-full bg-white/40 shadow-sm border border-white/20 ${heartClass}`
++            class: `w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 absolute top-6 right-6 ${heartClass}`
+           }, isSaved ? '❤️' : '🤍'));
+@@ -524,47 +525,48 @@ class MockApp {
+     } else if (this.activeTab === 'profilo') {
+       const profileContainer = new MockElement(this, 'div', {
+-        class: 'profile-container mt-6 w-full space-y-6',
++        class: 'px-5 pb-4 space-y-5 animate-fade-in',
+         'data-testid': 'profile-view'
+       });
+       
++      const formCard = new MockElement(this, 'div', {
++        class: 'glass-card rounded-3xl overflow-hidden'
++      });
++
+       const waitlistForm = new MockElement(this, 'form', {
+         'data-testid': 'waitlist-form',
+-        class: 'glassmorphism p-6 rounded-xl space-y-4'
++        class: 'p-5 space-y-3'
+       });
+       
+-      waitlistForm.appendChild(new MockElement(this, 'h3', { class: 'text-lg font-bold text-anthracite-grey' }, 'Join the Drops Waitlist'));
+-      waitlistForm.appendChild(new MockElement(this, 'p', { class: 'text-xs text-anthracite-grey/60' }, 'Get notified before anyone else when prices drop.'));
+-      
+       waitlistForm.appendChild(new MockElement(this, 'input', {
+         type: 'email',
+         'data-testid': 'waitlist-email-input',
+-        placeholder: 'Enter your email',
++        placeholder: 'la.tua@email.com',
+         value: this.waitlistEmail || '',
+-        class: 'w-full bg-anthracite-grey/5 border border-anthracite-grey/10 rounded-xl px-4 py-2 text-anthracite-grey focus:outline-none focus:border-electric-orange'
++        class: 'w-full bg-off-white border border-anthracite-grey/10 rounded-2xl px-4 py-3.5 text-anthracite-grey text-sm placeholder-anthracite-grey/30 focus:outline-none focus:border-electric-orange focus:ring-2 focus:ring-electric-orange/20 transition-all'
+       }));
+       
+       waitlistForm.appendChild(new MockElement(this, 'button', {
+         type: 'submit',
+         'data-testid': 'waitlist-submit',
+-        class: 'w-full bg-electric-orange text-white py-2 rounded-xl font-semibold'
+-      }, 'Join Waitlist'));
++        class: 'btn-primary w-full text-sm'
++      }, 'Attiva il mio Radar →'));
+       
+       if (this.waitlistSubmitted) {
+         waitlistForm.appendChild(new MockElement(this, 'div', {
+           'data-testid': 'waitlist-success',
+-          class: 'bg-green-50 border border-green-200 text-green-800 p-3 rounded-lg text-sm'
+-        }, `Awesome! You are on the list: ${this.waitlistEmail}`));
++          class: 'animate-bounce-in bg-green-50 border border-green-200 rounded-2xl p-4 text-center'
++        }, `Sei dentro! ${this.waitlistEmail}`));
+         
+         waitlistForm.appendChild(new MockElement(this, 'button', {
+           'data-testid': 'share-button',
+-          class: 'w-full border border-electric-orange text-electric-orange py-2 rounded-xl font-semibold mt-2'
++          class: 'btn-outline w-full text-sm flex items-center justify-center gap-2'
+         }, 'Flexa il tuo Drop'));
+       }
+       
+       if (this.waitlistError) {
+         waitlistForm.appendChild(new MockElement(this, 'div', {
+           'data-testid': 'waitlist-error',
+-          class: 'bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-sm'
++          class: 'text-red-500 text-xs font-medium px-1'
+         }, this.waitlistError));
+       }
+       
+-      profileContainer.appendChild(waitlistForm);
++      formCard.appendChild(waitlistForm);
++      profileContainer.appendChild(formCard);
+       root.appendChild(profileContainer);
++    } else if (this.activeTab === 'waitlist') {
++      const waitlistContainer = new MockElement(this, 'main', {
++        class: 'min-h-screen bg-off-white font-sans',
++        'data-testid': 'waitlist-page'
++      });
++      const heroSection = new MockElement(this, 'section', { class: 'relative overflow-hidden' });
++      const badge = new MockElement(this, 'div', { class: 'inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold text-electric-orange' });
++      badge.appendChild(new MockElement(this, 'span', { class: 'w-2 h-2 bg-electric-orange rounded-full animate-pulse' }));
++      badge.appendChild(new MockElement(this, 'span', {}, '2.847 persone già in lista'));
++      heroSection.appendChild(badge);
++
++      const formCard = new MockElement(this, 'div', { class: 'rounded-3xl overflow-hidden' });
++      const waitlistForm = new MockElement(this, 'form', {
++        'data-testid': 'waitlist-form',
++        class: 'p-5'
++      });
++
++      waitlistForm.appendChild(new MockElement(this, 'input', {
++        type: 'email',
++        'data-testid': 'waitlist-email-input',
++        placeholder: 'la.tua@email.com',
++        value: this.waitlistEmail || '',
++        class: 'w-full bg-off-white border border-anthracite-grey/10 rounded-2xl px-4 py-3.5 text-anthracite-grey text-sm'
++      }));
++
++      waitlistForm.appendChild(new MockElement(this, 'button', {
++        type: 'submit',
++        'data-testid': 'waitlist-submit',
++        class: 'btn-primary w-full text-sm'
++      }, 'Attiva il mio Radar →'));
++
++      if (this.waitlistSubmitted) {
++        waitlistForm.appendChild(new MockElement(this, 'div', {
++          'data-testid': 'waitlist-success',
++          class: 'animate-bounce-in bg-green-50 border border-green-200 rounded-2xl p-4 text-center'
++        }, `🎉 Sei dentro! ${this.waitlistEmail}`));
++
++        waitlistForm.appendChild(new MockElement(this, 'button', {
++          'data-testid': 'share-button',
++          class: 'btn-outline w-full text-sm'
++        }, 'Flexa il tuo Drop'));
++      }
++
++      if (this.waitlistError) {
++        waitlistForm.appendChild(new MockElement(this, 'div', {
++          'data-testid': 'waitlist-error',
++          class: 'text-red-500 text-xs font-medium px-1'
++        }, this.waitlistError));
++      }
++
++      formCard.appendChild(waitlistForm);
++      heroSection.appendChild(formCard);
++      waitlistContainer.appendChild(heroSection);
++      root.appendChild(waitlistContainer);
+     }

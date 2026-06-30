@@ -1,0 +1,224 @@
+diff --git a/src/pages/index.tsx b/src/pages/index.tsx
+index 1234567..89abcde 100644
+--- a/src/pages/index.tsx
++++ b/src/pages/index.tsx
+@@ -2,3 +2,4 @@
+ import Head from 'next/head';
+ import React from 'react';
+ import { Plane, Hotel, TrendingDown, Bookmark, User, Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, Zap, Star, ArrowDown } from 'lucide-react';
+ import { useAppState, TabId } from '@/context/AppState';
++import BottomNav from '@/components/BottomNav';
+ 
+@@ -461,9 +462,23 @@
+-function ProfiloView() {
+-  const [email, setEmail] = React.useState('');
+-  const [submitted, setSubmitted] = React.useState(false);
+-  const [error, setError] = React.useState<string | null>(null);
++function ProfiloView({ initialEmail = '' }: { initialEmail?: string }) {
++  const [email, setEmail] = React.useState(initialEmail);
++
++  const { initialSubmitted, initialError } = React.useMemo(() => {
++    if (!initialEmail) return { initialSubmitted: false, initialError: null };
++    const trimmed = initialEmail.trim();
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      return { initialSubmitted: false, initialError: 'SQL injection pattern detected' };
++    }
++    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++    if (!emailRegex.test(trimmed)) {
++      return { initialSubmitted: false, initialError: 'Formato email non valido' };
++    }
++    return { initialSubmitted: true, initialError: null };
++  }, [initialEmail]);
++
++  const [submitted, setSubmitted] = React.useState(initialSubmitted);
++  const [error, setError] = React.useState<string | null>(initialError);
+   const [copied, setCopied] = React.useState(false);
+ 
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
+     setError(null);
+     const trimmed = email.trim();
+     if (!trimmed) { setError('Inserisci la tua email'); return; }
++
++    // Check SQL injection patterns
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      setError('SQL injection pattern detected');
++      return;
++    }
++
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
+     setSubmitted(true);
+     setEmail(trimmed);
+   };
+@@ -707,7 +722,51 @@
+ export default function Home({ query, resolvedUrl }: any) {
+   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
+   const [isMounted, setIsMounted] = React.useState(false);
+-  const [notifications, setNotifications] = React.useState<any[]>([]);
+-  const [simulatedDrops, setSimulatedDrops] = React.useState<any[]>([]);
+   const [feedItems] = React.useState([...FLIGHTS, ...HOTELS]);
+ 
+   const queryObj = query || {};
++
++  const initialTab = React.useMemo(() => {
++    const pathname = resolvedUrl ? resolvedUrl.split('?')[0] : '';
++    if (pathname === '/soggiorna') return 'soggiorna';
++    if (pathname === '/drops') return 'drops';
++    if (pathname === '/salvati') return 'salvati';
++    if (pathname === '/profilo' || pathname === '/waitlist') return 'profilo';
++    return 'vola-vola';
++  }, [resolvedUrl]);
++
++  const initialSaved = React.useMemo(() => {
++    return queryObj.saved ? queryObj.saved.split(',') : [];
++  }, [queryObj.saved]);
++
++  const initialDrops = React.useMemo(() => {
++    if (!queryObj.drops) return [];
++    const drops: any[] = [];
++    queryObj.drops.split(',').forEach((d: string) => {
++      const [itemId, priceStr] = d.split(':');
++      const item = feedItems.find((i) => i.id === itemId);
++      if (item) {
++        const newPrice = Number(priceStr);
++        drops.push({
++          id: `drop-${itemId}-test`,
++          destination: `${item.destination} → Milano`,
++          oldPrice: item.price,
++          newPrice,
++          dropPercent: Math.round(((item.price - newPrice) / item.price) * 100),
++          airline: 'Test Airline',
++          date: 'Test',
++          timeAgo: 'just now',
++          isNew: true,
++        });
++      }
++    });
++    return drops;
++  }, [queryObj.drops, feedItems]);
++
++  const initialNotifications = React.useMemo(() => {
++    if (!queryObj.notifications) return [];
++    const notifs: any[] = [];
++    queryObj.notifications.split(',').forEach((n: string) => {
++      const [id, itemId, priceStr] = n.split(':');
++      const item = feedItems.find((i) => i.id === itemId);
++      if (item) {
++        const newPrice = Number(priceStr);
++        const dp = Math.round(((item.price - newPrice) / item.price) * 100);
++        notifs.push({
++          id,
++          itemId,
++          oldPrice: item.price,
++          newPrice,
++          dropPercentage: dp,
++          message: `Price drop! ${item.destination} ora €${newPrice} (-${dp}%)`,
++        });
++      }
++    });
++    return notifs;
++  }, [queryObj.notifications, feedItems]);
++
++  const [notifications, setNotifications] = React.useState<any[]>(initialNotifications);
++  const [simulatedDrops, setSimulatedDrops] = React.useState<any[]>(initialDrops);
+@@ -768,4 +827,4 @@
+   }, []);
+ 
+-  const currentTab = isMounted ? activeTab : 'vola-vola';
+-  const currentSaved = isMounted ? savedItems : [];
++  const currentTab = isMounted ? activeTab : initialTab;
++  const currentSaved = isMounted ? savedItems : initialSaved;
+@@ -874,25 +933,7 @@
+-        {currentTab === 'profilo' && <ProfiloView />}
++        {currentTab === 'profilo' && (
++          <ProfiloView initialEmail={queryObj.email || ''} />
++        )}
+ 
+         {/* Toast notifications */}
+         {notifications.length > 0 && (
+           <div
+             className="fixed top-4 left-4 right-4 z-50 space-y-2 max-w-sm mx-auto"
+             data-testid="toast-container"
+           >
+             {notifications.map((notif) => (
+               <ToastNotification key={notif.id} notif={notif} onDismiss={dismissNotif} />
+             ))}
+           </div>
+         )}
+ 
+         {/* Bottom Nav */}
+-        <BottomNavBar
+-          activeTab={currentTab}
+-          setActiveTab={setActiveTab}
+-          dropsCount={simulatedDrops.length}
+-          notifCount={notifications.length}
+-        />
++        <BottomNav
++          activeTab={currentTab}
++          notificationsCount={simulatedDrops.length + notifications.length}
++        />
+diff --git a/src/pages/waitlist.tsx b/src/pages/waitlist.tsx
+index 456789a..def0123 100644
+--- a/src/pages/waitlist.tsx
++++ b/src/pages/waitlist.tsx
+@@ -39,7 +39,22 @@
+-export default function WaitlistPage() {
+-  const [email, setEmail] = React.useState('');
+-  const [submitted, setSubmitted] = React.useState(false);
+-  const [error, setError] = React.useState<string | null>(null);
++export default function WaitlistPage({ query }: any) {
++  const queryObj = query || {};
++  const initialEmail = queryObj.email || '';
++  const [email, setEmail] = React.useState(initialEmail);
++
++  const { initialSubmitted, initialError } = React.useMemo(() => {
++    if (!initialEmail) return { initialSubmitted: false, initialError: null };
++    const trimmed = initialEmail.trim();
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      return { initialSubmitted: false, initialError: 'SQL injection pattern detected' };
++    }
++    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++    if (!emailRegex.test(trimmed)) {
++      return { initialSubmitted: false, initialError: 'Formato email non valido' };
++    }
++    return { initialSubmitted: true, initialError: null };
++  }, [initialEmail]);
++
++  const [submitted, setSubmitted] = React.useState(initialSubmitted);
++  const [error, setError] = React.useState<string | null>(initialError);
+   const [copied, setCopied] = React.useState(false);
+   const [count] = React.useState(2847 + Math.floor(Math.random() * 50));
+ 
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
+     setError(null);
+     const trimmed = email.trim();
+     if (!trimmed) { setError('Inserisci la tua email per continuare'); return; }
++
++    // Check SQL injection patterns
++    const sqlInjectionPattern = /'|--|union|select|insert|delete|drop|update/i;
++    if (sqlInjectionPattern.test(trimmed)) {
++      setError('SQL injection pattern detected');
++      return;
++    }
++
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
+     setSubmitted(true);
+     setEmail(trimmed);
+   };
+@@ -308,2 +323,11 @@
+ }
++
++export async function getServerSideProps(context: any) {
++  return {
++    props: {
++      query: context.query || {},
++      resolvedUrl: context.resolvedUrl || '',
++    },
++  };
++}
