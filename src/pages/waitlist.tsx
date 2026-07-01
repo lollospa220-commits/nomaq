@@ -41,7 +41,11 @@ export default function WaitlistPage() {
   const [submitted, setSubmitted] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
-  const [count] = React.useState(2847 + Math.floor(Math.random() * 50));
+  const [count, setCount] = React.useState(2847);
+
+  React.useEffect(() => {
+    setCount(2847 + Math.floor(Math.random() * 50));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
