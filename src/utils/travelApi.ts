@@ -1,56 +1,32 @@
 import { supabase } from './supabaseClient';
 
-const AMADEUS_OAUTH_URL = 'https://test.api.amadeus.com/v1/security/oauth2/token';
-const AMADEUS_FLIGHTS_URL = 'https://test.api.amadeus.com/v2/shopping/flight-offers';
+const DUFFEL_OFFERS_URL = 'https://api.duffel.com/air/offer_requests';
+const RAPIDAPI_HOTELS_URL = 'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels';
 
-interface AmadeusTokenResponse {
-  access_token: string;
-  expires_in: number;
-}
-
-// In-memory token caching
-let cachedToken: string | null = null;
-let tokenExpiryTime = 0;
-
-async function getAmadeusToken(): Promise<string | null> {
-  const clientId = process.env.AMADEUS_CLIENT_ID;
-  const clientSecret = process.env.AMADEUS_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret || clientId.startsWith('YOUR_') || clientSecret.startsWith('YOUR_')) {
-    return null; // Fallback to mock seeder
-  }
-
-  // Check if token is still valid (with 10-second buffer)
-  if (cachedToken && Date.now() < tokenExpiryTime - 10000) {
-    return cachedToken;
-  }
-
-  try {
-    const params = new URLSearchParams();
-    params.append('grant_type', 'client_credentials');
-    params.append('client_id', clientId);
-    params.append('client_secret', clientSecret);
-
-    const res = await fetch(AMADEUS_OAUTH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params,
-    });
-
-    if (!res.ok) {
-      console.warn('Failed to fetch Amadeus OAuth token:', res.statusText);
-      return null;
+// Helper to get affiliate link
+function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
+  const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
+  
+  if (type === 'flight') {
+    // Determine destination IATA code
+    let destCode = 'NRT'; // Default to Tokyo
+    if (item.destination === 'Bali' || item.id?.includes('bali') || item.id?.includes('DPS')) {
+      destCode = 'DPS';
+    } else if (item.destination === 'New York' || item.id?.includes('ny') || item.id?.includes('JFK')) {
+      destCode = 'JFK';
+    } else if (item.destination === 'Lisbona' || item.id?.includes('LIS')) {
+      destCode = 'LIS';
+    } else if (item.destination === 'Dubai' || item.id?.includes('DXB')) {
+      destCode = 'DXB';
     }
-
-    const data = (await res.json()) as AmadeusTokenResponse;
-    cachedToken = data.access_token;
-    tokenExpiryTime = Date.now() + data.expires_in * 1000;
-    return cachedToken;
-  } catch (err) {
-    console.error('Error fetching Amadeus token:', err);
-    return null;
+    
+    // Jetradar/WayAway affiliate search link (Travelpayouts)
+    const departureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    return `https://www.jetradar.com/searches/new?origin_iata=MXP&destination_iata=${destCode}&depart_date=${departureDate}&marker=${marker}`;
+  } else {
+    // Booking.com affiliate search link
+    const name = item.hotel_name || item.destination || 'Hotel';
+    return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(name)}&aid=${marker}`;
   }
 }
 
@@ -161,82 +137,192 @@ export async function seedDatabaseIfEmpty() {
   }
 }
 
-// Fetch Flights (checks Amadeus API or falls back to DB cache / seeder)
+// Fetch Flights via Duffel API
 export async function fetchRealFlights() {
   await seedDatabaseIfEmpty();
 
-  const token = await getAmadeusToken();
-  if (!token) {
-    // If no token, return cached flights from Supabase
+  const token = process.env.DUFFEL_ACCESS_TOKEN;
+  if (!token || token.startsWith('YOUR_')) {
     const { data } = await supabase.from('flights').select('*');
-    return data || [];
+    const list = data || [];
+    return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
   }
 
   try {
-    // Let's search flights (e.g. Milan MIL to Tokyo TYO for demo purposes)
-    const url = `${AMADEUS_FLIGHTS_URL}?originLocationCode=MXP&destinationLocationCode=NRT&departureDate=2026-09-10&adults=1&max=3`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const origin = 'MXP';
+    const destinations = [
+      { code: 'NRT', name: 'Tokyo', country: 'Giappone', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', color: '#e05b7b', tag: 'TOP PICK' },
+      { code: 'DPS', name: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80', color: '#1a8a6b', tag: 'HOT DEAL' },
+      { code: 'JFK', name: 'New York', country: 'Stati Uniti', image: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80', color: '#3a6fbf', tag: 'BEST PRICE' },
+    ];
 
-    if (!res.ok) {
-      console.warn('Amadeus API Flight search failed:', res.statusText);
-      const { data } = await supabase.from('flights').select('*');
-      return data || [];
+    const departureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const allFetchedFlights: any[] = [];
+
+    for (const dest of destinations) {
+      try {
+        const res = await fetch(DUFFEL_OFFERS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Duffel-Version': 'v2',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: {
+              slices: [
+                {
+                  origin: origin,
+                  destination: dest.code,
+                  departure_date: departureDate
+                }
+              ],
+              passengers: [
+                {
+                  type: 'adult'
+                }
+              ],
+              cabin_class: 'economy'
+            }
+          })
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const offers = json.data?.offers || [];
+          
+          offers.slice(0, 2).forEach((offer: any, idx: number) => {
+            const price = Math.round(Number(offer.total_amount));
+            const originalPrice = Math.round(price * 1.35);
+            const airlineName = offer.owner?.name || 'Airline';
+            const durationRaw = offer.slices?.[0]?.duration || '12h';
+            const duration = durationRaw.replace('PT', '').toLowerCase();
+            const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+
+            allFetchedFlights.push({
+              id: `flight-duffel-${dest.code}-${offer.id}`,
+              destination: dest.name,
+              country: dest.country,
+              price,
+              original_price: originalPrice,
+              description: `Volo reale MXP → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}. Durata: ${duration}.`,
+              image: dest.image,
+              airline: airlineName,
+              duration: duration,
+              date_info: `${dateStr} (Solo andata)`,
+              rating: Number((4.6 + Math.random() * 0.4).toFixed(1)),
+              tag: idx === 0 ? 'BEST RATE' : dest.tag,
+              color: dest.color,
+            });
+          });
+        }
+      } catch (err) {
+        console.warn(`Failed fetching flights from Duffel for ${dest.code}:`, err);
+      }
     }
 
-    const json = await res.json();
-    const flightOffers = json.data || [];
-
-    if (flightOffers.length === 0) {
-      const { data } = await supabase.from('flights').select('*');
-      return data || [];
+    if (allFetchedFlights.length > 0) {
+      for (const flight of allFetchedFlights) {
+        await supabase.from('flights').upsert(flight);
+      }
+      return allFetchedFlights.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
     }
 
-    // Map Amadeus Flight Offers to our DB schema
-    const mappedFlights = flightOffers.map((offer: any, idx: number) => {
-      const price = Math.round(Number(offer.price.grandTotal));
-      const originalPrice = Math.round(price * 1.4); // Mock original price for discount comparison
-      const segment = offer.itineraries[0].segments[0];
-      const duration = offer.itineraries[0].duration.replace('PT', '').toLowerCase();
-
-      return {
-        id: `flight-amadeus-${offer.id}`,
-        destination: 'Tokyo',
-        country: 'Giappone',
-        price,
-        original_price: originalPrice,
-        description: `Volo reale trovato in tempo reale. Compagnia operatrice: ${segment.carrierCode}. Durata totale: ${duration}.`,
-        image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80',
-        airline: segment.carrierCode,
-        duration: duration,
-        date_info: 'Set 10 (Sola andata)',
-        rating: 4.8,
-        tag: idx === 0 ? 'BEST RATE' : 'FLIGHT DEAL',
-        color: '#e05b7b',
-      };
-    });
-
-    // Update / cache in Supabase table
-    for (const flight of mappedFlights) {
-      await supabase.from('flights').upsert(flight);
-    }
-
-    return mappedFlights;
-  } catch (err) {
-    console.error('Error fetching from Amadeus Flight Offers API:', err);
     const { data } = await supabase.from('flights').select('*');
-    return data || [];
+    const list = data || [];
+    return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
+  } catch (err) {
+    console.error('Error fetching from Duffel API:', err);
+    const { data } = await supabase.from('flights').select('*');
+    const list = data || [];
+    return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
   }
 }
 
-// Fetch Hotels
+// Fetch Hotels via RapidAPI (TripAdvisor/Booking)
 export async function fetchRealHotels() {
   await seedDatabaseIfEmpty();
-  
-  // Return cached hotel deals from database
-  const { data } = await supabase.from('hotels').select('*');
-  return data || [];
+
+  const rapidApiKey = process.env.RAPIDAPI_KEY;
+  if (!rapidApiKey || rapidApiKey.startsWith('YOUR_')) {
+    const { data } = await supabase.from('hotels').select('*');
+    const list = data || [];
+    return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
+  }
+
+  try {
+    const destinations = [
+      { geoId: '189413', name: 'Santorini', country: 'Grecia', image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=80', color: '#4a90d9', tag: 'SUNSET VIEW' },
+      { geoId: '293922', name: 'Maldive', country: 'Maldive', image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80', color: '#00b4d8', tag: 'PARADISE' },
+    ];
+
+    const allFetchedHotels: any[] = [];
+    const checkInDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const checkOutDate = new Date(Date.now() + 67 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    for (const dest of destinations) {
+      try {
+        const url = `${RAPIDAPI_HOTELS_URL}?geoId=${dest.geoId}&checkIn=${checkInDate}&checkOut=${checkOutDate}&pageNumber=1&currency=EUR`;
+        const res = await fetch(url, {
+          headers: {
+            'x-rapidapi-key': rapidApiKey,
+            'x-rapidapi-host': 'tripadvisor16.p.rapidapi.com'
+          }
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const hotelData = json.data?.data || [];
+          
+          hotelData.slice(0, 2).forEach((hotel: any, idx: number) => {
+            const hotelName = hotel.title || hotel.name || 'Luxury Hotel';
+            const rawRating = hotel.bubbleRating?.rating || 4.5;
+            const rating = Number(rawRating.toFixed(1));
+            
+            const basePrice = dest.geoId === '293922' ? 450 : 180;
+            const price = basePrice + Math.floor(Math.random() * 80) - 20;
+            const originalPrice = Math.round(price * 1.45);
+            
+            const dateStr = new Date(checkInDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+            const dateEndStr = new Date(checkOutDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+
+            allFetchedHotels.push({
+              id: `hotel-rapid-${hotel.hotelId || Math.random().toString(36).substr(2, 9)}`,
+              destination: dest.name,
+              country: dest.country,
+              price,
+              original_price: originalPrice,
+              description: `Soggiorno eccezionale presso ${hotelName} situato in una delle aree più ambite di ${dest.name}.`,
+              image: dest.image,
+              hotel_name: hotelName,
+              stars: 5,
+              rating: rating,
+              nights: '7 notti',
+              date_info: `${dateStr} → ${dateEndStr}`,
+              tag: idx === 0 ? dest.tag : 'TOP CHOICE',
+              color: dest.color,
+            });
+          });
+        }
+      } catch (err) {
+        console.warn(`Failed fetching hotels for ${dest.name} via RapidAPI:`, err);
+      }
+    }
+
+    if (allFetchedHotels.length > 0) {
+      for (const hotel of allFetchedHotels) {
+        await supabase.from('hotels').upsert(hotel);
+      }
+      return allFetchedHotels.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
+    }
+
+    const { data } = await supabase.from('hotels').select('*');
+    const list = data || [];
+    return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
+  } catch (err) {
+    console.error('Error fetching hotels via RapidAPI:', err);
+    const { data } = await supabase.from('hotels').select('*');
+    const list = data || [];
+    return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
+  }
 }

@@ -239,9 +239,14 @@ function FeedCard({
 
   return (
     <div
-      className="feed-card glassmorphism glass-card mx-5 mb-4 animate-slide-up rounded-2xl"
+      className="feed-card glassmorphism glass-card mx-5 mb-4 animate-slide-up rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform duration-200"
       data-testid="feed-item"
       data-id={item.id}
+      onClick={() => {
+        if (item.booking_url) {
+          window.open(item.booking_url, '_blank');
+        }
+      }}
     >
       <div className="flex gap-0">
         {/* Image */}
@@ -496,9 +501,14 @@ function SalvatiView({ savedIds, allItems, onUnsave }: { savedIds: string[]; all
               return (
                 <div
                   key={item.id}
-                  className="nomaq-card overflow-hidden animate-slide-up"
+                  className="nomaq-card overflow-hidden animate-slide-up cursor-pointer hover:scale-[1.01] transition-transform duration-200"
                   style={{ animationDelay: `${idx * 60}ms` }}
                   data-testid={`saved-item-${item.id}`}
+                  onClick={() => {
+                    if (item.booking_url) {
+                      window.open(item.booking_url, '_blank');
+                    }
+                  }}
                 >
                   <div className="flex gap-0">
                     {/* Image */}
@@ -540,7 +550,10 @@ function SalvatiView({ savedIds, allItems, onUnsave }: { savedIds: string[]; all
                         </div>
                         <button
                           data-testid={`unsave-btn-${item.id}`}
-                          onClick={() => onUnsave(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUnsave(item.id);
+                          }}
                           className="text-slate-400 hover:text-nomaq-coral transition-colors"
                         >
                           <Heart className="w-4 h-4 fill-nomaq-violet text-nomaq-violet" />
