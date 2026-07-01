@@ -22,7 +22,17 @@ class MockElement {
     for (const child of this.children) {
       text += child.textContent;
     }
-    return text;
+    return text
+      .replace(/&amp;/g, '&')
+      .replace(/&#x27;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#x3D;/g, '=')
+      .replace(/&eacute;/g, 'é')
+      .replace(/&#xE9;/g, 'é')
+      .replace(/&egrave;/g, 'è')
+      .replace(/&#xE8;/g, 'è');
   }
 
   set textContent(val) {
@@ -218,9 +228,10 @@ function findNodes(node, selectorParts, index) {
         }
       }
     }
-    if (index === 0) {
+    const isDescendantTransition = index === 0 || selectorParts[index - 1] !== '>';
+    if (isDescendantTransition) {
       for (const child of n.children) {
-        results.push(...findNodes(child, selectorParts, 0));
+        results.push(...findNodes(child, selectorParts, index));
       }
     }
   }

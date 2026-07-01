@@ -78,14 +78,53 @@ class LiveDriver {
     this.waitlistEmail = '';
     this.waitlistError = null;
     this.waitlistSubmissions = [];
-    this.feed = [
+    this._feed = this.makeFeedProxy([
       { id: 'flight-roma', type: 'flight', destination: 'Roma', price: 120, description: 'Direct flight to the historic capital of Italy, Roma.', image: 'roma.jpg' },
       { id: 'flight-paris', type: 'flight', destination: 'Paris', price: 150, description: 'Fly to Paris and explore the City of Light.', image: 'paris.jpg' },
       { id: 'hotel-london', type: 'hotel', destination: 'London Cozy Inn', price: 200, description: 'A cozy boutique hotel in the heart of London.', image: 'london.jpg' },
       { id: 'hotel-tokyo', type: 'hotel', destination: 'Tokyo Suite', price: 350, description: 'Luxury suite with stunning Tokyo skyline views.', image: 'tokyo.jpg' },
       { id: 'flight-ny', type: 'flight', destination: 'New York City', price: 400, description: 'Non-stop flight to JFK NYC. Experience the Big Apple!', image: 'nyc.jpg' }
-    ];
+    ]);
     this.currentDoc = null;
+  }
+
+  makeFeedProxy(arr) {
+    const self = this;
+    const itemHandler = {
+      set(target, prop, value) {
+        const res = Reflect.set(target, prop, value);
+        if (self.currentDoc) {
+          self.fetchRoute(self.activeTab === 'vola-vola' ? '/' : `/${self.activeTab}`);
+        }
+        return res;
+      }
+    };
+    const proxiedItems = arr.map(item => new Proxy(item, itemHandler));
+    const arrayHandler = {
+      set(target, prop, value) {
+        let valToSet = value;
+        if (typeof value === 'object' && value !== null && !value._isProxy) {
+          valToSet = new Proxy(value, itemHandler);
+        }
+        const res = Reflect.set(target, prop, valToSet);
+        if (self.currentDoc) {
+          self.fetchRoute(self.activeTab === 'vola-vola' ? '/' : `/${self.activeTab}`);
+        }
+        return res;
+      }
+    };
+    return new Proxy(proxiedItems, arrayHandler);
+  }
+
+  get feed() {
+    return this._feed;
+  }
+
+  set feed(val) {
+    this._feed = this.makeFeedProxy(val || []);
+    if (this.currentDoc) {
+      this.fetchRoute(this.activeTab === 'vola-vola' ? '/' : `/${this.activeTab}`);
+    }
   }
 
   reset() {
@@ -99,13 +138,13 @@ class LiveDriver {
     this.waitlistEmail = '';
     this.waitlistError = null;
     this.waitlistSubmissions = [];
-    this.feed = [
+    this._feed = this.makeFeedProxy([
       { id: 'flight-roma', type: 'flight', destination: 'Roma', price: 120, description: 'Direct flight to the historic capital of Italy, Roma.', image: 'roma.jpg' },
       { id: 'flight-paris', type: 'flight', destination: 'Paris', price: 150, description: 'Fly to Paris and explore the City of Light.', image: 'paris.jpg' },
       { id: 'hotel-london', type: 'hotel', destination: 'London Cozy Inn', price: 200, description: 'A cozy boutique hotel in the heart of London.', image: 'london.jpg' },
       { id: 'hotel-tokyo', type: 'hotel', destination: 'Tokyo Suite', price: 350, description: 'Luxury suite with stunning Tokyo skyline views.', image: 'tokyo.jpg' },
       { id: 'flight-ny', type: 'flight', destination: 'New York City', price: 400, description: 'Non-stop flight to JFK NYC. Experience the Big Apple!', image: 'nyc.jpg' }
-    ];
+    ]);
     
     this.fetchRoute('/');
   }
@@ -167,7 +206,7 @@ class LiveDriver {
     const { execSync } = require('child_process');
     try {
       const url = `${this.baseUrl}${fullRoute}`;
-      const cmd = `node -e "fetch('${url}').then(r => r.text()).then(t => process.stdout.write(t)).catch(e => { console.error(e); process.exit(1); })"`;
+      const cmd = `node -e "fetch(process.argv[1]).then(r => r.text()).then(t => process.stdout.write(t)).catch(e => { console.error(e); process.exit(1); })" "${url}"`;
       const html = execSync(cmd, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'inherit'] });
       this.currentDoc = parseHTML(html, this);
     } catch (err) {
@@ -281,6 +320,10 @@ class LiveDriver {
   setQueryParameters(params) {
     this.queryParameters = { ...params };
     this.fetchRoute(this.activeTab === 'vola-vola' ? '/' : `/${this.activeTab}`);
+  }
+
+  render() {
+    return this.currentDoc;
   }
 
   querySelector(selector) {

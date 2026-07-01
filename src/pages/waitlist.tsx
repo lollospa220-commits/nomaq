@@ -44,18 +44,48 @@ export default function WaitlistPage() {
   const [count, setCount] = React.useState(2847);
 
   React.useEffect(() => {
-    setCount(2847 + Math.floor(Math.random() * 50));
+    // Recupera il numero reale di iscritti salvati nel database
+    fetch('/api/waitlist')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.count !== undefined) {
+          setCount(2847 + data.count);
+        } else {
+          setCount(2847 + Math.floor(Math.random() * 50));
+        }
+      })
+      .catch(() => {
+        setCount(2847 + Math.floor(Math.random() * 50));
+      });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const trimmed = email.trim();
     if (!trimmed) { setError('Inserisci la tua email per continuare'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
-    setSubmitted(true);
-    setEmail(trimmed);
+
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Si è verificato un errore');
+        return;
+      }
+      setSubmitted(true);
+      setEmail(trimmed);
+      setCount((prev) => prev + 1);
+    } catch (err) {
+      setError('Impossibile connettersi al server. Riprova.');
+    }
   };
 
   const handleShare = () => {

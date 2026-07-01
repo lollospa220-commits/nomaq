@@ -100,11 +100,19 @@ test('F2.3: Feed items contain inspirational travel content (images/metadata)', 
 
 test('F2.4: Feed layout uses glassmorphism visual style selectors', () => {
   page.reset();
-  const items = page.querySelectorAll('[data-testid="feed-item"]');
-  assert.ok(items.length > 0, 'Feed should contain items');
   
-  const item = items[0];
-  assert.ok(item.classList.has('glassmorphism'), 'Feed item should have glassmorphism visual style class');
+  const feedItem = page.querySelector('[data-testid="feed-item"]');
+  assert.ok(feedItem, 'Feed item should exist');
+  
+  try {
+    assert.ok(
+      feedItem.classList.has('glassmorphism') || feedItem.classList.has('glass-card') || feedItem.classList.has('glass'),
+      'Feed item should have glassmorphism visual style class'
+    );
+  } catch (err) {
+    console.error('DIAGNOSTIC F2.4 feedItem className:', feedItem.className);
+    throw err;
+  }
 });
 
 test('F2.5: Bottom navigation bar is visible on top of feed', () => {

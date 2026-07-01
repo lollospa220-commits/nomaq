@@ -2,7 +2,7 @@ import React from 'react';
 import { Plane, Hotel, TrendingDown, Bookmark, User } from 'lucide-react';
 import { useAppState, TabId } from '@/context/AppState';
 
-const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }[] = [
+const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }> }[] = [
   { id: 'vola-vola', label: 'Vola Vola', Icon: Plane },
   { id: 'soggiorna', label: 'Soggiorna', Icon: Hotel },
   { id: 'drops', label: 'Drops', Icon: TrendingDown },
@@ -39,7 +39,7 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
       role="navigation"
       aria-label="Navigazione principale"
     >
-      <div className="mx-auto max-w-md h-16 flex items-center justify-around px-2">
+      <div className="mx-auto max-w-md h-[60px] flex items-center justify-around px-2">
         {TABS.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           const hasBadge = id === 'drops' && notificationsCount !== undefined && notificationsCount > 0;
@@ -56,19 +56,23 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
             >
               <div className="relative flex flex-col items-center gap-0.5">
                 <div
-                  className={`p-2 rounded-xl transition-all duration-200 ${isActive ? 'bg-electric-orange/10' : ''}`}
+                  className={`p-2 rounded-2xl transition-all duration-300 ${
+                    isActive
+                      ? 'bg-nomaq-lavender'
+                      : ''
+                  }`}
                 >
                   <Icon
-                    className={`w-5 h-5 transition-all duration-200 ${
-                      isActive ? 'text-electric-orange' : 'text-anthracite-grey/50'
+                    className={`w-[18px] h-[18px] transition-all duration-200 ${
+                      isActive ? 'text-nomaq-indigo' : 'text-slate-400'
                     }`}
-                    strokeWidth={isActive ? 2.5 : 2}
+                    strokeWidth={isActive ? 2.5 : 1.8}
                   />
                 </div>
 
                 {hasBadge && (
                   <span
-                    className="absolute -top-0.5 -right-0.5 bg-electric-orange text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1"
+                    className="absolute -top-0.5 -right-1 bg-electric-orange text-white text-[8px] font-black min-w-[15px] h-[15px] flex items-center justify-center rounded-full px-0.5"
                     data-testid="drops-badge"
                     aria-label={`${notificationsCount} notifiche`}
                   >
@@ -78,7 +82,7 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
 
                 <span
                   className={`text-[9px] font-semibold transition-all duration-200 leading-none ${
-                    isActive ? 'text-electric-orange' : 'text-anthracite-grey/40'
+                    isActive ? 'text-nomaq-indigo' : 'text-slate-400'
                   }`}
                 >
                   {label}

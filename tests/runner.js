@@ -6,20 +6,13 @@ const http = require('http');
 const { spawn } = require('child_process');
 const path = require('path');
 
-function checkAppReachable() {
-  return new Promise((resolve) => {
-    const req = http.get('http://localhost:3000', { timeout: 1000 }, (res) => {
-      resolve(true);
-      res.resume();
-    });
-    req.on('error', () => {
-      resolve(false);
-    });
-    req.on('timeout', () => {
-      req.destroy();
-      resolve(false);
-    });
-  });
+async function checkAppReachable() {
+  try {
+    const res = await fetch('http://localhost:3000', { signal: AbortSignal.timeout(1000) });
+    return res.ok || res.status === 200;
+  } catch (err) {
+    return false;
+  }
 }
 
 async function main() {
