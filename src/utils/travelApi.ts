@@ -1,28 +1,59 @@
 import { supabase } from './supabaseClient';
+import { getDestinationImage, ensureVariedImages } from './destinationImages';
 
 const DUFFEL_OFFERS_URL = 'https://api.duffel.com/air/offer_requests';
 const RAPIDAPI_HOTELS_URL = 'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels';
 
+// Airlines that pay no metasearch commission: route their offers to Kiwi.com
+// (Ryanair "Approved OTA" with easyJet direct integration, ~3% per booking
+// via the Travelpayouts Kiwi.com program) instead of Aviasales.
+const LCC_AIRLINES = ['ryanair', 'easyjet', 'wizz', 'vueling', 'volotea'];
+
+function resolveDestCode(item: any): string {
+  if (item.dest_code) return item.dest_code;
+  const key = `${item.destination || ''} ${item.id || ''}`.toLowerCase();
+  const map: Array<[string, string]> = [
+    ['bali', 'DPS'], ['dps', 'DPS'],
+    ['new york', 'JFK'], ['jfk', 'JFK'], ['-ny', 'JFK'],
+    ['lisbona', 'LIS'], ['lis', 'LIS'],
+    ['dubai', 'DXB'], ['dxb', 'DXB'],
+    ['barcellona', 'BCN'], ['barcelona', 'BCN'], ['bcn', 'BCN'],
+    ['londra', 'LGW'], ['london', 'LGW'], ['lgw', 'LGW'],
+    ['tokyo', 'NRT'], ['nrt', 'NRT'],
+    ['sicilia', 'PMO'], ['parigi', 'CDG'], ['paris', 'CDG'],
+  ];
+  const hit = map.find(([k]) => key.includes(k));
+  return hit ? hit[1] : 'NRT';
+}
+
 // Helper to get affiliate link
 function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
   const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
-  
+
   if (type === 'flight') {
-    // Determine destination IATA code
-    let destCode = 'NRT'; // Default to Tokyo
-    if (item.destination === 'Bali' || item.id?.includes('bali') || item.id?.includes('DPS')) {
-      destCode = 'DPS';
-    } else if (item.destination === 'New York' || item.id?.includes('ny') || item.id?.includes('JFK')) {
-      destCode = 'JFK';
-    } else if (item.destination === 'Lisbona' || item.id?.includes('LIS')) {
-      destCode = 'LIS';
-    } else if (item.destination === 'Dubai' || item.id?.includes('DXB')) {
-      destCode = 'DXB';
-    }
-    
-    // Jetradar/WayAway affiliate search link (Travelpayouts)
+    const destCode = resolveDestCode(item);
     const departureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    return `https://www.jetradar.com/searches/new?origin_iata=MXP&destination_iata=${destCode}&depart_date=${departureDate}&marker=${marker}`;
+
+    // Low-cost carriers (Ryanair/easyJet/…) pay ~0% on metasearch redirects:
+    // send those clicks to Kiwi.com (sells both at real prices) when a Kiwi
+    // affiliate id is configured. KIWI_AFFILIATE_ID is the opaque `affilid`
+    // value from Travelpayouts' Kiwi.com "ready-made link" for this project
+    // (Programs > Kiwi.com > Links > "IT: Main page" > Copy link, then follow
+    // the redirect to read the `affilid` query param) — Kiwi has no deep-link
+    // generator UI, but its /deep endpoint still honors from/to/departure
+    // alongside that affilid.
+    const kiwiAffilId = process.env.KIWI_AFFILIATE_ID;
+    const airline = String(item.airline || '').toLowerCase();
+    if (kiwiAffilId && LCC_AIRLINES.some((a) => airline.includes(a))) {
+      const [y, m, d] = departureDate.split('-');
+      const kiwiDate = `${d}-${m}-${y}`; // Kiwi's /deep endpoint expects DD-MM-YYYY
+      return `https://www.kiwi.com/deep?from=MXP&to=${destCode}&departure=${kiwiDate}&affilid=${kiwiAffilId}&lang=it`;
+    }
+
+    // Aviasales affiliate search link (Travelpayouts). jetradar.com is a dead
+    // brand (301 → aviasales.com) — link the current domain directly so the
+    // marker is never lost in the cross-domain redirect.
+    return `https://search.aviasales.com/flights/?origin_iata=MXP&destination_iata=${destCode}&depart_date=${departureDate}&adults=1&marker=${marker}`;
   } else {
     // Booking.com affiliate search link
     const name = item.hotel_name || item.destination || 'Hotel';
@@ -174,22 +205,27 @@ export async function fetchRealFlights() {
   const token = process.env.DUFFEL_ACCESS_TOKEN;
   if (!token || token.startsWith('YOUR_')) {
     const { data } = await supabase.from('flights').select('*');
-    const list = data || [];
+    const list = ensureVariedImages(data || []);
     return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
   }
 
   try {
     const origin = 'MXP';
+    // Mix of European LCC routes (easyJet is on Duffel via Direct Connect;
+    // Ryanair is not distributed by Duffel) and long-haul picks.
     const destinations = [
-      { code: 'NRT', name: 'Tokyo', country: 'Giappone', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', color: '#e05b7b', tag: 'TOP PICK' },
-      { code: 'DPS', name: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80', color: '#1a8a6b', tag: 'HOT DEAL' },
-      { code: 'JFK', name: 'New York', country: 'Stati Uniti', image: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80', color: '#3a6fbf', tag: 'BEST PRICE' },
+      { code: 'BCN', name: 'Barcellona', country: 'Spagna', color: '#e05b7b', tag: 'WEEKEND' },
+      { code: 'LGW', name: 'Londra', country: 'Regno Unito', color: '#3a6fbf', tag: 'BEST PRICE' },
+      { code: 'LIS', name: 'Lisbona', country: 'Portogallo', color: '#e08030', tag: 'HOT DEAL' },
+      { code: 'NRT', name: 'Tokyo', country: 'Giappone', color: '#e05b7b', tag: 'TOP PICK' },
+      { code: 'JFK', name: 'New York', country: 'Stati Uniti', color: '#3a6fbf', tag: 'BEST PRICE' },
     ];
 
     const departureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const allFetchedFlights: any[] = [];
 
-    for (const dest of destinations) {
+    // Query all destinations in parallel: each offer_request takes seconds and
+    // this runs during SSR, so a sequential loop multiplies the TTFB.
+    const perDestination = await Promise.all(destinations.map(async (dest) => {
       try {
         const res = await fetch(DUFFEL_OFFERS_URL, {
           method: 'POST',
@@ -217,54 +253,59 @@ export async function fetchRealFlights() {
           })
         });
 
-        if (res.ok) {
-          const json = await res.json();
-          const offers = json.data?.offers || [];
-          
-          offers.slice(0, 2).forEach((offer: any, idx: number) => {
-            const price = Math.round(Number(offer.total_amount));
-            const originalPrice = Math.round(price * 1.35);
-            const airlineName = offer.owner?.name || 'Airline';
-            const durationRaw = offer.slices?.[0]?.duration || '12h';
-            const duration = durationRaw.replace('PT', '').toLowerCase();
-            const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+        if (!res.ok) return [];
+        const json = await res.json();
+        const offers = json.data?.offers || [];
 
-            allFetchedFlights.push({
-              id: `flight-duffel-${dest.code}-${offer.id}`,
-              destination: dest.name,
-              country: dest.country,
-              price,
-              original_price: originalPrice,
-              description: `Volo reale MXP → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}. Durata: ${duration}.`,
-              image: dest.image,
-              airline: airlineName,
-              duration: duration,
-              date_info: `${dateStr} (Solo andata)`,
-              rating: Number((4.6 + Math.random() * 0.4).toFixed(1)),
-              tag: idx === 0 ? 'BEST RATE' : dest.tag,
-              color: dest.color,
-            });
-          });
-        }
+        return offers.slice(0, 2).map((offer: any, idx: number) => {
+          const price = Math.round(Number(offer.total_amount));
+          const originalPrice = Math.round(price * 1.35);
+          const airlineName = offer.owner?.name || 'Airline';
+          const durationRaw = offer.slices?.[0]?.duration || '12h';
+          const duration = durationRaw.replace('PT', '').toLowerCase();
+          const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+
+          return {
+            id: `flight-duffel-${dest.code}-${offer.id}`,
+            destination: dest.name,
+            country: dest.country,
+            dest_code: dest.code,
+            price,
+            original_price: originalPrice,
+            description: `Volo reale MXP → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}. Durata: ${duration}.`,
+            image: getDestinationImage(dest.name, `${dest.code}-${offer.id}-${idx}`),
+            airline: airlineName,
+            duration: duration,
+            date_info: `${dateStr} (Solo andata)`,
+            rating: Number((4.6 + Math.random() * 0.4).toFixed(1)),
+            tag: idx === 0 ? 'BEST RATE' : dest.tag,
+            color: dest.color,
+          };
+        });
       } catch (err) {
         console.warn(`Failed fetching flights from Duffel for ${dest.code}:`, err);
+        return [];
       }
-    }
+    }));
+
+    const allFetchedFlights: any[] = perDestination.flat();
 
     if (allFetchedFlights.length > 0) {
       for (const flight of allFetchedFlights) {
-        await supabase.from('flights').upsert(flight);
+        // dest_code is not a column of the flights table — keep it in-memory only
+        const { dest_code, ...row } = flight;
+        await supabase.from('flights').upsert(row);
       }
-      return allFetchedFlights.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
+      return ensureVariedImages(allFetchedFlights).map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
     }
 
     const { data } = await supabase.from('flights').select('*');
-    const list = data || [];
+    const list = ensureVariedImages(data || []);
     return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
   } catch (err) {
     console.error('Error fetching from Duffel API:', err);
     const { data } = await supabase.from('flights').select('*');
-    const list = data || [];
+    const list = ensureVariedImages(data || []);
     return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
   }
 }
@@ -276,7 +317,7 @@ export async function fetchRealHotels() {
   const rapidApiKey = process.env.RAPIDAPI_KEY;
   if (!rapidApiKey || rapidApiKey.startsWith('YOUR_')) {
     const { data } = await supabase.from('hotels').select('*');
-    const list = data || [];
+    const list = ensureVariedImages(data || []);
     return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
   }
 
@@ -323,7 +364,7 @@ export async function fetchRealHotels() {
               price,
               original_price: originalPrice,
               description: `Soggiorno eccezionale presso ${hotelName} situato in una delle aree più ambite di ${dest.name}.`,
-              image: dest.image,
+              image: getDestinationImage(dest.name, `${dest.geoId}-${hotel.hotelId || idx}`),
               hotel_name: hotelName,
               stars: 5,
               rating: rating,
@@ -343,16 +384,16 @@ export async function fetchRealHotels() {
       for (const hotel of allFetchedHotels) {
         await supabase.from('hotels').upsert(hotel);
       }
-      return allFetchedHotels.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
+      return ensureVariedImages(allFetchedHotels).map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
     }
 
     const { data } = await supabase.from('hotels').select('*');
-    const list = data || [];
+    const list = ensureVariedImages(data || []);
     return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
   } catch (err) {
     console.error('Error fetching hotels via RapidAPI:', err);
     const { data } = await supabase.from('hotels').select('*');
-    const list = data || [];
+    const list = ensureVariedImages(data || []);
     return list.map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'hotel') }));
   }
 }
