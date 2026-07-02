@@ -2,6 +2,8 @@ import Head from 'next/head';
 import React from 'react';
 import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket } from 'lucide-react';
 import { useAppState, TabId } from '@/context/AppState';
+import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
@@ -232,12 +234,40 @@ const MOCK_DROPS = [
 function NomaqLogo() {
   return (
     <div className="flex items-center justify-center py-4">
-      <img 
-        src="/images/logo.png" 
-        alt="Nomaq Logo" 
-        className="h-[60px] w-auto object-contain" 
+      <img
+        src="/images/logo.png"
+        alt="Nomaq Logo"
+        className="h-[60px] w-auto object-contain"
         loading="eager"
       />
+    </div>
+  );
+}
+
+/* ── Language Switcher (IT/EN) ── */
+function LanguageSwitcher() {
+  const { lang, setLang } = useLanguage();
+  return (
+    <div
+      className="flex items-center gap-0.5 bg-white/85 backdrop-blur-sm border border-slate-200 rounded-full p-0.5 shadow-soft"
+      data-testid="language-switcher"
+    >
+      {(['it', 'en'] as const).map((l) => (
+        <button
+          key={l}
+          onClick={() => setLang(l)}
+          data-testid={`lang-${l}`}
+          aria-label={l === 'it' ? 'Italiano' : 'English'}
+          aria-pressed={lang === l}
+          className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase transition-all duration-200 ${
+            lang === l
+              ? 'bg-nomaq-indigo text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          {l}
+        </button>
+      ))}
     </div>
   );
 }
@@ -448,6 +478,7 @@ const MOCK_FEATURED_DROP = {
 };
 
 function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: any[]; isE2E?: boolean; onSimulateDrop: () => void }) {
+  const { t } = useLanguage();
   const allDrops = isE2E ? simulatedDrops : [...simulatedDrops, ...MOCK_DROPS];
 
   return (
@@ -456,7 +487,7 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-display-lg text-nomaq-navy mb-1">Drops</h1>
-          <p className="text-slate-500 text-sm">Real-time flight deals that just dropped in price.</p>
+          <p className="text-slate-500 text-sm">{t('dropsSubtitle')}</p>
         </div>
         <button
           data-testid="debug-price-drop"
@@ -475,21 +506,21 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
           className="nomaq-pill cursor-pointer hover:bg-slate-200 active:scale-95 transition-all focus:outline-none flex items-center gap-1.5"
         >
           <MapPin className="w-3.5 h-3.5 text-nomaq-indigo" />
-          From Naples
+          {t('fromNaples')}
         </button>
         <button 
           onClick={() => alert('Filtro "Qualsiasi mese" cliccato')}
           className="nomaq-pill cursor-pointer hover:bg-slate-200 active:scale-95 transition-all focus:outline-none flex items-center gap-1.5"
         >
           <Calendar className="w-3.5 h-3.5 text-nomaq-indigo" />
-          Any month
+          {t('anyMonth')}
         </button>
         <button 
           onClick={() => alert('Filtro "1 viaggiatore" cliccato')}
           className="nomaq-pill cursor-pointer hover:bg-slate-200 active:scale-95 transition-all focus:outline-none flex items-center gap-1.5"
         >
           <User className="w-3.5 h-3.5 text-nomaq-indigo" />
-          1 traveler
+          {t('oneTraveler')}
         </button>
       </div>
 
@@ -497,7 +528,7 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
       <div className="mb-6">
         <div className="flex items-center gap-1.5 mb-3">
           <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-          <span className="text-sm font-semibold text-nomaq-navy">Picked for you by AI</span>
+          <span className="text-sm font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
         </div>
         <DropMagazineCard drop={MOCK_FEATURED_DROP} isFeatured={true} />
       </div>
@@ -505,7 +536,7 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
       {/* "Just dropped now" list */}
       <div className="mb-3 flex items-center gap-1.5">
         <Clock className="w-4 h-4 text-nomaq-indigo" />
-        <span className="text-sm font-semibold text-nomaq-navy">Just dropped now</span>
+        <span className="text-sm font-semibold text-nomaq-navy">{t('justDroppedNow')}</span>
       </div>
 
       <div className="space-y-0" data-testid="drops-history-list">
@@ -514,8 +545,8 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
             <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-3">
               <ArrowDown className="w-8 h-8 text-nomaq-indigo/40" />
             </div>
-            <p className="text-slate-500 font-medium">No drops detected yet.</p>
-            <p className="text-slate-400 text-sm mt-1">The radar is listening...</p>
+            <p className="text-slate-500 font-medium">{t('noDropsYet')}</p>
+            <p className="text-slate-400 text-sm mt-1">{t('radarListening')}</p>
           </div>
         ) : (
           allDrops.map((drop) => (
@@ -527,7 +558,7 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
       {/* Footer */}
       {allDrops.length > 0 && (
         <div className="flex justify-center mt-6 mb-2">
-          <p className="text-slate-400 text-xs flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> Prices update in real time. Deals won't last long.</p>
+          <p className="text-slate-400 text-xs flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> {t('dropsFooter')}</p>
         </div>
       )}
     </div>
@@ -659,14 +690,15 @@ function SalvatiView({ savedIds, allItems, onUnsave }: { savedIds: string[]; all
 
 /* ── Concierge View ── */
 function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; allItems: any[]; onUnsave: (id: string) => void }) {
+  const { t } = useLanguage();
   const [chatInput, setChatInput] = React.useState('');
   const saved = allItems.filter((i) => savedIds.includes(i.id));
 
   const quickActions = [
-    { icon: <Utensils className="w-4 h-4" />, label: '🍣 Ristoranti vicini' },
-    { icon: <Map className="w-4 h-4" />, label: '🗺️ Crea itinerario' },
-    { icon: <Languages className="w-4 h-4" />, label: '🗣️ Traduttore' },
-    { icon: <Ticket className="w-4 h-4" />, label: '🎫 I miei biglietti' },
+    { icon: <Utensils className="w-4 h-4" />, label: t('qaRestaurants') },
+    { icon: <Map className="w-4 h-4" />, label: t('qaItinerary') },
+    { icon: <Languages className="w-4 h-4" />, label: t('qaTranslator') },
+    { icon: <Ticket className="w-4 h-4" />, label: t('qaTickets') },
   ];
 
   return (
@@ -679,7 +711,7 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
             <Sparkles className="w-5 h-5 text-nomaq-indigo" />
           </div>
         </div>
-        <p className="text-slate-500 text-sm">Il tuo assistente di viaggio personale ✨</p>
+        <p className="text-slate-500 text-sm">{t('conciergeSubtitle')}</p>
       </div>
 
       {/* Proactive Trip Widget */}
@@ -687,21 +719,21 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
         <div className="relative bg-white/70 backdrop-blur-lg border border-white/80 rounded-2xl p-4 shadow-soft">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-nomaq-indigo uppercase tracking-wide mb-0.5">Prossimo viaggio</p>
+              <p className="text-[10px] font-semibold text-nomaq-indigo uppercase tracking-wide mb-0.5">{t('nextTrip')}</p>
               <p className="text-sm font-bold text-nomaq-navy">Tokyo, Giappone 🇯🇵</p>
-              <p className="text-xs text-slate-500 mt-0.5">Tra 12 giorni · 5 notti</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t('in12Days')}</p>
             </div>
             <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
               <div className="flex items-center gap-1">
                 <CloudSun className="w-4 h-4 text-amber-400" />
                 <span className="text-sm font-bold text-nomaq-navy">24°C</span>
               </div>
-              <span className="text-[10px] text-slate-400">Sereno</span>
+              <span className="text-[10px] text-slate-400">{t('weatherClear')}</span>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-[11px] text-slate-500">Tutto confermato · Nessun avviso attivo</span>
+            <span className="text-[11px] text-slate-500">{t('allConfirmed')}</span>
           </div>
         </div>
       </div>
@@ -725,7 +757,7 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
         {/* User message */}
         <div className="flex justify-end">
           <div className="max-w-[80%] bg-nomaq-navy text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm shadow-sm">
-            Ciao! Sono a Tokyo tra 12 giorni. Puoi consigliarmi un ristorante di sushi vicino a Shibuya?
+            {t('chatUserMsg')}
           </div>
         </div>
 
@@ -735,7 +767,7 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
             <Sparkles className="w-4 h-4 text-nomaq-indigo" />
           </div>
           <div className="max-w-[80%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 text-sm shadow-sm text-slate-700">
-            Certo! Ecco il miglior omakase che ho trovato vicino a Shibuya per te 🍣
+            {t('chatAiMsg')}
           </div>
         </div>
 
@@ -757,11 +789,11 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className={`w-3 h-3 ${i < 4 ? 'fill-amber-400 text-amber-400' : (i === 4 ? 'fill-amber-200 text-amber-200' : 'text-slate-200')}`} />
                 ))}
-                <span className="text-[11px] text-slate-500 ml-0.5">4.8 · 312 recensioni</span>
+                <span className="text-[11px] text-slate-500 ml-0.5">4.8 · 312 {t('reviews')}</span>
               </div>
-              <p className="text-xs text-slate-500 mb-3">📍 2-14-20 Shibuya, Shibuya-ku · ~15 min a piedi da Shibuya Station</p>
+              <p className="text-xs text-slate-500 mb-3">📍 2-14-20 Shibuya, Shibuya-ku · {t('walkFromStation')}</p>
               <button className="w-full bg-nomaq-indigo text-white text-xs font-semibold rounded-xl py-2 hover:bg-nomaq-violet active:scale-95 transition-all">
-                🗺️ Vedi mappa
+                {t('seeMap')}
               </button>
             </div>
           </div>
@@ -800,7 +832,7 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
             type="text"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Chiedi al tuo concierge..."
+            placeholder={t('askConcierge')}
             className="flex-1 bg-transparent text-sm text-slate-700 placeholder-slate-400 outline-none"
           />
           <button className="w-9 h-9 rounded-full bg-nomaq-indigo flex items-center justify-center flex-shrink-0 hover:bg-nomaq-violet active:scale-90 transition-all shadow-sm">
@@ -812,23 +844,37 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
   );
 }
 
-/* ── Profilo / Waitlist View ── */
+/* ── Profilo / Auth / Waitlist View ── */
 function ProfiloView({
   initialCount,
   initialError,
   initialSubmitted,
   initialEmail,
+  isE2E,
 }: {
   initialCount?: number;
   initialError?: string | null;
   initialSubmitted?: boolean;
   initialEmail?: string;
+  isE2E?: boolean;
 } = {}) {
+  const { t, lang } = useLanguage();
+  const { user, profile, signIn, signUp, signOut } = useAuth();
+
   const [email, setEmail] = React.useState(initialEmail || '');
   const [submitted, setSubmitted] = React.useState(initialSubmitted || false);
   const [error, setError] = React.useState<string | null>(initialError || null);
   const [copied, setCopied] = React.useState(false);
   const [count, setCount] = React.useState(initialCount || 2847);
+
+  // Auth form state
+  const [authMode, setAuthMode] = React.useState<'signin' | 'signup'>('signin');
+  const [authName, setAuthName] = React.useState('');
+  const [authEmail, setAuthEmail] = React.useState('');
+  const [authPassword, setAuthPassword] = React.useState('');
+  const [authError, setAuthError] = React.useState<string | null>(null);
+  const [authInfo, setAuthInfo] = React.useState<string | null>(null);
+  const [authBusy, setAuthBusy] = React.useState(false);
 
   React.useEffect(() => {
     fetch('/api/waitlist')
@@ -841,13 +887,54 @@ function ProfiloView({
       .catch(() => { });
   }, []);
 
+  const mapAuthError = (msg: string): string => {
+    const m = msg.toLowerCase();
+    if (msg === 'AUTH_UNAVAILABLE') return t('authUnavailable');
+    if (m.includes('invalid login credentials')) return t('errInvalidCredentials');
+    if (m.includes('already registered') || m.includes('already exists')) return t('errUserExists');
+    if (m.includes('password') && (m.includes('at least') || m.includes('6'))) return t('errPasswordShort');
+    if (m.includes('email not confirmed')) return t('errEmailNotConfirmed');
+    return msg || t('errGeneric');
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthInfo(null);
+    const em = authEmail.trim();
+    if (!em || !authPassword || (authMode === 'signup' && !authName.trim())) {
+      setAuthError(t('errRequiredFields'));
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      if (authMode === 'signin') {
+        const { error: err } = await signIn(em, authPassword);
+        if (err) setAuthError(mapAuthError(err));
+      } else {
+        const { error: err, needsConfirmation } = await signUp(authName.trim(), em, authPassword);
+        if (err) {
+          setAuthError(mapAuthError(err));
+        } else if (needsConfirmation) {
+          setAuthInfo(t('confirmEmailSent'));
+          setAuthMode('signin');
+          setAuthPassword('');
+        }
+      }
+    } catch {
+      setAuthError(t('errGeneric'));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const trimmed = email.trim();
-    if (!trimmed) { setError('Inserisci la tua email'); return; }
+    if (!trimmed) { setError(t('waitlistErrEmpty')); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
+    if (!emailRegex.test(trimmed)) { setError(t('waitlistErrInvalid')); return; }
 
     try {
       const res = await fetch('/api/waitlist', {
@@ -859,14 +946,14 @@ function ProfiloView({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Si è verificato un errore');
+        setError(data.error || t('waitlistErrGeneric'));
         return;
       }
       setSubmitted(true);
       setEmail(trimmed);
       setCount((prev) => prev + 1);
     } catch (err) {
-      setError('Impossibile connettersi al server. Riprova.');
+      setError(t('waitlistErrConn'));
     }
   };
 
@@ -880,16 +967,185 @@ function ProfiloView({
     }
   };
 
+  /* ── Logged-in profile ── */
+  if (user) {
+    const displayName =
+      profile?.full_name || user.user_metadata?.full_name || user.email || '';
+    const initial = (displayName.trim().charAt(0) || '?').toUpperCase();
+    const memberSince = profile?.created_at
+      ? new Date(profile.created_at).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-GB', {
+          month: 'long',
+          year: 'numeric',
+        })
+      : null;
+
+    return (
+      <div className="px-5 pb-4 space-y-5 animate-fade-in" data-testid="profile-view">
+        <div className="pt-2">
+          <h1 className="font-display text-display-lg text-nomaq-navy mb-1">{t('yourProfile')}</h1>
+        </div>
+
+        {/* Profile card */}
+        <div className="nomaq-card p-5" data-testid="profile-card">
+          <div className="flex items-center gap-4">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={displayName}
+                className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-nomaq-violet to-nomaq-indigo flex items-center justify-center flex-shrink-0 shadow-soft">
+                <span className="text-white text-2xl font-bold">{initial}</span>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold text-nomaq-navy truncate" data-testid="profile-name">
+                {displayName}
+              </h2>
+              <p className="text-sm text-slate-500 truncate" data-testid="profile-email">{user.email}</p>
+              {memberSince && (
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  {t('memberSince')} {memberSince}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Feature pills */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <span className="nomaq-pill text-xs"><Calendar className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillEarlyAccess')}</span>
+          <span className="nomaq-pill text-xs"><Settings className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillAI')}</span>
+          <span className="nomaq-pill text-xs"><Tag className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillDeals')}</span>
+        </div>
+
+        {/* Logout */}
+        <button
+          data-testid="logout-button"
+          onClick={() => signOut()}
+          className="w-full py-3 rounded-xl text-nomaq-coral font-semibold text-sm flex items-center justify-center gap-2 border-2 border-nomaq-coral/20 hover:bg-red-50 transition-all active:scale-[0.98]"
+        >
+          <LogOut className="w-4 h-4" />
+          {t('logout')}
+        </button>
+      </div>
+    );
+  }
+
+  /* ── Not logged in: auth + waitlist ──
+     Rendered even while the session is loading so SSR always contains
+     the waitlist form (E2E tests parse server HTML only). */
   return (
     <div className="px-5 pb-4 space-y-5 animate-fade-in" data-testid="profile-view">
+      {/* Auth Card (hidden in E2E mode: tests expect the waitlist email input
+          to be the first input[type=email] in the profile view) */}
+      {!isE2E && (
+      <div className="nomaq-card p-5 mt-2">
+        <div className="text-center mb-4">
+          <h2 className="font-display text-xl text-nomaq-navy mb-1 flex items-center justify-center gap-2">
+            <User className="w-5 h-5 text-nomaq-indigo" />
+            {authMode === 'signin' ? t('authSignInTitle') : t('authSignUpTitle')}
+          </h2>
+          <p className="text-slate-500 text-xs">
+            {authMode === 'signin' ? t('authSignInSubtitle') : t('authSignUpSubtitle')}
+          </p>
+        </div>
+
+        <form data-testid="auth-form" onSubmit={handleAuthSubmit} className="space-y-3">
+          {authMode === 'signup' && (
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('fullNameLabel')}</label>
+              <input
+                type="text"
+                data-testid="auth-name-input"
+                placeholder={t('fullNamePlaceholder')}
+                value={authName}
+                onChange={(e) => setAuthName(e.target.value)}
+                autoComplete="name"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+              />
+            </div>
+          )}
+          <div>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('emailLabel')}</label>
+            <input
+              type="email"
+              data-testid="auth-email-input"
+              placeholder="you@example.com"
+              value={authEmail}
+              onChange={(e) => setAuthEmail(e.target.value)}
+              autoComplete="email"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('passwordLabel')}</label>
+            <input
+              type="password"
+              data-testid="auth-password-input"
+              placeholder="••••••••"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+            />
+          </div>
+
+          {authError && (
+            <div data-testid="auth-error" className="text-red-500 text-xs font-medium px-1">{authError}</div>
+          )}
+          {authInfo && (
+            <div data-testid="auth-info" className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-xs font-medium">
+              {authInfo}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            data-testid="auth-submit"
+            disabled={authBusy}
+            className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', boxShadow: '0 4px 16px rgba(124, 58, 237, 0.3)' }}
+          >
+            {authBusy
+              ? t('authWorking')
+              : (
+                <>
+                  {authMode === 'signin' ? t('signInBtn') : t('signUpBtn')} <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+          </button>
+        </form>
+
+        <div className="text-center mt-4">
+          <button
+            type="button"
+            data-testid="auth-toggle-mode"
+            onClick={() => {
+              setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
+              setAuthError(null);
+              setAuthInfo(null);
+            }}
+            className="text-xs text-slate-500"
+          >
+            {authMode === 'signin' ? t('noAccount') : t('haveAccount')}{' '}
+            <span className="text-nomaq-indigo font-semibold">
+              {authMode === 'signin' ? t('signUpBtn') : t('signInBtn')}
+            </span>
+          </button>
+        </div>
+      </div>
+      )}
+
       {/* Waitlist Hero */}
       <div className="flex flex-col items-center pt-2 mb-2 text-center">
         <h1 className="font-display text-display-md text-nomaq-navy leading-tight mb-3 flex items-center justify-center gap-2">
-          <span>Be the first to<br />travel smarter</span><Sparkles className="w-6 h-6 text-nomaq-indigo" />
+          <span>{t('waitlistHeroA')}<br />{t('waitlistHeroB')}</span><Sparkles className="w-6 h-6 text-nomaq-indigo" />
         </h1>
         <p className="text-slate-500 text-sm leading-relaxed">
-          Nomaq is opening soon. Join the waitlist<br />
-          and get early access to AI-powered travel deals.
+          {t('waitlistSub')}
         </p>
       </div>
 
@@ -899,7 +1155,7 @@ function ProfiloView({
           {!submitted ? (
             <>
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Email address</label>
+                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('emailAddress')}</label>
                 <input
                   type="email"
                   data-testid="waitlist-email-input"
@@ -918,14 +1174,14 @@ function ProfiloView({
                 className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', boxShadow: '0 4px 16px rgba(124, 58, 237, 0.3)' }}
               >
-                <Sparkles className="w-4 h-4 mr-1" /> Join waitlist <ArrowRight className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 mr-1" /> {t('joinWaitlist')} <ArrowRight className="w-4 h-4" />
               </button>
             </>
           ) : (
             <div className="space-y-3">
               <div data-testid="waitlist-success" className="animate-bounce-in bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
                 <div className="flex justify-center mb-1"><PartyPopper className="w-6 h-6 text-emerald-500" /></div>
-                <div className="text-emerald-700 font-bold text-sm">You're in!</div>
+                <div className="text-emerald-700 font-bold text-sm">{t('youreIn')}</div>
                 <div className="text-emerald-600 text-xs mt-1">{email}</div>
               </div>
               <button
@@ -934,7 +1190,7 @@ function ProfiloView({
                 className="w-full py-3 rounded-xl text-nomaq-indigo font-semibold text-sm flex items-center justify-center gap-2 border-2 border-nomaq-indigo/20 hover:bg-nomaq-lavender transition-all"
               >
                 <Share2 className="w-4 h-4" />
-                {copied ? 'Link copiato! ✓' : 'Flexa il tuo Drop'}
+                {copied ? t('linkCopied') : t('shareDrop')}
               </button>
             </div>
           )}
@@ -944,27 +1200,26 @@ function ProfiloView({
       {/* Early members note */}
       <div className="flex justify-center text-center">
         <p className="text-slate-500 text-xs leading-relaxed flex items-center justify-center gap-1">
-          <Sparkles className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> Early members get exclusive deals,<br />
-          beta access and personalized trip drops.
+          <Sparkles className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('earlyMembers')}
         </p>
       </div>
 
       {/* Feature pills */}
       <div className="flex flex-wrap gap-2 justify-center">
-        <span className="nomaq-pill text-xs"><Calendar className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> Early access</span>
-        <span className="nomaq-pill text-xs"><Settings className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> AI trip planning</span>
-        <span className="nomaq-pill text-xs"><Tag className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> Exclusive deals</span>
+        <span className="nomaq-pill text-xs"><Calendar className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillEarlyAccess')}</span>
+        <span className="nomaq-pill text-xs"><Settings className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillAI')}</span>
+        <span className="nomaq-pill text-xs"><Tag className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillDeals')}</span>
       </div>
 
       {/* No spam footer */}
       <div className="flex justify-center text-center pb-2">
-        <p className="text-slate-400 text-xs flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> No spam. Only smart travel updates.</p>
+        <p className="text-slate-400 text-xs flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> {t('noSpam')}</p>
       </div>
 
       {/* Counter */}
       <div className="text-center">
         <span className="text-slate-400 text-xs">
-          {count.toLocaleString()} travelers already joined
+          {count.toLocaleString()} {t('travelersJoined')}
         </span>
       </div>
     </div>
@@ -1020,6 +1275,8 @@ export default function Home({
   initialWaitlistEmail,
 }: any) {
   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
+  const { t } = useLanguage();
+  const { user, profile } = useAuth();
   const [isMounted, setIsMounted] = React.useState(false);
   const [aiQuery, setAiQuery] = React.useState('');
   const [isSearching, setIsSearching] = React.useState(false);
@@ -1235,17 +1492,29 @@ export default function Home({
 
   const feedByTab = currentTab === 'vola-vola' ? flights : hotels;
 
+  // Dynamic greeting: personalized when logged in, generic otherwise
+  const firstName = (
+    profile?.full_name ||
+    user?.user_metadata?.full_name ||
+    (user?.email ? String(user.email).split('@')[0] : '')
+  )
+    .trim()
+    .split(/\s+/)[0];
+  const greeting = user && firstName
+    ? `${t('welcomeBack')}, ${firstName} ✈️`
+    : `${t('welcome')} ✈️`;
+
   // Quick suggestion data for home view
   const quickSuggestions = [
     {
       icon: <Wand2 className="w-3.5 h-3.5 text-nomaq-violet animate-pulse" strokeWidth={2.5} />,
-      text: 'Sorprendimi ✨',
+      text: t('surpriseMe'),
       bg: 'bg-nomaq-lavender/50',
       isSurprise: true,
     },
-    { 
-      icon: <Plane className="w-3.5 h-3.5 text-blue-500" strokeWidth={2.5} />, 
-      text: 'Flights under 100€',
+    {
+      icon: <Plane className="w-3.5 h-3.5 text-blue-500" strokeWidth={2.5} />,
+      text: t('flightsUnder100'),
       bg: 'bg-blue-50/80'
     },
     { 
@@ -1254,7 +1523,7 @@ export default function Home({
           <path d="M3 5c6-2 12-2 18 0M5 9h14M8 5v15M16 5v15" />
         </svg>
       ), 
-      text: 'One-way to Japan',
+      text: t('oneWayJapan'),
       bg: 'bg-violet-50/80'
     },
     { 
@@ -1263,17 +1532,17 @@ export default function Home({
           <path d="M12 2v20M5 21a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2M7 19l2-7h6l2 7M10 12l2-7 2 7M9 15h6" />
         </svg>
       ), 
-      text: 'Weekend a Parigi',
+      text: t('weekendParis'),
       bg: 'bg-orange-50/80'
     },
-    { 
-      icon: <Palmtree className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2.5} />, 
-      text: 'Beach holidays',
+    {
+      icon: <Palmtree className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2.5} />,
+      text: t('beachHolidays'),
       bg: 'bg-emerald-50/80'
     },
-    { 
-      icon: <Snowflake className="w-3.5 h-3.5 text-sky-500" strokeWidth={2.5} />, 
-      text: 'Ski trips',
+    {
+      icon: <Snowflake className="w-3.5 h-3.5 text-sky-500" strokeWidth={2.5} />,
+      text: t('skiTrips'),
       bg: 'bg-sky-50/80'
     },
   ];
@@ -1294,19 +1563,24 @@ export default function Home({
           {/* Hidden active view for tests */}
           <div data-testid="active-view" className="hidden">{currentTab}</div>
 
-          {/* ── Logo Header ── */}
-          <NomaqLogo />
+          {/* ── Logo Header (with language switcher) ── */}
+          <div className="relative">
+            <NomaqLogo />
+            <div className="absolute right-5 top-1/2 -translate-y-1/2">
+              <LanguageSwitcher />
+            </div>
+          </div>
 
           {/* ── Home view header (vola-vola / soggiorna) ── */}
           {(currentTab === 'vola-vola' || currentTab === 'soggiorna') && (
             <div className="px-5 mb-5">
               {/* Centered top block */}
               <div className="text-center mb-6">
-                <p className="text-slate-500 text-sm font-medium mb-2 select-none">
-                  Bentornato, Lorenzo ✈️
+                <p className="text-slate-500 text-sm font-medium mb-2 select-none" data-testid="home-greeting">
+                  {greeting}
                 </p>
                 <h1 className="font-display text-display-md text-nomaq-navy leading-tight mb-5">
-                  Where are we going today<span className="text-[#EC4899] font-sans font-bold">?</span>
+                  {t('headline')}<span className="text-[#EC4899] font-sans font-bold">?</span>
                 </h1>
 
                 {/* AI Search bar (Centered, relative container) */}
@@ -1325,7 +1599,7 @@ export default function Home({
                         }}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                        placeholder="e.g. A weekend by the sea under 150€ from Naples"
+                        placeholder={t('searchPlaceholder')}
                         className="w-full bg-transparent border-none outline-none text-slate-800 text-xs sm:text-sm leading-snug font-medium placeholder-slate-400 focus:ring-0 focus:outline-none"
                       />
                     </div>
@@ -1359,27 +1633,27 @@ export default function Home({
                   {/* Absolute Dropdown for recent searches */}
                   {isFocused && (
                     <div className="absolute left-0 right-0 top-[68px] z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-2xl p-4 border border-slate-100 text-left animate-fade-in">
-                      <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">Continua da dove eri rimasto</h3>
+                      <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>
                       <div className="flex flex-col gap-2">
-                        <button 
+                        <button
                           onMouseDown={() => {
-                            setAiQuery('Weekend a Londra sotto i 200€');
-                            handleSearch('Weekend a Londra sotto i 200€');
+                            setAiQuery(t('recentSearch1'));
+                            handleSearch(t('recentSearch1'));
                           }}
                           className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
                         >
                           <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">Weekend a Londra sotto i 200€</span>
+                          <span className="truncate">{t('recentSearch1')}</span>
                         </button>
-                        <button 
+                        <button
                           onMouseDown={() => {
-                            setAiQuery('Volo per Tokyo a Novembre');
-                            handleSearch('Volo per Tokyo a Novembre');
+                            setAiQuery(t('recentSearch2'));
+                            handleSearch(t('recentSearch2'));
                           }}
                           className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
                         >
                           <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">Volo per Tokyo a Novembre</span>
+                          <span className="truncate">{t('recentSearch2')}</span>
                         </button>
                       </div>
                     </div>
@@ -1389,13 +1663,13 @@ export default function Home({
                 {/* Compact Filters Row (Micro-UI) */}
                 <div className="flex flex-row gap-2 mt-3 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden w-full px-1">
                   <button className="rounded-full px-3 py-1 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white/45 transition-colors whitespace-nowrap">
-                    Solo voli diretti
+                    {t('filterDirect')}
                   </button>
                   <button className="rounded-full px-3 py-1 text-xs font-medium border border-nomaq-indigo/30 bg-nomaq-lavender/50 text-nomaq-violet hover:bg-nomaq-lavender/70 transition-colors whitespace-nowrap">
-                    Solo bagaglio a mano
+                    {t('filterLuggage')}
                   </button>
                   <button className="rounded-full px-3 py-1 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white/45 transition-colors whitespace-nowrap">
-                    Flessibile (± 3 giorni)
+                    {t('filterFlexible')}
                   </button>
                 </div>
 
@@ -1439,7 +1713,7 @@ export default function Home({
               {/* Section label (Left-aligned) */}
               <div className="flex items-center gap-1.5 mb-1">
                 <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-                <span className="text-sm font-semibold text-nomaq-navy">Picked for you by AI</span>
+                <span className="text-sm font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
               </div>
             </div>
           )}
@@ -1459,7 +1733,7 @@ export default function Home({
                     <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Plane className="w-8 h-8 text-nomaq-indigo/40" />
                     </div>
-                    <p className="text-slate-500 font-semibold">No offers available</p>
+                    <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
                   </div>
                 ) : (
                   feedByTab.map((item) => (
@@ -1478,7 +1752,7 @@ export default function Home({
                 <div className="mx-5 mb-4 mt-2">
                   <div className="nomaq-card p-4 flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
-                    <span className="text-sm text-slate-500 flex-1">Tell Nomaq your budget, mood and dates...</span>
+                    <span className="text-sm text-slate-500 flex-1">{t('tellNomaq')}</span>
                     <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
@@ -1507,6 +1781,7 @@ export default function Home({
               initialError={initialWaitlistError}
               initialSubmitted={initialWaitlistSubmitted}
               initialEmail={initialWaitlistEmail}
+              isE2E={isE2E}
             />
           )}
 
