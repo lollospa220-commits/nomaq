@@ -63,6 +63,7 @@ Rispondi SOLO con un oggetto JSON, esattamente in questo schema:
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
+    signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
       model: 'deepseek-chat',
       response_format: { type: 'json_object' },
