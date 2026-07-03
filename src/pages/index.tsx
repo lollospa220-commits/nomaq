@@ -1,12 +1,15 @@
 import Head from 'next/head';
 import React from 'react';
-import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket } from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket, Smartphone, ShieldCheck } from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useAppState, TabId } from '@/context/AppState';
+import { TranslationKey } from '@/i18n/translations';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
+import { getDestinationImage } from '@/utils/destinationImages';
 
 /* ─────────────────────────────────────────────
    MOCK DATA
@@ -20,7 +23,7 @@ const FLIGHTS = [
     price: 89,
     originalPrice: 135,
     description: 'Da Napoli · 2 notti · da 89€',
-    image: 'https://images.unsplash.com/photo-1583422409516-15d0ac53f937?q=80&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?q=80&w=800&auto=format&fit=crop',
     airline: 'EasyJet',
     duration: '2h 10m',
     date: 'Qualsiasi weekend',
@@ -178,6 +181,57 @@ const HOTELS = [
     tag: 'CITY VIEW',
     color: '#8e5ea2',
   },
+  {
+    id: 'hotel-amalfi',
+    type: 'hotel',
+    destination: 'Costiera Amalfitana',
+    country: 'Italia',
+    price: 195,
+    originalPrice: 340,
+    description: 'Terrazze sul mare, limoni e borghi color pastello. La dolce vita a picco sul blu.',
+    image: 'https://images.unsplash.com/photo-1533656338503-b22f63e96cd8?w=800&q=80',
+    hotelName: 'Villa Positano',
+    stars: 4,
+    rating: 4.8,
+    nights: '4 notti',
+    date: 'Giu 10 → Giu 14',
+    tag: 'SUNSET VIEW',
+    color: '#e08030',
+  },
+  {
+    id: 'hotel-rome',
+    type: 'hotel',
+    destination: 'Roma',
+    country: 'Italia',
+    price: 140,
+    originalPrice: 245,
+    description: 'Boutique hotel a due passi dal Pantheon. Colazione sul rooftop con vista cupole.',
+    image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80',
+    hotelName: 'Pantheon Suites',
+    stars: 4,
+    rating: 4.6,
+    nights: '3 notti',
+    date: 'Ott 3 → Ott 6',
+    tag: 'CITY VIEW',
+    color: '#8e5ea2',
+  },
+  {
+    id: 'hotel-barcelona',
+    type: 'hotel',
+    destination: 'Barcellona',
+    country: 'Spagna',
+    price: 165,
+    originalPrice: 290,
+    description: 'Design hotel nel Born, tapas bar e piscina panoramica sul tetto. Gaudí ovunque.',
+    image: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80',
+    hotelName: 'Casa Born',
+    stars: 4,
+    rating: 4.7,
+    nights: '4 notti',
+    date: 'Set 5 → Set 9',
+    tag: 'BEST RATE',
+    color: '#4a90d9',
+  },
 ];
 
 const MOCK_DROPS = [
@@ -237,7 +291,7 @@ function NomaqLogo() {
       <img
         src="/images/logo.png"
         alt="Nomaq Logo"
-        className="h-[60px] w-auto object-contain"
+        className="h-[90px] w-auto object-contain"
         loading="eager"
       />
     </div>
@@ -269,6 +323,120 @@ function LanguageSwitcher() {
         </button>
       ))}
     </div>
+  );
+}
+
+/* ── Sparkles send button (3 stars, like the original mobile version) ── */
+function ThreeSparklesIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      {/* big 4-point star */}
+      <path d="M12 2 C12.5 6.5 14.5 8.5 19 9 C14.5 9.5 12.5 11.5 12 16 C11.5 11.5 9.5 9.5 5 9 C9.5 8.5 11.5 6.5 12 2 Z" />
+      {/* small star bottom-right */}
+      <path d="M18.5 13.5 C18.75 15.55 19.7 16.5 21.75 16.75 C19.7 17 18.75 17.95 18.5 20 C18.25 17.95 17.3 17 15.25 16.75 C17.3 16.5 18.25 15.55 18.5 13.5 Z" />
+      {/* small star bottom-left */}
+      <path d="M7 15.5 C7.2 17.15 7.95 17.9 9.6 18.1 C7.95 18.3 7.2 19.05 7 20.7 C6.8 19.05 6.05 18.3 4.4 18.1 C6.05 17.9 6.8 17.15 7 15.5 Z" />
+    </svg>
+  );
+}
+
+/* ── Desktop top navbar ── */
+function DesktopNav({ activeTab, onNavigate }: { activeTab: TabId; onNavigate: (id: TabId) => void }) {
+  const { t } = useLanguage();
+  const items: { id: TabId; label: string }[] = [
+    { id: 'vola-vola', label: t('navFlights') },
+    { id: 'soggiorna', label: t('navSoggiorna') },
+    { id: 'drops', label: t('navDrops') },
+    { id: 'salvati', label: t('navConcierge') },
+    { id: 'profilo', label: t('navProfilo') },
+  ];
+  return (
+    <header
+      className="hidden lg:block sticky top-0 z-40 bg-transparent backdrop-blur-md"
+      data-testid="desktop-nav"
+    >
+      <div className="max-w-6xl mx-auto h-20 px-6 flex items-center justify-between">
+        <img
+          src="/images/logo.png"
+          alt="Nomaq"
+          className="h-[60px] w-auto object-contain cursor-pointer -ml-8"
+          onClick={() => onNavigate('vola-vola')}
+        />
+        <nav className="flex items-center gap-1" aria-label="Navigazione principale desktop">
+          {items.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                data-testid={`desktop-nav-${item.id}`}
+                aria-current={isActive ? 'page' : undefined}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                  isActive
+                    ? 'bg-nomaq-lavender text-nomaq-indigo'
+                    : 'text-nomaq-navy hover:bg-slate-50 hover:text-nomaq-indigo'
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+          <div className="ml-3">
+            <LanguageSwitcher />
+          </div>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+/* ── FAQ section ── */
+function FaqSection() {
+  const { t } = useLanguage();
+  const [open, setOpen] = React.useState<number | null>(null);
+  const faqs = [
+    { q: t('faq1q'), a: t('faq1a') },
+    { q: t('faq2q'), a: t('faq2a') },
+    { q: t('faq3q'), a: t('faq3a') },
+    { q: t('faq4q'), a: t('faq4a') },
+    { q: t('faq5q'), a: t('faq5a') },
+    { q: t('faq6q'), a: t('faq6a') },
+  ];
+  return (
+    <section className="px-5 lg:px-6 pb-10 mt-2" data-testid="faq-section">
+      <div className="flex items-center gap-2 mb-4">
+        <ThreeSparklesIcon className="w-5 h-5 text-nomaq-indigo" />
+        <h2 className="text-base lg:text-xl font-bold text-nomaq-navy">{t('faqTitle')}</h2>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2 lg:gap-x-6">
+        {faqs.map((faq, i) => {
+          const isOpen = open === i;
+          return (
+            <button
+              key={i}
+              onClick={() => setOpen(isOpen ? null : i)}
+              aria-expanded={isOpen}
+              className="nomaq-card bg-white/80 backdrop-blur-sm text-left p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow duration-200"
+            >
+              <span className="w-7 h-7 rounded-full bg-nomaq-lavender text-nomaq-indigo flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                Q
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-bold text-nomaq-navy leading-snug">{faq.q}</span>
+                <span
+                  className={`block text-xs text-slate-500 leading-relaxed mt-1 ${isOpen ? '' : 'line-clamp-1'}`}
+                >
+                  {faq.a}
+                </span>
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 flex-shrink-0 mt-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -305,7 +473,7 @@ function FeedCard({
 
   return (
     <div
-      className="feed-card glassmorphism glass-card animate-slide-up rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform duration-200 flex flex-col overflow-hidden w-full"
+      className="feed-card glassmorphism glass-card animate-slide-up rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform duration-200 flex flex-col overflow-hidden w-full h-full"
       data-testid="feed-item"
       data-id={item.id}
       onClick={() => {
@@ -315,12 +483,16 @@ function FeedCard({
       }}
     >
       {/* Image (Top half) */}
-      <div className="relative w-full h-28 flex-shrink-0 overflow-hidden rounded-t-2xl">
+      <div className="relative w-full h-28 lg:h-44 flex-shrink-0 overflow-hidden rounded-t-2xl">
         <img
-          src={item.image || 'fallback-placeholder.jpg'}
+          src={item.image || getDestinationImage(item.destination, item.id || 'item')}
           alt={item.destination}
           className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            const fallback = getDestinationImage(item.destination, item.id || 'item');
+            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+          }}
         />
         {/* Save button */}
         <button
@@ -348,7 +520,7 @@ function FeedCard({
       <div className="flex-1 p-3 flex flex-col justify-between min-w-0 bg-white/40">
         {/* Row 1: Destination title (left) and Tag badge (right) */}
         <div className="flex justify-between items-start gap-2 mb-1">
-          <h3 className="text-xs font-bold text-nomaq-navy leading-snug truncate flex-1">{item.destination}</h3>
+          <h3 className="text-xs lg:text-base font-bold text-nomaq-navy leading-snug truncate flex-1">{item.destination}</h3>
           {cleanTag && (
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-bold ${tagClass} flex-shrink-0`}>
               <Sparkles className="w-2 h-2 mr-0.5 inline-block" /> {cleanTag}
@@ -357,7 +529,7 @@ function FeedCard({
         </div>
 
         {/* Row 2: Descriptive text / Flight details */}
-        <p className="text-[10px] text-slate-500 leading-snug line-clamp-2 mb-2 min-h-[28px]">{item.description}</p>
+        <p className="text-[10px] lg:text-xs text-slate-500 leading-snug line-clamp-2 mb-2 min-h-[28px] lg:min-h-[32px]">{item.description}</p>
 
         {/* Row 3 (Footer): Country/Airline (left) and Prices (right) */}
         <div className="flex items-center justify-between mt-auto">
@@ -386,6 +558,433 @@ function FeedCard({
   );
 }
 
+/* ── Stays (Soggiorna) — reference design ── */
+const PICKED_STAYS: Array<{
+  id: string; name: string; metaKey: TranslationKey; price: number;
+  rating: number; reviews: number; image: string;
+}> = [
+  {
+    id: 'stay-napoli',
+    name: 'Smart Hotel Napoli',
+    metaKey: 'stay1meta',
+    price: 58,
+    rating: 4.6,
+    reviews: 812,
+    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
+  },
+  {
+    id: 'stay-capri',
+    name: 'Villa Marina Capri',
+    metaKey: 'stay2meta',
+    price: 129,
+    rating: 4.8,
+    reviews: 623,
+    image: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=800&q=80',
+  },
+  {
+    id: 'stay-toledo',
+    name: 'Maison Toledo',
+    metaKey: 'stay3meta',
+    price: 74,
+    rating: 4.7,
+    reviews: 459,
+    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80',
+  },
+];
+
+const FEATURED_STAY = {
+  id: 'stay-ostello-bello',
+  name: 'Ostello Bello Napoli',
+  rating: 4.4,
+  reviews: 344,
+  oldPrice: 51,
+  price: 39,
+  image: 'https://images.unsplash.com/photo-1519974719765-e6559eac2575?w=1200&q=80',
+};
+
+function StaysView({
+  hotels,
+  activeSearch,
+  isSearching,
+  onSearch,
+  savedIds,
+  onToggleSave,
+}: {
+  hotels: any[];
+  activeSearch: string;
+  isSearching: boolean;
+  onSearch: (q: string) => void;
+  savedIds: string[];
+  onToggleSave: (id: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [dest, setDest] = React.useState('');
+  const [checkIn, setCheckIn] = React.useState('');
+  const [checkOut, setCheckOut] = React.useState('');
+  const [guests, setGuests] = React.useState(1);
+  const [stayType, setStayType] = React.useState('all');
+
+  // Default dates set after mount to avoid SSR/CSR hydration mismatch
+  React.useEffect(() => {
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const inD = new Date();
+    inD.setDate(inD.getDate() + 7);
+    const outD = new Date();
+    outD.setDate(outD.getDate() + 11);
+    setCheckIn(fmt(inD));
+    setCheckOut(fmt(outD));
+  }, []);
+
+  const fieldBase = 'flex items-center gap-2 px-3 py-2.5 min-w-0';
+  const labelCls = 'text-[10px] font-semibold text-slate-400 uppercase tracking-wide block';
+  const valueCls = 'w-full bg-transparent text-sm font-semibold text-nomaq-navy outline-none';
+
+  const searchResults = activeSearch ? hotels : [];
+
+  const trustItems = [
+    { Icon: ShieldCheck, title: t('trust1t'), sub: t('trust1s') },
+    { Icon: Zap, title: t('trust2t'), sub: t('trust2s') },
+    { Icon: Sparkles, title: t('trust3t'), sub: t('trust3s') },
+    { Icon: Smartphone, title: t('trust4t'), sub: t('trust4s') },
+  ];
+
+  return (
+    <div className="px-5 lg:px-6 pb-10 animate-fade-in" data-testid="stays-view">
+      {/* ── Hero: headline full width, search widget below ── */}
+      <div className="lg:pt-10 mb-8 text-center lg:text-left">
+        <div className="mb-6 lg:mb-8">
+          <h1 className="font-display text-display-md lg:text-display-lg text-nomaq-navy leading-tight mb-3 lg:max-w-3xl">
+            {t('staysHeadline')}
+          </h1>
+          <p className="text-slate-500 text-sm lg:text-base leading-relaxed lg:max-w-xl">{t('staysTagline')}</p>
+        </div>
+
+        {/* Search widget */}
+        <div className="bg-white/95 backdrop-blur-md rounded-3xl lg:rounded-full shadow-soft border border-white/60 p-2 flex flex-col lg:flex-row lg:items-center text-left">
+          <div className={`${fieldBase} flex-1 lg:min-w-[170px]`}>
+            <MapPin className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <span className={labelCls}>{t('destLabel')}</span>
+              <input
+                type="text"
+                value={dest}
+                onChange={(e) => setDest(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onSearch(dest)}
+                placeholder="Napoli, Italia"
+                className={valueCls}
+                data-testid="stays-destination"
+              />
+            </div>
+          </div>
+          <div className="hidden lg:block h-8 w-px bg-slate-100" />
+          <div className={fieldBase}>
+            <Calendar className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
+            <div className="min-w-0">
+              <span className={labelCls}>{t('checkInLabel')}</span>
+              <input
+                type="date"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                className={`${valueCls} cursor-pointer`}
+              />
+            </div>
+          </div>
+          <div className="hidden lg:block h-8 w-px bg-slate-100" />
+          <div className={fieldBase}>
+            <Calendar className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
+            <div className="min-w-0">
+              <span className={labelCls}>{t('checkOutLabel')}</span>
+              <input
+                type="date"
+                value={checkOut}
+                min={checkIn}
+                onChange={(e) => setCheckOut(e.target.value)}
+                className={`${valueCls} cursor-pointer`}
+              />
+            </div>
+          </div>
+          <div className="hidden lg:block h-8 w-px bg-slate-100" />
+          <div className={fieldBase}>
+            <User className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
+            <div className="min-w-0">
+              <span className={labelCls}>{t('guestsLabel')}</span>
+              <select
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className={`${valueCls} cursor-pointer appearance-none pr-4`}
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? t('guestSingular') : t('guestPlural')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="hidden lg:block h-8 w-px bg-slate-100" />
+          <div className={fieldBase}>
+            <Hotel className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
+            <div className="min-w-0">
+              <span className={labelCls}>{t('stayTypeLabel')}</span>
+              <select
+                value={stayType}
+                onChange={(e) => setStayType(e.target.value)}
+                className={`${valueCls} cursor-pointer appearance-none pr-4`}
+              >
+                <option value="all">{t('allStays')}</option>
+                <option value="hotel">{t('typeHotel')}</option>
+                <option value="apartment">{t('typeApartment')}</option>
+                <option value="bnb">{t('typeBnb')}</option>
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={() => onSearch(dest)}
+            disabled={isSearching}
+            data-testid="stays-search-btn"
+            aria-label={t('destLabel')}
+            className="m-2 lg:m-1 w-full lg:w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center flex-shrink-0 shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
+          >
+            {isSearching ? (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            ) : (
+              <Search className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Map + featured stay ── */}
+      <div className="grid lg:grid-cols-[1fr_1.45fr] gap-5 mb-8">
+        {/* Stylized map card */}
+        <div className="relative rounded-3xl overflow-hidden bg-[#edf1f7] min-h-[240px] lg:min-h-[320px] shadow-soft border border-white/70">
+          <div
+            className="absolute inset-0 opacity-70"
+            style={{
+              backgroundImage:
+                'linear-gradient(90deg, transparent 46%, #dde3ee 46%, #dde3ee 49%, transparent 49%), linear-gradient(0deg, transparent 62%, #dde3ee 62%, #dde3ee 65%, transparent 65%), linear-gradient(35deg, transparent 70%, #e3e8f2 70%, #e3e8f2 72%, transparent 72%)',
+            }}
+          />
+          <div className="absolute right-0 bottom-0 w-2/5 h-1/2 bg-sky-100/80 rounded-tl-[90px]" />
+          <span className="absolute top-[18%] left-[10%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">VOMERO</span>
+          <span className="absolute bottom-[26%] left-[16%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">CHIAIA</span>
+          <span className="absolute top-[12%] right-[14%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">PORTO</span>
+          {[
+            { top: '22%', left: '38%' },
+            { top: '30%', right: '24%' },
+            { bottom: '30%', right: '18%' },
+          ].map((pos, i) => (
+            <span key={i} className="absolute w-8 h-8 bg-white rounded-full shadow-soft flex items-center justify-center" style={pos as any}>
+              <MapPin className="w-4 h-4 text-nomaq-indigo fill-nomaq-lavender" />
+            </span>
+          ))}
+          <div className="absolute top-[38%] left-1/2 -translate-x-1/2 flex flex-col items-center">
+            <span className="w-12 h-12 bg-white rounded-full shadow-card flex items-center justify-center mb-2">
+              <MapPin className="w-6 h-6 text-nomaq-indigo fill-nomaq-lavender" />
+            </span>
+            <span className="font-display text-2xl text-nomaq-navy">Naples</span>
+          </div>
+          <button
+            onClick={() => window.open('https://www.google.com/maps/place/Naples,+Italy', '_blank')}
+            className="absolute bottom-4 left-4 bg-white rounded-full px-4 py-2.5 shadow-card flex items-center gap-2 text-sm font-semibold text-nomaq-navy hover:scale-105 active:scale-95 transition-transform duration-200"
+          >
+            <Map className="w-4 h-4 text-nomaq-indigo" />
+            {t('exploreMap')}
+          </button>
+        </div>
+
+        {/* Featured stay */}
+        <div className="rounded-3xl overflow-hidden bg-white shadow-card border border-white/70 flex flex-col lg:flex-row" data-testid="feed-item" data-id={FEATURED_STAY.id}>
+          <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
+            <img src={FEATURED_STAY.image} alt={FEATURED_STAY.name} className="absolute inset-0 w-full h-full object-cover" />
+            <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-xs font-bold text-nomaq-navy flex items-center gap-1.5 shadow-soft">
+              <Tag className="w-3.5 h-3.5 text-nomaq-indigo" /> {t('bestValue')}
+            </span>
+            <button
+              data-testid="save-button"
+              data-id={FEATURED_STAY.id}
+              onClick={() => onToggleSave(FEATURED_STAY.id)}
+              className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/85 backdrop-blur-sm shadow-soft"
+            >
+              <Heart className={`w-4 h-4 ${savedIds.includes(FEATURED_STAY.id) ? 'text-nomaq-violet fill-nomaq-violet' : 'text-slate-400'}`} strokeWidth={2} />
+            </button>
+          </div>
+          <div className="lg:w-[290px] p-6 flex flex-col justify-center gap-1.5 flex-shrink-0">
+            <h3 className="font-display text-2xl text-nomaq-navy leading-tight">{FEATURED_STAY.name}</h3>
+            <p className="text-slate-500 text-sm">{t('featuredMeta')}</p>
+            <div className="flex items-center gap-1.5 text-sm mt-1">
+              <Star className="w-4 h-4 fill-nomaq-indigo text-nomaq-indigo" />
+              <span className="font-bold text-nomaq-indigo">{FEATURED_STAY.rating}</span>
+              <span className="text-slate-400">· {FEATURED_STAY.reviews} {t('reviews')}</span>
+            </div>
+            <span className="text-nomaq-coral text-sm line-through mt-2">€{FEATURED_STAY.oldPrice}</span>
+            <div className="flex items-end gap-1.5">
+              <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€ {FEATURED_STAY.price}</span>
+              <span className="text-xs text-slate-400 mb-0.5">{t('perNight')}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-nomaq-indigo text-xs font-semibold mt-1">
+              <Smartphone className="w-3.5 h-3.5" /> {t('appOnlyPrice')}
+            </div>
+            <button
+              aria-label={t('viewStay')}
+              className="self-end mt-3 w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Picked for you by AI ── */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5">
+          <ThreeSparklesIcon className="w-5 h-5 text-nomaq-indigo" />
+          <span className="text-sm lg:text-base font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
+        </div>
+        <button className="flex items-center gap-1 text-sm font-semibold text-nomaq-indigo hover:text-nomaq-violet transition-colors">
+          {t('seeAllStays')} <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3" data-testid="feed-container">
+        {activeSearch ? (
+          searchResults.length === 0 ? (
+            <div className="text-center py-12 col-span-full" data-testid="feed-empty">
+              <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
+            </div>
+          ) : (
+            searchResults.map((item: any) => (
+              <StayCard
+                key={item.id}
+                id={item.id}
+                name={item.destination}
+                meta={item.hotelName || item.country || ''}
+                rating={item.rating}
+                reviews={null}
+                price={item.price}
+                image={item.image || getDestinationImage(item.destination, item.id || 'stay')}
+                isSaved={savedIds.includes(item.id)}
+                onToggleSave={onToggleSave}
+                t={t}
+              />
+            ))
+          )
+        ) : (
+          PICKED_STAYS.map((s) => (
+            <StayCard
+              key={s.id}
+              id={s.id}
+              name={s.name}
+              meta={t(s.metaKey)}
+              rating={s.rating}
+              reviews={s.reviews}
+              price={s.price}
+              image={s.image}
+              isSaved={savedIds.includes(s.id)}
+              onToggleSave={onToggleSave}
+              t={t}
+            />
+          ))
+        )}
+      </div>
+
+      {/* ── Trust strip ── */}
+      <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-5 bg-white/75 backdrop-blur-sm rounded-3xl p-5 lg:p-6 shadow-soft border border-white/70">
+        {trustItems.map(({ Icon, title, sub }) => (
+          <div key={title} className="flex items-start gap-3">
+            <span className="w-10 h-10 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0">
+              <Icon className="w-5 h-5 text-nomaq-indigo" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-nomaq-navy leading-snug">{title}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StayCard({
+  id,
+  name,
+  meta,
+  rating,
+  reviews,
+  price,
+  image,
+  isSaved,
+  onToggleSave,
+  t,
+}: {
+  id: string;
+  name: string;
+  meta: string;
+  rating: number;
+  reviews: number | null;
+  price: number;
+  image: string;
+  isSaved: boolean;
+  onToggleSave: (id: string) => void;
+  t: (k: TranslationKey) => string;
+}) {
+  return (
+    <div
+      className="nomaq-card bg-white/90 backdrop-blur-sm flex gap-3 p-3 items-stretch hover:shadow-card-hover transition-shadow duration-200 cursor-pointer"
+      data-testid="feed-item"
+      data-id={id}
+    >
+      <div className="relative w-28 lg:w-32 flex-shrink-0 rounded-2xl overflow-hidden min-h-[104px]">
+        <img
+          src={image}
+          alt={name}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            const fallback = getDestinationImage(name, id);
+            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+          }}
+        />
+        <button
+          data-testid="save-button"
+          data-id={id}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSave(id);
+          }}
+          className="absolute top-1.5 left-1.5 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 backdrop-blur-sm"
+        >
+          <Heart className={`w-3.5 h-3.5 ${isSaved ? 'text-nomaq-violet fill-nomaq-violet' : 'text-slate-400'}`} strokeWidth={2} />
+        </button>
+      </div>
+      <div className="flex-1 flex flex-col justify-between min-w-0 py-1">
+        <div>
+          <h3 className="text-sm lg:text-base font-bold text-nomaq-navy truncate">{name}</h3>
+          <p className="text-[11px] text-slate-500 truncate mt-0.5">{meta}</p>
+          <div className="flex items-center gap-1 text-[11px] mt-1.5">
+            <Star className="w-3 h-3 fill-nomaq-indigo text-nomaq-indigo" />
+            <span className="font-bold text-nomaq-indigo">{rating}</span>
+            {reviews !== null && <span className="text-slate-400">· {reviews} {t('reviews')}</span>}
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-nomaq-navy">
+            <span className="font-extrabold">€{price}</span>{' '}
+            <span className="text-[10px] text-slate-400">{t('perNight')}</span>
+          </span>
+          <span className="text-nomaq-indigo text-xs font-semibold flex items-center gap-1">
+            {t('viewStay')} <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Drops View ── */
 const getDropImage = (destination: string) => {
   const dest = destination.toLowerCase();
@@ -405,7 +1004,7 @@ const getDropImage = (destination: string) => {
     return 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800&auto=format&fit=crop';
   }
   if (dest.includes('barcellona') || dest.includes('barcelona')) {
-    return 'https://images.unsplash.com/photo-1583422409516-15d0ac53f937?q=80&w=800&auto=format&fit=crop';
+    return 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?q=80&w=800&auto=format&fit=crop';
   }
   return 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop';
 };
@@ -486,7 +1085,7 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
       {/* Header with Zap trigger */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-display-lg text-nomaq-navy mb-1">Drops</h1>
+          <h1 className="font-display text-display-lg text-nomaq-navy mb-1">Radar</h1>
           <p className="text-slate-500 text-sm">{t('dropsSubtitle')}</p>
         </div>
         <button
@@ -561,6 +1160,302 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
           <p className="text-slate-400 text-xs flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> {t('dropsFooter')}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Radar (reference design) ── */
+const RADAR_IMG: Record<string, string> = {
+  paris: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80',
+  bali: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
+  tokyo: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80',
+  lisbon: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=800&q=80',
+  santorini: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=80',
+  reykjavik: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800&q=80',
+  barcelona: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80',
+  marrakech: 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?w=800&q=80',
+  athens: 'https://images.unsplash.com/photo-1555993539-1732b0258235?w=800&q=80',
+};
+
+type RadarDrop = {
+  id: string; from: string; to: string; oldPrice: number; newPrice: number;
+  airline: string; dateIt: string; dateEn: string; monthIdx: number;
+  minsAgo: number; img: string;
+};
+
+const RADAR_PICKS: RadarDrop[] = [
+  { id: 'radar-paris-ny', from: 'Parigi', to: 'New York', oldPrice: 550, newPrice: 299, airline: 'Air France', dateIt: 'Ott 22', dateEn: 'Oct 22', monthIdx: 9, minsAgo: 10, img: 'paris' },
+  { id: 'radar-bali-milano', from: 'Bali', to: 'Milano', oldPrice: 620, newPrice: 389, airline: 'Qatar Airways', dateIt: 'Lug 12', dateEn: 'Jul 12', monthIdx: 6, minsAgo: 2, img: 'bali' },
+  { id: 'radar-tokyo-roma', from: 'Tokyo', to: 'Roma', oldPrice: 700, newPrice: 420, airline: 'Emirates', dateIt: 'Nov 03', dateEn: 'Nov 03', monthIdx: 10, minsAgo: 15, img: 'tokyo' },
+];
+
+const RADAR_LAST_MINUTE: RadarDrop[] = [
+  { id: 'radar-napoli-lisbona', from: 'Napoli', to: 'Lisbona', oldPrice: 420, newPrice: 300, airline: 'TAP Air Portugal', dateIt: 'Set 18', dateEn: 'Sep 18', monthIdx: 8, minsAgo: 8, img: 'lisbon' },
+  { id: 'radar-santorini-berlino', from: 'Santorini', to: 'Berlino', oldPrice: 560, newPrice: 380, airline: 'Aegean Airlines', dateIt: 'Ago 25', dateEn: 'Aug 25', monthIdx: 7, minsAgo: 6, img: 'santorini' },
+  { id: 'radar-reykjavik-amsterdam', from: 'Reykjavik', to: 'Amsterdam', oldPrice: 600, newPrice: 390, airline: 'Icelandair', dateIt: 'Dic 05', dateEn: 'Dec 05', monthIdx: 11, minsAgo: 12, img: 'reykjavik' },
+];
+
+const RADAR_TODAY: RadarDrop[] = [
+  { id: 'radar-napoli-barcellona', from: 'Napoli', to: 'Barcellona', oldPrice: 410, newPrice: 320, airline: 'Vueling', dateIt: 'Giu 15', dateEn: 'Jun 15', monthIdx: 5, minsAgo: 5, img: 'barcelona' },
+  { id: 'radar-roma-marrakech', from: 'Roma', to: 'Marrakech', oldPrice: 420, newPrice: 310, airline: 'Ryanair', dateIt: 'Giu 18', dateEn: 'Jun 18', monthIdx: 5, minsAgo: 7, img: 'marrakech' },
+  { id: 'radar-parigi-atene', from: 'Parigi', to: 'Atene', oldPrice: 430, newPrice: 300, airline: 'Transavia', dateIt: 'Giu 20', dateEn: 'Jun 20', monthIdx: 5, minsAgo: 9, img: 'athens' },
+];
+
+function RadarBadges({ d, small = false }: { d: RadarDrop; small?: boolean }) {
+  const dropAmt = d.oldPrice - d.newPrice;
+  const pct = Math.round((dropAmt / d.oldPrice) * 100);
+  const cls = small ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
+  return (
+    <div className={`absolute z-10 flex gap-1.5 ${small ? 'top-2 left-2' : 'top-3 left-3'}`}>
+      <span className={`bg-emerald-500 text-white font-bold rounded-lg shadow-sm ${cls}`}>Drop €{dropAmt}</span>
+      <span className={`bg-orange-500 text-white font-bold rounded-lg shadow-sm ${cls}`}>-{pct}%</span>
+    </div>
+  );
+}
+
+function RadarRoute({ d, className = '' }: { d: RadarDrop; className?: string }) {
+  return (
+    <div className={`flex items-center gap-1.5 font-bold text-nomaq-navy min-w-0 ${className}`}>
+      <span className="truncate">{d.from}</span>
+      <ArrowRight className="w-4 h-4 text-nomaq-indigo flex-shrink-0" strokeWidth={2.5} />
+      <span className="truncate">{d.to}</span>
+    </div>
+  );
+}
+
+function RadarBigCard({ d }: { d: RadarDrop }) {
+  const { t, lang } = useLanguage();
+  return (
+    <div
+      className="bg-white rounded-3xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+      data-testid={`drop-item-${d.id}`}
+      onClick={() => window.open('https://www.google.com/flights', '_blank')}
+    >
+      <div className="relative h-36 lg:h-40">
+        <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <RadarBadges d={d} />
+      </div>
+      <div className="p-4 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <RadarRoute d={d} className="text-base" />
+          <p className="text-xs text-slate-400 mt-1 truncate">
+            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn} · {d.minsAgo} {t('minAgo')}
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div className="text-slate-400 text-xs line-through leading-none mb-1">€{d.oldPrice}</div>
+          <div className="text-2xl font-extrabold text-nomaq-navy leading-none">€{d.newPrice}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RadarCompactCard({ d }: { d: RadarDrop }) {
+  const { t, lang } = useLanguage();
+  return (
+    <div
+      className="bg-white rounded-2xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex items-stretch"
+      data-testid={`drop-item-${d.id}`}
+      onClick={() => window.open('https://www.google.com/flights', '_blank')}
+    >
+      <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
+        <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <RadarBadges d={d} small />
+      </div>
+      <div className="flex-1 px-3.5 py-3 flex items-center justify-between gap-3 min-w-0">
+        <div className="min-w-0">
+          <RadarRoute d={d} className="text-sm" />
+          <p className="text-[11px] text-slate-400 mt-1 truncate">
+            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn} · {d.minsAgo} {t('minAgo')}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="text-right">
+            <div className="text-slate-400 text-xs line-through leading-none mb-1">€{d.oldPrice}</div>
+            <div className="text-lg font-extrabold text-nomaq-navy leading-none">€{d.newPrice}</div>
+          </div>
+          <span className="w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center">
+            <ChevronRight className="w-4 h-4 text-nomaq-navy" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RadarView({ simulatedDrops }: { simulatedDrops: any[] }) {
+  const { t, lang } = useLanguage();
+  const [city, setCity] = React.useState('Napoli');
+  const [month, setMonth] = React.useState<number | null>(null);
+  const [travelers, setTravelers] = React.useState(1);
+  const [openDd, setOpenDd] = React.useState<'city' | 'month' | 'trav' | null>(null);
+  const rootRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  React.useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpenDd(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
+  const MONTHS = lang === 'it'
+    ? ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const CITIES = ['Napoli', 'Roma', 'Milano'];
+
+  const byMonth = (list: RadarDrop[]) => (month === null ? list : list.filter((d) => d.monthIdx === month));
+
+  // Simulated drops (from E2E query state) surface at the top of the picks
+  const simMapped: RadarDrop[] = simulatedDrops.map((s) => {
+    const [from, to] = String(s.destination).split('→').map((x: string) => x.trim());
+    return {
+      id: s.id, from, to: to || '', oldPrice: s.oldPrice, newPrice: s.newPrice,
+      airline: s.airline || 'Airline', dateIt: s.date || '', dateEn: s.date || '',
+      monthIdx: -1, minsAgo: 0, img: 'paris',
+    };
+  });
+  const picks = [...simMapped, ...byMonth(RADAR_PICKS)];
+  const lastMinute = byMonth(RADAR_LAST_MINUTE);
+  const today = byMonth(RADAR_TODAY);
+
+  const ddBtn = 'flex items-center justify-between gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-nomaq-navy shadow-soft w-full lg:w-auto lg:min-w-[200px] hover:border-nomaq-indigo/30 transition-colors';
+  const ddPanel = 'absolute left-0 top-[calc(100%+8px)] z-30 bg-white rounded-2xl shadow-card border border-slate-100 p-4 animate-fade-in';
+
+  const travLabel = `${travelers} ${travelers === 1 ? t('travelerSingular') : t('travelerPlural')}`;
+
+  const sections: Array<{ icon: React.ReactNode; title: string; items: RadarDrop[]; compact?: boolean }> = [
+    { icon: <ThreeSparklesIcon className="w-5 h-5 text-nomaq-indigo" />, title: t('ourPicks'), items: picks },
+    { icon: <Clock className="w-5 h-5 text-nomaq-indigo" />, title: t('lastMinuteDeals'), items: lastMinute },
+    { icon: <Calendar className="w-5 h-5 text-nomaq-indigo" />, title: t('todaysDeals'), items: today, compact: true },
+  ];
+
+  return (
+    <div ref={rootRef} className="px-5 lg:px-6 pb-10 animate-fade-in" data-testid="radar-view">
+      {/* Header */}
+      <div className="pt-2 lg:pt-8 mb-5">
+        <h1 className="font-display text-display-lg lg:text-display-xl text-nomaq-navy mb-2">Radar</h1>
+        <p className="text-slate-500 text-sm lg:text-base">{t('dropsSubtitle')}</p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col lg:flex-row gap-3 mb-8">
+        {/* Departure city */}
+        <div className="relative">
+          <button className={ddBtn} onClick={() => setOpenDd(openDd === 'city' ? null : 'city')} aria-expanded={openDd === 'city'}>
+            <span className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-nomaq-indigo" />
+              {t('fromPrefix')} {city}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${openDd === 'city' ? 'rotate-180' : ''}`} />
+          </button>
+          {openDd === 'city' && (
+            <div className={`${ddPanel} w-full lg:w-[220px] p-2`}>
+              {CITIES.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => { setCity(c); setOpenDd(null); }}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${c === city ? 'bg-nomaq-lavender text-nomaq-indigo' : 'text-nomaq-navy hover:bg-slate-50'}`}
+                >
+                  {t('fromPrefix')} {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Month */}
+        <div className="relative">
+          <button className={ddBtn} onClick={() => setOpenDd(openDd === 'month' ? null : 'month')} aria-expanded={openDd === 'month'}>
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-nomaq-indigo" />
+              {month === null ? t('anyMonth') : MONTHS[month]}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${openDd === 'month' ? 'rotate-180' : ''}`} />
+          </button>
+          {openDd === 'month' && (
+            <div className={`${ddPanel} w-[280px]`}>
+              <p className="text-sm font-bold text-nomaq-navy">{t('selectMonth')}</p>
+              <p className="text-xs text-slate-400 mb-3">{t('selectMonthSub')}</p>
+              <div className="grid grid-cols-4 gap-2">
+                {MONTHS.map((m, i) => (
+                  <button
+                    key={m}
+                    onClick={() => { setMonth(month === i ? null : i); setOpenDd(null); }}
+                    className={`px-2 py-2 rounded-xl text-xs font-semibold transition-colors ${month === i ? 'bg-nomaq-indigo text-white' : 'bg-slate-50 text-nomaq-navy hover:bg-nomaq-lavender'}`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Travelers */}
+        <div className="relative">
+          <button className={ddBtn} onClick={() => setOpenDd(openDd === 'trav' ? null : 'trav')} aria-expanded={openDd === 'trav'}>
+            <span className="flex items-center gap-2">
+              <User className="w-4 h-4 text-nomaq-indigo" />
+              {travLabel}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${openDd === 'trav' ? 'rotate-180' : ''}`} />
+          </button>
+          {openDd === 'trav' && (
+            <div className={`${ddPanel} w-full lg:w-[240px]`}>
+              <p className="text-sm font-bold text-nomaq-navy mb-3">{t('travelers')}</p>
+              <div className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+                <button
+                  onClick={() => setTravelers(Math.max(1, travelers - 1))}
+                  className="w-8 h-8 rounded-lg bg-white shadow-soft text-nomaq-indigo font-bold text-lg flex items-center justify-center disabled:opacity-40"
+                  disabled={travelers <= 1}
+                  aria-label="-"
+                >
+                  −
+                </button>
+                <span className="text-sm font-bold text-nomaq-navy">{travelers}</span>
+                <button
+                  onClick={() => setTravelers(Math.min(9, travelers + 1))}
+                  className="w-8 h-8 rounded-lg bg-white shadow-soft text-nomaq-indigo font-bold text-lg flex items-center justify-center disabled:opacity-40"
+                  disabled={travelers >= 9}
+                  aria-label="+"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 text-center mt-2">{t('maxTravelers')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sections */}
+      {sections.map(({ icon, title, items, compact }) => (
+        <div key={title} className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            {icon}
+            <span className="text-sm lg:text-base font-semibold text-nomaq-navy">{title}</span>
+          </div>
+          {items.length === 0 ? (
+            <p className="text-slate-400 text-sm py-4">{t('noDropsMonth')}</p>
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-3">
+              {items.map((d) =>
+                compact ? <RadarCompactCard key={d.id} d={d} /> : <RadarBigCard key={d.id} d={d} />
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Footer */}
+      <div className="flex justify-center mt-2">
+        <p className="text-slate-400 text-xs flex items-center gap-1.5">
+          <ShieldCheck className="w-4 h-4" /> {t('radarFooter')}
+        </p>
+      </div>
     </div>
   );
 }
@@ -1275,74 +2170,94 @@ export default function Home({
   initialWaitlistEmail,
 }: any) {
   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, profile } = useAuth();
+  const router = useRouter();
   const [isMounted, setIsMounted] = React.useState(false);
   const [aiQuery, setAiQuery] = React.useState('');
   const [isSearching, setIsSearching] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
-  
-  const handleSearch = async (searchQuery: string) => {
-    setIsSearching(true);
-    // Simulate AI/Duffel search processing delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    
-    if (!searchQuery.trim()) {
-      try {
-        const resF = await fetch('/api/flights');
-        const dataF = await resF.json();
-        if (Array.isArray(dataF)) {
-          setFlights(dataF.map((item: any) => ({
-            ...item,
-            originalPrice: Number(item.original_price),
-            price: Number(item.price),
-            rating: Number(item.rating),
-            stars: item.stars ? Number(item.stars) : undefined,
-            date: item.date_info || item.date,
-          })));
-        }
-        const resH = await fetch('/api/hotels');
-        const dataH = await resH.json();
-        if (Array.isArray(dataH)) {
-          setHotels(dataH.map((item: any) => ({
-            ...item,
-            originalPrice: Number(item.original_price),
-            price: Number(item.price),
-            rating: Number(item.rating),
-            stars: item.stars ? Number(item.stars) : undefined,
-            date: item.date_info || item.date,
-          })));
-        }
-      } catch (e) {
-        console.error('Error reloading search:', e);
-      }
-      setIsSearching(false);
-      return;
-    }
-    
+  const [showAllDeals, setShowAllDeals] = React.useState(false);
+  const [activeSearch, setActiveSearch] = React.useState('');
+  const [aiSummary, setAiSummary] = React.useState('');
+  const [aiPackage, setAiPackage] = React.useState<{ flight: any; hotel: any; reasoning: string } | null>(null);
+
+  const handleNavigate = (id: TabId) => {
+    setActiveTab(id);
+    router.push(id === 'vola-vola' ? '/' : `/${id}`, undefined, { shallow: true });
+  };
+
+  // Local keyword fallback: used when the AI endpoint errors or no
+  // DEEPSEEK_API_KEY is configured, so search still works either way.
+  const localFilter = (searchQuery: string) => {
     const lowerQuery = searchQuery.toLowerCase();
-    
-    // Filter the items locally
-    const filteredFlights = flights.filter(f => 
-      f.destination.toLowerCase().includes(lowerQuery) || 
+    const filteredFlights = allFlights.filter(f =>
+      f.destination.toLowerCase().includes(lowerQuery) ||
       f.description.toLowerCase().includes(lowerQuery) ||
       (f.country && f.country.toLowerCase().includes(lowerQuery))
     );
-    
-    const filteredHotels = hotels.filter(h => 
-      h.destination.toLowerCase().includes(lowerQuery) || 
+    const filteredHotels = allHotels.filter(h =>
+      h.destination.toLowerCase().includes(lowerQuery) ||
       h.description.toLowerCase().includes(lowerQuery) ||
       (h.country && h.country.toLowerCase().includes(lowerQuery))
     );
-    
     setFlights(filteredFlights);
     setHotels(filteredHotels);
+  };
+
+  const handleSearch = async (searchQuery: string) => {
+    setIsSearching(true);
+    const trimmed = searchQuery.trim();
+
+    if (!trimmed) {
+      setAiSummary('');
+      setAiPackage(null);
+      setFlights(allFlights);
+      setHotels(allHotels);
+      setActiveSearch('');
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/ai-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: trimmed, flights: allFlights, hotels: allHotels, lang }),
+      });
+      if (!res.ok) throw new Error('ai-search unavailable');
+      const data = await res.json();
+
+      setFlights(allFlights.filter((f) => (data.flightIds || []).includes(f.id)));
+      setHotels(allHotels.filter((h) => (data.hotelIds || []).includes(h.id)));
+      setAiSummary(data.summary || '');
+
+      if (data.package) {
+        const pf = allFlights.find((f) => f.id === data.package.flightId);
+        const ph = allHotels.find((h) => h.id === data.package.hotelId);
+        setAiPackage(pf && ph ? { flight: pf, hotel: ph, reasoning: data.package.reasoning || '' } : null);
+      } else {
+        setAiPackage(null);
+      }
+    } catch (e) {
+      setAiSummary('');
+      setAiPackage(null);
+      localFilter(trimmed);
+    }
+
+    setActiveSearch(trimmed);
     setIsSearching(false);
   };
 
   const [notifications, setNotifications] = React.useState<any[]>(initialNotifications || []);
   const [simulatedDrops, setSimulatedDrops] = React.useState<any[]>(initialSimulatedDrops || []);
 
+  // allFlights/allHotels hold the full catalog; flights/hotels hold the
+  // (possibly search-filtered) displayed subset. Keeping them separate means
+  // a second search filters the real catalog again instead of an
+  // already-shrunk result set.
+  const [allFlights, setAllFlights] = React.useState<any[]>(initialFlights || []);
+  const [allHotels, setAllHotels] = React.useState<any[]>(initialHotels || []);
   const [flights, setFlights] = React.useState<any[]>(initialFlights || []);
   const [hotels, setHotels] = React.useState<any[]>(initialHotels || []);
   const [feedItems, setFeedItems] = React.useState<any[]>(
@@ -1367,6 +2282,7 @@ export default function Home({
             stars: item.stars ? Number(item.stars) : undefined,
             date: item.date_info || item.date,
           }));
+          setAllFlights(formatted);
           setFlights(formatted);
         }
       })
@@ -1385,6 +2301,7 @@ export default function Home({
             stars: item.stars ? Number(item.stars) : undefined,
             date: item.date_info || item.date,
           }));
+          setAllHotels(formatted);
           setHotels(formatted);
         }
       })
@@ -1490,7 +2407,17 @@ export default function Home({
 
   const dismissNotif = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id));
 
-  const feedByTab = currentTab === 'vola-vola' ? flights : hotels;
+  // Pad the feed with curated mock deals (deduped by destination) so the
+  // grid always fills at least 6 uniform cards. Skipped in E2E and while a
+  // search filter is active.
+  const feedByTab = React.useMemo(() => {
+    const base = currentTab === 'vola-vola' ? flights : hotels;
+    if (isE2E || activeSearch || base.length >= 6) return base;
+    const mockPool = currentTab === 'vola-vola' ? FLIGHTS : HOTELS;
+    const seen = new Set(base.map((i: any) => String(i.destination).toLowerCase()));
+    const extras = mockPool.filter((m) => !seen.has(m.destination.toLowerCase()));
+    return [...base, ...extras];
+  }, [currentTab, flights, hotels, isE2E, activeSearch]);
 
   // Dynamic greeting: personalized when logged in, generic otherwise
   const firstName = (
@@ -1558,31 +2485,57 @@ export default function Home({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </Head>
 
-      <main className="min-h-screen pb-24" data-testid="app-root">
-        <div className={`mx-auto ${queryObj.desktop === 'true' ? 'max-w-4xl' : 'max-w-md'}`}>
+      <main className="min-h-screen pb-24 lg:pb-10" data-testid="app-root">
+        {/* ── Desktop top navbar ── */}
+        <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} />
+
+        <div className={`mx-auto ${queryObj.desktop === 'true' ? 'max-w-4xl' : 'max-w-md lg:max-w-6xl'}`}>
           {/* Hidden active view for tests */}
           <div data-testid="active-view" className="hidden">{currentTab}</div>
 
-          {/* ── Logo Header (with language switcher) ── */}
-          <div className="relative">
+          {/* ── Logo Header (with language switcher) — mobile only ── */}
+          <div className="relative lg:hidden">
             <NomaqLogo />
             <div className="absolute right-5 top-1/2 -translate-y-1/2">
               <LanguageSwitcher />
             </div>
           </div>
 
-          {/* ── Home view header (vola-vola / soggiorna) ── */}
-          {(currentTab === 'vola-vola' || currentTab === 'soggiorna') && (
-            <div className="px-5 mb-5">
-              {/* Centered top block */}
-              <div className="text-center mb-6">
-                <p className="text-slate-500 text-sm font-medium mb-2 select-none" data-testid="home-greeting">
-                  {greeting}
-                </p>
-                <h1 className="font-display text-display-md text-nomaq-navy leading-tight mb-5">
-                  {t('headline')}<span className="text-[#EC4899] font-sans font-bold">?</span>
-                </h1>
+          {/* ── Stays view (soggiorna) — reference design ── */}
+          {currentTab === 'soggiorna' && !isE2E && (
+            <StaysView
+              hotels={feedByTab}
+              activeSearch={activeSearch}
+              isSearching={isSearching}
+              onSearch={(q) => {
+                setAiQuery(q);
+                handleSearch(q);
+              }}
+              savedIds={currentSaved}
+              onToggleSave={toggleSaveItem}
+            />
+          )}
 
+          {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
+          {(currentTab === 'vola-vola' || (currentTab === 'soggiorna' && isE2E)) && (
+            <div className="px-5 lg:px-6 mb-5">
+              {/* Centered top block; two-column hero on desktop */}
+              <div className="text-center mb-6 lg:mb-12 lg:pt-12 lg:grid lg:grid-cols-[1fr_1.4fr] lg:gap-12 lg:items-center lg:text-left">
+                {/* Left column: greeting + headline + tagline */}
+                <div className="lg:pr-2">
+                  <p className="text-slate-500 text-sm font-medium mb-2 select-none" data-testid="home-greeting">
+                    {greeting}
+                  </p>
+                  <h1 className="font-display text-display-md lg:text-display-lg text-nomaq-navy leading-tight mb-5 lg:mb-4">
+                    {t('headline')}<span className="text-[#EC4899] font-sans font-bold">?</span>
+                  </h1>
+                  <p className="hidden lg:block text-slate-500 text-base leading-relaxed max-w-sm">
+                    {t('heroTagline')}
+                  </p>
+                </div>
+
+                {/* Right column: AI search + filters + quick suggestions */}
+                <div className="lg:min-w-0">
                 {/* AI Search bar (Centered, relative container) */}
                 <div className="relative mx-auto mb-3">
                   <div className="bg-white/95 backdrop-blur-md rounded-full shadow-soft flex items-center h-16 pl-5 pr-2 border border-white/60 text-left">
@@ -1621,11 +2574,9 @@ export default function Home({
                           </svg>
                         </div>
                       ) : (
-                        <img 
-                          src="/images/sparkles_btn.png" 
-                          alt="Search" 
-                          className="w-full h-full object-contain"
-                        />
+                        <div className="w-12 h-12 rounded-full bg-white border border-slate-100 shadow-soft flex items-center justify-center">
+                          <ThreeSparklesIcon className="w-7 h-7 text-nomaq-navy" />
+                        </div>
                       )}
                     </button>
                   </div>
@@ -1661,7 +2612,7 @@ export default function Home({
                 </div>
 
                 {/* Compact Filters Row (Micro-UI) */}
-                <div className="flex flex-row gap-2 mt-3 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden w-full px-1">
+                <div className="flex flex-row gap-2 mt-3 overflow-x-auto lg:overflow-visible lg:flex-wrap scrollbar-none [&::-webkit-scrollbar]:hidden w-full px-1">
                   <button className="rounded-full px-3 py-1 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white/45 transition-colors whitespace-nowrap">
                     {t('filterDirect')}
                   </button>
@@ -1674,7 +2625,7 @@ export default function Home({
                 </div>
 
                 {/* Combined Tag & Sorprendimi Row */}
-                <div className="flex flex-row items-center justify-start gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden w-full mt-6">
+                <div className="flex flex-row items-center justify-start gap-2 overflow-x-auto lg:overflow-visible lg:flex-wrap lg:pb-0 pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden w-full mt-6 lg:mt-4">
                   {quickSuggestions.map((s) => (
                     <button 
                       key={s.text} 
@@ -1708,24 +2659,58 @@ export default function Home({
                     </button>
                   ))}
                 </div>
+                </div>
               </div>
 
-              {/* Section label (Left-aligned) */}
-              <div className="flex items-center gap-1.5 mb-1">
-                <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-                <span className="text-sm font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
+              {/* Section label row */}
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-nomaq-indigo" />
+                  <span className="text-sm lg:text-base font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
+                </div>
+                <button
+                  onClick={() => setShowAllDeals(!showAllDeals)}
+                  className="hidden lg:flex items-center gap-1 text-sm font-semibold text-nomaq-indigo hover:text-nomaq-violet transition-colors"
+                >
+                  {t('seeAllDeals')} <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           )}
 
 
 
-          {/* ── Feed (vola-vola / soggiorna) ── */}
-          {(currentTab === 'vola-vola' || currentTab === 'soggiorna') && (
+          {/* ── AI search summary + suggested package ── */}
+          {!isE2E && currentTab === 'vola-vola' && activeSearch && (aiSummary || aiPackage) && (
+            <div className="px-5 lg:px-6 mb-4" data-testid="ai-search-result">
+              {aiSummary && (
+                <div className="nomaq-card bg-nomaq-lavender/40 border-nomaq-indigo/15 p-4 flex items-start gap-3 mb-3">
+                  <ThreeSparklesIcon className="w-4 h-4 text-nomaq-indigo flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-nomaq-navy leading-snug">{aiSummary}</p>
+                </div>
+              )}
+              {aiPackage && (
+                <div data-testid="ai-package">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Wand2 className="w-4 h-4 text-nomaq-violet" />
+                    <span className="text-sm font-semibold text-nomaq-navy">{t('aiPackageTitle')}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-2">
+                    <FeedCard item={aiPackage.flight} isSaved={currentSaved.includes(aiPackage.flight.id)} onToggleSave={toggleSaveItem} />
+                    <FeedCard item={aiPackage.hotel} isSaved={currentSaved.includes(aiPackage.hotel.id)} onToggleSave={toggleSaveItem} />
+                  </div>
+                  {aiPackage.reasoning && <p className="text-xs text-slate-500 leading-snug">{aiPackage.reasoning}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Feed (vola-vola; soggiorna only in E2E) ── */}
+          {(currentTab === 'vola-vola' || (currentTab === 'soggiorna' && isE2E)) && (
             <>
               {/* Grid collage 2x2 container */}
-              <div 
-                className="grid grid-cols-2 gap-4 px-5 pb-5 scrollable" 
+              <div
+                className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 px-5 lg:px-6 pb-5 scrollable"
                 data-testid="feed-container"
               >
                 {feedByTab.length === 0 ? (
@@ -1736,20 +2721,24 @@ export default function Home({
                     <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
                   </div>
                 ) : (
-                  feedByTab.map((item) => (
-                    <FeedCard
+                  feedByTab.map((item, idx) => (
+                    <div
                       key={item.id}
-                      item={item}
-                      isSaved={currentSaved.includes(item.id)}
-                      onToggleSave={toggleSaveItem}
-                    />
+                      className={`h-full ${!showAllDeals && idx >= 6 ? 'lg:hidden' : ''}`}
+                    >
+                      <FeedCard
+                        item={item}
+                        isSaved={currentSaved.includes(item.id)}
+                        onToggleSave={toggleSaveItem}
+                      />
+                    </div>
                   ))
                 )}
               </div>
 
               {/* Bottom suggestion card - preserved under the horizontal carousel */}
               {feedByTab.length > 0 && (
-                <div className="mx-5 mb-4 mt-2">
+                <div className="mx-5 lg:mx-6 mb-4 mt-2">
                   <div className="nomaq-card p-4 flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
                     <span className="text-sm text-slate-500 flex-1">{t('tellNomaq')}</span>
@@ -1757,32 +2746,45 @@ export default function Home({
                   </div>
                 </div>
               )}
+
+              {/* FAQ */}
+              <FaqSection />
             </>
           )}
 
-          {/* ── Drops ── */}
+          {/* ── Radar (Drops) — reference design; legacy view kept for E2E ── */}
           {currentTab === 'drops' && (
-            <DropsView simulatedDrops={simulatedDrops} isE2E={isE2E} onSimulateDrop={handleSimulateDrop} />
+            isE2E ? (
+              <div className="mx-auto w-full max-w-md lg:max-w-2xl lg:pt-8">
+                <DropsView simulatedDrops={simulatedDrops} isE2E={isE2E} onSimulateDrop={handleSimulateDrop} />
+              </div>
+            ) : (
+              <RadarView simulatedDrops={simulatedDrops} />
+            )
           )}
 
           {/* ── Concierge (Salvati slot — E2E compatible) ── */}
           {currentTab === 'salvati' && (
-            <ConciergeView
-              savedIds={currentSaved}
-              allItems={feedItems}
-              onUnsave={toggleSaveItem}
-            />
+            <div className="mx-auto w-full max-w-md lg:max-w-2xl lg:pt-8">
+              <ConciergeView
+                savedIds={currentSaved}
+                allItems={feedItems}
+                onUnsave={toggleSaveItem}
+              />
+            </div>
           )}
 
           {/* ── Profilo ── */}
           {currentTab === 'profilo' && (
-            <ProfiloView
-              initialCount={initialWaitlistCount}
-              initialError={initialWaitlistError}
-              initialSubmitted={initialWaitlistSubmitted}
-              initialEmail={initialWaitlistEmail}
-              isE2E={isE2E}
-            />
+            <div className="mx-auto w-full max-w-md lg:max-w-2xl lg:pt-8">
+              <ProfiloView
+                initialCount={initialWaitlistCount}
+                initialError={initialWaitlistError}
+                initialSubmitted={initialWaitlistSubmitted}
+                initialEmail={initialWaitlistEmail}
+                isE2E={isE2E}
+              />
+            </div>
           )}
 
           {/* ── Toast notifications ── */}

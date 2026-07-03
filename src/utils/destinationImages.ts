@@ -13,7 +13,6 @@ const POOLS: Array<{ keywords: string[]; images: string[] }> = [
   {
     keywords: ['barcellona', 'barcelona', 'spagna', 'spain'],
     images: [
-      u('1583422409516-15d0ac53f937'),
       u('1539037116277-4db20889f2d4'),
       u('1511527661048-7fe73d85e9a4'),
       u('1464790719320-516ecd75af6c'),

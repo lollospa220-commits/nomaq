@@ -70,7 +70,7 @@ const DEFAULT_FLIGHTS = [
     price: 89,
     original_price: 135,
     description: 'Da Napoli · 2 notti · da 89€',
-    image: 'https://images.unsplash.com/photo-1583422409516-2895a77efedd?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80',
     airline: 'EasyJet',
     duration: '2h 10m',
     date_info: 'Qualsiasi weekend',
