@@ -41,8 +41,8 @@ module.exports = {
         'off-white': '#F8F8FA',
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        display: ['"DM Serif Display"', 'Georgia', 'serif'],
+        sans: ['var(--font-inter, Inter)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['var(--font-dm-serif, "DM Serif Display")', 'Georgia', 'serif'],
       },
       fontSize: {
         '2xs': ['10px', { lineHeight: '14px' }],

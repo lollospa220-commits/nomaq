@@ -18,10 +18,12 @@ const FLIGHT_DESTINATIONS = [
 
 // IATA → nome compagnia per le tariffe Travelpayouts (che espongono solo il codice).
 const IATA_AIRLINE_NAMES: Record<string, string> = {
-  FR: 'Ryanair', U2: 'easyJet', W6: 'Wizz Air', VY: 'Vueling', V7: 'Volotea',
+  FR: 'Ryanair', U2: 'easyJet', W6: 'Wizz Air', W4: 'Wizz Air Malta', VY: 'Vueling',
+  V7: 'Volotea', LS: 'Jet2', HV: 'Transavia', PC: 'Pegasus', EW: 'Eurowings',
   IB: 'Iberia', BA: 'British Airways', LH: 'Lufthansa', AF: 'Air France', KL: 'KLM',
-  AZ: 'ITA Airways', EK: 'Emirates', QR: 'Qatar Airways', TK: 'Turkish Airlines',
-  NH: 'ANA', DL: 'Delta', AA: 'American Airlines', UA: 'United',
+  AZ: 'ITA Airways', TP: 'TAP Air Portugal', LX: 'Swiss', A3: 'Aegean', FI: 'Icelandair',
+  EK: 'Emirates', QR: 'Qatar Airways', TK: 'Turkish Airlines',
+  NH: 'ANA', JL: 'Japan Airlines', DL: 'Delta', AA: 'American Airlines', UA: 'United',
 };
 
 function resolveDestCode(item: any): string | null {

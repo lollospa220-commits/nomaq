@@ -297,9 +297,11 @@ function FeedCard({
 
       {/* Content (Bottom half) */}
       <div className="flex-1 p-3 flex flex-col justify-between min-w-0 bg-white/40">
-        {/* Row 1: Destination title (left) and Tag badge (right) */}
-        <div className="flex justify-between items-start gap-2 mb-1">
-          <h3 className="text-xs lg:text-base font-bold text-nomaq-navy leading-snug truncate flex-1">{item.destination}</h3>
+        {/* Row 1: Destination title (left) and Tag badge (right).
+            line-clamp-2 (non truncate): a 375px la colonna è stretta e un
+            titolo come "Weekend a Barcellona" diventerebbe "Weeke…". */}
+        <div className="flex justify-between items-start gap-2 mb-1 min-h-[32px] lg:min-h-0">
+          <h3 className="text-xs lg:text-base font-bold text-nomaq-navy leading-snug line-clamp-2 flex-1">{item.destination}</h3>
           {cleanTag && (
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-bold ${tagClass} flex-shrink-0`}>
               <Sparkles className="w-2 h-2 mr-0.5 inline-block" /> {cleanTag}
@@ -1190,7 +1192,7 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
         <div className="flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-slate-400 mb-4">
           <Calendar className="w-4 h-4" /> {t('tripItinerary')} · {plan.days?.length} {plan.days?.length === 1 ? t('dayWord') : t('daysWord')}
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-5 lg:overflow-visible">
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-5 lg:overflow-visible scroll-fade-x">
           {(plan.days || []).map((day: any, di: number) => (
             <div key={di} className="min-w-[230px] lg:min-w-0 bg-white/75 border border-white rounded-2xl p-4 shadow-soft">
               <div className="pb-2.5 mb-2.5 border-b border-slate-100">
@@ -1749,7 +1751,7 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
 
       {/* Quick Actions */}
       <div className="px-5 mb-4">
-        <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none pb-1">
+        <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none pb-1 scroll-fade-x">
           {quickActions.map((action, idx) => (
             <button
               key={idx}
@@ -1837,8 +1839,9 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
         )}
       </div>
 
-      {/* Chat Input Bar */}
-      <div className="sticky bottom-0 px-4 pb-5 pt-3 bg-slate-50/80 backdrop-blur-sm">
+      {/* Chat Input Bar — su mobile resta sopra la BottomNav fissa (60px +
+          safe area) che altrimenti la coprirebbe; su lg la nav è nascosta. */}
+      <div className="sticky bottom-[calc(60px+env(safe-area-inset-bottom,0px))] lg:bottom-0 px-4 pb-3 lg:pb-5 pt-3 bg-slate-50/80 backdrop-blur-sm">
         <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-full px-4 py-3 shadow-soft">
           <button className="text-slate-400 hover:text-nomaq-indigo transition-colors flex-shrink-0">
             <Paperclip className="w-5 h-5" />
@@ -2109,7 +2112,7 @@ function ProfiloView({
             <input
               type="password"
               data-testid="auth-password-input"
-              placeholder="••••••••"
+              placeholder={t('passwordPlaceholder')}
               value={authPassword}
               onChange={(e) => setAuthPassword(e.target.value)}
               autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
@@ -2655,8 +2658,6 @@ export default function Home({
         <meta name="description" content="Nomaq: l'app che rileva i crolli di prezzo su voli e hotel in tempo reale. Vola di più, spendi meno." />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
         <meta name="theme-color" content="#4F46E5" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </Head>
 
       <main className="min-h-screen pb-24 lg:pb-10" data-testid="app-root">
@@ -2809,7 +2810,7 @@ export default function Home({
                 )}
 
                 {/* Compact Filters Row (Micro-UI) */}
-                <div className="flex flex-row gap-2 mt-3 overflow-x-auto lg:overflow-visible lg:flex-wrap scrollbar-none [&::-webkit-scrollbar]:hidden w-full px-1">
+                <div className="flex flex-row gap-2 mt-3 overflow-x-auto lg:overflow-visible lg:flex-wrap scrollbar-none [&::-webkit-scrollbar]:hidden w-full px-1 scroll-fade-x">
                   <button className="rounded-full px-3 py-1 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white/45 transition-colors whitespace-nowrap">
                     {t('filterDirect')}
                   </button>
@@ -2822,7 +2823,7 @@ export default function Home({
                 </div>
 
                 {/* Combined Tag & Sorprendimi Row */}
-                <div className="flex flex-row items-center justify-start gap-2 overflow-x-auto lg:overflow-visible lg:flex-wrap lg:pb-0 pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden w-full mt-6 lg:mt-4">
+                <div className="flex flex-row items-center justify-start gap-2 overflow-x-auto lg:overflow-visible lg:flex-wrap lg:pb-0 pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden w-full mt-6 lg:mt-4 scroll-fade-x">
                   {quickSuggestions.map((s) => (
                     <button 
                       key={s.text} 
