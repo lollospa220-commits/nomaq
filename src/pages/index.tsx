@@ -745,7 +745,7 @@ const getDropImage = (destination: string) => {
     return 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=800&auto=format&fit=crop';
   }
   if (dest.includes('lisbona') || dest.includes('lisbon')) {
-    return 'https://images.unsplash.com/photo-1585244161746-95e26b86558e?q=80&w=800&auto=format&fit=crop';
+    return 'https://images.unsplash.com/photo-1501415201023-2f45fbcefac0?q=80&w=800&auto=format&fit=crop';
   }
   if (dest.includes('parigi') || dest.includes('paris')) {
     return 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800&auto=format&fit=crop';

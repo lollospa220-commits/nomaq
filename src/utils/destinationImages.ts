@@ -3,7 +3,8 @@
  * Guarantees that feed cards get varied, destination-appropriate images:
  * every image pool has multiple photos and a deterministic seed-based pick,
  * and ensureVariedImages() removes duplicate images from a result list.
- * All Unsplash photo IDs verified to return HTTP 200.
+ * Tutti gli ID Unsplash verificati (200) al 3 luglio 2026 — Unsplash può
+ * comunque rimuovere foto nel tempo (successo una volta su Lisbona: 404).
  */
 
 const u = (id: string) =>
@@ -64,7 +65,7 @@ const POOLS: Array<{ keywords: string[]; images: string[] }> = [
     keywords: ['lisbona', 'lisbon', 'portogallo', 'portugal'],
     images: [
       u('1555881400-74d7acaacd8b'),
-      u('1585244161746-95e26b86558e'),
+      u('1501415201023-2f45fbcefac0'), // tram 28, sostituisce un ID rimosso da Unsplash (404)
     ],
   },
   {
