@@ -338,49 +338,6 @@ function FeedCard({
 }
 
 /* ── Stays (Soggiorna) — reference design ── */
-const PICKED_STAYS: Array<{
-  id: string; name: string; metaKey: TranslationKey; price: number;
-  rating: number; reviews: number; image: string;
-}> = [
-  {
-    id: 'stay-napoli',
-    name: 'Smart Hotel Napoli',
-    metaKey: 'stay1meta',
-    price: 58,
-    rating: 4.6,
-    reviews: 812,
-    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
-  },
-  {
-    id: 'stay-capri',
-    name: 'Villa Marina Capri',
-    metaKey: 'stay2meta',
-    price: 129,
-    rating: 4.8,
-    reviews: 623,
-    image: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=800&q=80',
-  },
-  {
-    id: 'stay-toledo',
-    name: 'Maison Toledo',
-    metaKey: 'stay3meta',
-    price: 74,
-    rating: 4.7,
-    reviews: 459,
-    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80',
-  },
-];
-
-const FEATURED_STAY = {
-  id: 'stay-ostello-bello',
-  name: 'Ostello Bello Napoli',
-  rating: 4.4,
-  reviews: 344,
-  oldPrice: 51,
-  price: 39,
-  image: 'https://images.unsplash.com/photo-1519974719765-e6559eac2575?w=1200&q=80',
-};
-
 function StaysView({
   hotels,
   activeSearch,
@@ -418,7 +375,12 @@ function StaysView({
   const labelCls = 'text-[10px] font-semibold text-slate-400 uppercase tracking-wide block';
   const valueCls = 'w-full bg-transparent text-sm font-semibold text-nomaq-navy outline-none';
 
-  const searchResults = activeSearch ? hotels : [];
+  // "Featured" è il primo hotel del catalogo reale (search attiva o default):
+  // niente più scheda finta con sconto inventato.
+  const featured = hotels[0] || null;
+  const featuredDiscount = featured?.original_price && featured.original_price > featured.price
+    ? Math.round(((featured.original_price - featured.price) / featured.original_price) * 100)
+    : 0;
 
   const trustItems = [
     { Icon: ShieldCheck, title: t('trust1t'), sub: t('trust1s') },
@@ -575,46 +537,62 @@ function StaysView({
           </button>
         </div>
 
-        {/* Featured stay */}
-        <div className="rounded-3xl overflow-hidden bg-white shadow-card border border-white/70 flex flex-col lg:flex-row" data-testid="feed-item" data-id={FEATURED_STAY.id}>
-          <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
-            <img src={FEATURED_STAY.image} alt={FEATURED_STAY.name} className="absolute inset-0 w-full h-full object-cover" />
-            <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-xs font-bold text-nomaq-navy flex items-center gap-1.5 shadow-soft">
-              <Tag className="w-3.5 h-3.5 text-nomaq-indigo" /> {t('bestValue')}
-            </span>
-            <button
-              data-testid="save-button"
-              data-id={FEATURED_STAY.id}
-              onClick={() => onToggleSave(FEATURED_STAY.id)}
-              className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/85 backdrop-blur-sm shadow-soft"
-            >
-              <Heart className={`w-4 h-4 ${savedIds.includes(FEATURED_STAY.id) ? 'text-nomaq-violet fill-nomaq-violet' : 'text-slate-400'}`} strokeWidth={2} />
-            </button>
+        {/* Featured stay: primo hotel reale del catalogo, nessun dato inventato */}
+        {featured ? (
+          <div
+            className="rounded-3xl overflow-hidden bg-white shadow-card border border-white/70 flex flex-col lg:flex-row cursor-pointer"
+            data-testid="feed-item"
+            data-id={featured.id}
+            onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
+          >
+            <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
+              <img
+                src={featured.image || getDestinationImage(featured.destination, featured.id || 'featured')}
+                alt={featured.destination}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-xs font-bold text-nomaq-navy flex items-center gap-1.5 shadow-soft">
+                <Tag className="w-3.5 h-3.5 text-nomaq-indigo" /> {t('bestValue')}
+              </span>
+              <button
+                data-testid="save-button"
+                data-id={featured.id}
+                onClick={(e) => { e.stopPropagation(); onToggleSave(featured.id); }}
+                className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/85 backdrop-blur-sm shadow-soft"
+              >
+                <Heart className={`w-4 h-4 ${savedIds.includes(featured.id) ? 'text-nomaq-violet fill-nomaq-violet' : 'text-slate-400'}`} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="lg:w-[290px] p-6 flex flex-col justify-center gap-1.5 flex-shrink-0">
+              <h3 className="font-display text-2xl text-nomaq-navy leading-tight">{featured.hotel_name || featured.destination}</h3>
+              <p className="text-slate-500 text-sm">{featured.destination}{featured.country ? `, ${featured.country}` : ''}</p>
+              {featured.rating != null && (
+                <div className="flex items-center gap-1.5 text-sm mt-1">
+                  <Star className="w-4 h-4 fill-nomaq-indigo text-nomaq-indigo" />
+                  <span className="font-bold text-nomaq-indigo">{featured.rating}</span>
+                </div>
+              )}
+              {featuredDiscount > 0 && (
+                <span className="text-nomaq-coral text-sm line-through mt-2">€{featured.original_price}</span>
+              )}
+              <div className="flex items-end gap-1.5">
+                <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€ {featured.price}</span>
+                <span className="text-xs text-slate-400 mb-0.5">{t('perNight')}</span>
+              </div>
+              <button
+                aria-label={t('viewStay')}
+                onClick={(e) => { e.stopPropagation(); if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
+                className="self-end mt-3 w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <div className="lg:w-[290px] p-6 flex flex-col justify-center gap-1.5 flex-shrink-0">
-            <h3 className="font-display text-2xl text-nomaq-navy leading-tight">{FEATURED_STAY.name}</h3>
-            <p className="text-slate-500 text-sm">{t('featuredMeta')}</p>
-            <div className="flex items-center gap-1.5 text-sm mt-1">
-              <Star className="w-4 h-4 fill-nomaq-indigo text-nomaq-indigo" />
-              <span className="font-bold text-nomaq-indigo">{FEATURED_STAY.rating}</span>
-              <span className="text-slate-400">· {FEATURED_STAY.reviews} {t('reviews')}</span>
-            </div>
-            <span className="text-nomaq-coral text-sm line-through mt-2">€{FEATURED_STAY.oldPrice}</span>
-            <div className="flex items-end gap-1.5">
-              <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€ {FEATURED_STAY.price}</span>
-              <span className="text-xs text-slate-400 mb-0.5">{t('perNight')}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-nomaq-indigo text-xs font-semibold mt-1">
-              <Smartphone className="w-3.5 h-3.5" /> {t('appOnlyPrice')}
-            </div>
-            <button
-              aria-label={t('viewStay')}
-              className="self-end mt-3 w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
-            >
-              <ArrowRight className="w-5 h-5" />
-            </button>
+        ) : (
+          <div className="rounded-3xl bg-white/70 shadow-soft border border-white/70 flex items-center justify-center min-h-[220px] lg:min-h-[320px] p-6 text-center">
+            <p className="text-slate-500 text-sm font-semibold">{t('noOffers')}</p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Picked for you by AI ── */}
@@ -629,40 +607,23 @@ function StaysView({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3" data-testid="feed-container">
-        {activeSearch ? (
-          searchResults.length === 0 ? (
-            <div className="text-center py-12 col-span-full" data-testid="feed-empty">
-              <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
-            </div>
-          ) : (
-            searchResults.map((item: any) => (
-              <StayCard
-                key={item.id}
-                id={item.id}
-                name={item.destination}
-                meta={item.hotelName || item.country || ''}
-                rating={item.rating}
-                reviews={null}
-                price={item.price}
-                image={item.image || getDestinationImage(item.destination, item.id || 'stay')}
-                isSaved={savedIds.includes(item.id)}
-                onToggleSave={onToggleSave}
-                t={t}
-              />
-            ))
-          )
+        {hotels.length === 0 ? (
+          <div className="text-center py-12 col-span-full" data-testid="feed-empty">
+            <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
+          </div>
         ) : (
-          PICKED_STAYS.map((s) => (
+          hotels.map((item: any) => (
             <StayCard
-              key={s.id}
-              id={s.id}
-              name={s.name}
-              meta={t(s.metaKey)}
-              rating={s.rating}
-              reviews={s.reviews}
-              price={s.price}
-              image={s.image}
-              isSaved={savedIds.includes(s.id)}
+              key={item.id}
+              id={item.id}
+              name={item.destination}
+              meta={item.hotel_name || item.country || ''}
+              rating={item.rating}
+              reviews={null}
+              price={item.price}
+              image={item.image || getDestinationImage(item.destination, item.id || 'stay')}
+              bookingUrl={item.booking_url}
+              isSaved={savedIds.includes(item.id)}
               onToggleSave={onToggleSave}
               t={t}
             />
@@ -696,6 +657,7 @@ function StayCard({
   reviews,
   price,
   image,
+  bookingUrl,
   isSaved,
   onToggleSave,
   t,
@@ -707,6 +669,7 @@ function StayCard({
   reviews: number | null;
   price: number;
   image: string;
+  bookingUrl?: string;
   isSaved: boolean;
   onToggleSave: (id: string) => void;
   t: (k: TranslationKey) => string;
@@ -716,6 +679,7 @@ function StayCard({
       className="nomaq-card bg-white/90 backdrop-blur-sm flex gap-3 p-3 items-stretch hover:shadow-card-hover transition-shadow duration-200 cursor-pointer"
       data-testid="feed-item"
       data-id={id}
+      onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank'); }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 rounded-2xl overflow-hidden min-h-[104px]">
         <img
