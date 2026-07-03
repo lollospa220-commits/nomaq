@@ -95,17 +95,25 @@ function compact(items: any[]) {
 /* ── Affiliate booking links, built server-side from the plan data ── */
 
 function flightBookingUrl(opt: TripOption, meta: TripPlan['meta']): string {
-  const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
+  // Kiwi.com per tutti i voli — nessun network russo (Aviasales/Jetradar).
   const isIata = (c?: string) => /^[A-Z]{3}$/.test(c || '');
+  const toDDMMYYYY = (iso?: string) => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return y && m && d ? `${d}-${m}-${y}` : '';
+  };
   const params = new URLSearchParams({
-    origin_iata: isIata(opt.fromCode) ? (opt.fromCode as string) : 'NAP',
-    adults: String(meta.travelers || 1),
-    marker,
+    from: isIata(opt.fromCode) ? (opt.fromCode as string) : 'NAP',
+    lang: 'it',
   });
-  if (isIata(opt.toCode)) params.set('destination_iata', opt.toCode as string);
-  if (meta.startDate) params.set('depart_date', meta.startDate);
-  if (meta.endDate) params.set('return_date', meta.endDate);
-  return `https://search.aviasales.com/flights/?${params.toString()}`;
+  if (isIata(opt.toCode)) params.set('to', opt.toCode as string);
+  const depart = toDDMMYYYY(meta.startDate);
+  if (depart) params.set('departure', depart);
+  const ret = toDDMMYYYY(meta.endDate);
+  if (ret) params.set('return', ret);
+  const kiwiAffilId = process.env.KIWI_AFFILIATE_ID;
+  if (kiwiAffilId) params.set('affilid', kiwiAffilId);
+  return `https://www.kiwi.com/deep?${params.toString()}`;
 }
 
 function hotelBookingUrl(h: HotelOption, meta: TripPlan['meta']): string {

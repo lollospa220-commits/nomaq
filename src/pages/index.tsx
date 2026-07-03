@@ -2575,22 +2575,43 @@ export default function Home({
     router.push(id === 'vola-vola' ? '/' : `/${id}`, undefined, { shallow: true });
   };
 
-  // Local keyword fallback: used when the AI endpoint errors or no
-  // DEEPSEEK_API_KEY is configured, so search still works either way.
+  // Parole troppo generiche per contare come match: da sole farebbero
+  // "corrispondere" quasi ogni voce del catalogo senza dire nulla di utile.
+  const SEARCH_STOPWORDS = new Set([
+    'a', 'ai', 'al', 'alla', 'con', 'da', 'dei', 'del', 'di', 'e', 'i', 'il',
+    'in', 'la', 'le', 'lo', 'per', 'sotto', 'un', 'una', 'vacanza', 'vacanze',
+    'volo', 'voli', 'weekend', 'the', 'to', 'for',
+  ]);
+
+  // Fallback locale: usato quando l'endpoint AI fallisce o manca
+  // DEEPSEEK_API_KEY, così la ricerca funziona comunque. Confronta singole
+  // parole significative (non l'intera frase) per non fallire su richieste
+  // in linguaggio naturale come "Weekend a Parigi"; se nessuna voce del
+  // catalogo corrisponde, mostra comunque tutto il catalogo con un avviso
+  // invece di lasciare l'utente davanti a una pagina vuota.
   const localFilter = (searchQuery: string) => {
-    const lowerQuery = searchQuery.toLowerCase();
-    const filteredFlights = allFlights.filter(f =>
-      f.destination.toLowerCase().includes(lowerQuery) ||
-      f.description.toLowerCase().includes(lowerQuery) ||
-      (f.country && f.country.toLowerCase().includes(lowerQuery))
-    );
-    const filteredHotels = allHotels.filter(h =>
-      h.destination.toLowerCase().includes(lowerQuery) ||
-      h.description.toLowerCase().includes(lowerQuery) ||
-      (h.country && h.country.toLowerCase().includes(lowerQuery))
-    );
-    setFlights(filteredFlights);
-    setHotels(filteredHotels);
+    const tokens = searchQuery
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((w) => w.length >= 3 && !SEARCH_STOPWORDS.has(w));
+
+    const matches = (item: any) => {
+      if (tokens.length === 0) return true;
+      const haystack = `${item.destination} ${item.description} ${item.country || ''}`.toLowerCase();
+      return tokens.some((tok) => haystack.includes(tok));
+    };
+
+    const filteredFlights = allFlights.filter(matches);
+    const filteredHotels = allHotels.filter(matches);
+
+    if (filteredFlights.length === 0 && filteredHotels.length === 0) {
+      setFlights(allFlights);
+      setHotels(allHotels);
+      setAiSummary(t('noExactMatch'));
+    } else {
+      setFlights(filteredFlights);
+      setHotels(filteredHotels);
+    }
   };
 
   const handleSearch = async (searchQuery: string) => {

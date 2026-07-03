@@ -50,6 +50,7 @@ const it = {
   tripExtras: 'trasporti + extra',
   tellNomaq: 'Dì a Nomaq il tuo budget, mood e date...',
   noOffers: 'Nessuna offerta disponibile',
+  noExactMatch: 'Nessuna corrispondenza esatta per la tua ricerca: ecco le offerte del momento.',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -248,6 +249,7 @@ const en: Record<TranslationKey, string> = {
   tripExtras: 'transport + extras',
   tellNomaq: 'Tell Nomaq your budget, mood and dates...',
   noOffers: 'No offers available',
+  noExactMatch: "No exact match for your search: here's what's trending right now.",
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',

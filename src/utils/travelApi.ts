@@ -4,11 +4,6 @@ import { getDestinationImage, ensureVariedImages } from './destinationImages';
 const DUFFEL_OFFERS_URL = 'https://api.duffel.com/air/offer_requests';
 const RAPIDAPI_HOTELS_URL = 'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels';
 
-// Airlines that pay no metasearch commission: route their offers to Kiwi.com
-// (Ryanair "Approved OTA" with easyJet direct integration, ~3% per booking
-// via the Travelpayouts Kiwi.com program) instead of Aviasales.
-const LCC_AIRLINES = ['ryanair', 'easyjet', 'wizz', 'vueling', 'volotea'];
-
 function resolveDestCode(item: any): string {
   if (item.dest_code) return item.dest_code;
   const key = `${item.destination || ''} ${item.id || ''}`.toLowerCase();
@@ -31,29 +26,18 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
   const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
 
   if (type === 'flight') {
+    // Kiwi.com per tutti i voli — nessun network russo (Aviasales/Jetradar).
+    // KIWI_AFFILIATE_ID è l'`affilid` del programma Kiwi.com su Travelpayouts
+    // (Programs > Kiwi.com > Links > "IT: Main page" > Copy link, poi leggi
+    // `affilid` nell'URL di destinazione): se assente il link resta un
+    // normale link di ricerca Kiwi.com, solo senza commissione tracciata.
     const destCode = resolveDestCode(item);
     const departureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-    // Low-cost carriers (Ryanair/easyJet/…) pay ~0% on metasearch redirects:
-    // send those clicks to Kiwi.com (sells both at real prices) when a Kiwi
-    // affiliate id is configured. KIWI_AFFILIATE_ID is the opaque `affilid`
-    // value from Travelpayouts' Kiwi.com "ready-made link" for this project
-    // (Programs > Kiwi.com > Links > "IT: Main page" > Copy link, then follow
-    // the redirect to read the `affilid` query param) — Kiwi has no deep-link
-    // generator UI, but its /deep endpoint still honors from/to/departure
-    // alongside that affilid.
+    const [y, m, d] = departureDate.split('-');
+    const params = new URLSearchParams({ from: 'MXP', to: destCode, departure: `${d}-${m}-${y}`, lang: 'it' });
     const kiwiAffilId = process.env.KIWI_AFFILIATE_ID;
-    const airline = String(item.airline || '').toLowerCase();
-    if (kiwiAffilId && LCC_AIRLINES.some((a) => airline.includes(a))) {
-      const [y, m, d] = departureDate.split('-');
-      const kiwiDate = `${d}-${m}-${y}`; // Kiwi's /deep endpoint expects DD-MM-YYYY
-      return `https://www.kiwi.com/deep?from=MXP&to=${destCode}&departure=${kiwiDate}&affilid=${kiwiAffilId}&lang=it`;
-    }
-
-    // Aviasales affiliate search link (Travelpayouts). jetradar.com is a dead
-    // brand (301 → aviasales.com) — link the current domain directly so the
-    // marker is never lost in the cross-domain redirect.
-    return `https://search.aviasales.com/flights/?origin_iata=MXP&destination_iata=${destCode}&depart_date=${departureDate}&adults=1&marker=${marker}`;
+    if (kiwiAffilId) params.set('affilid', kiwiAffilId);
+    return `https://www.kiwi.com/deep?${params.toString()}`;
   } else {
     // Booking.com affiliate search link
     const name = item.hotel_name || item.destination || 'Hotel';
