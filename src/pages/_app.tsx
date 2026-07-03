@@ -3,6 +3,7 @@ import type { AppProps } from 'next/app';
 import { AppStateProvider } from '@/context/AppState';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AuthProvider } from '@/context/AuthContext';
+import CookieBanner from '@/components/CookieBanner';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -13,6 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
           initialSavedItems={pageProps.initialSavedItems}
         >
           <Component {...pageProps} />
+          <CookieBanner />
         </AppStateProvider>
       </AuthProvider>
     </LanguageProvider>

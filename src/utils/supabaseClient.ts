@@ -27,7 +27,7 @@ const getMockDb = (): MockDb => {
 
 class MockQueryBuilder {
   private table: string;
-  private filters: Array<{ key: string; value: any }> = [];
+  private filters: Array<{ key: string; value: any; op: 'eq' | 'like' }> = [];
   private isDelete: boolean = false;
   private isCountOnly: boolean = false;
 
@@ -43,7 +43,12 @@ class MockQueryBuilder {
   }
 
   eq(key: string, value: any) {
-    this.filters.push({ key, value });
+    this.filters.push({ key, value, op: 'eq' });
+    return this;
+  }
+
+  like(key: string, pattern: string) {
+    this.filters.push({ key, value: pattern, op: 'like' });
     return this;
   }
 
@@ -52,12 +57,22 @@ class MockQueryBuilder {
     return this;
   }
 
+  private matchesFilters(item: any): boolean {
+    return this.filters.every((f) => {
+      if (f.op === 'like') {
+        // Converte il pattern SQL LIKE (% jolly) in regex, con escape del resto
+        const rx = new RegExp('^' + String(f.value).split('%').map((part) =>
+          part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
+        return rx.test(String(item[f.key] ?? ''));
+      }
+      return item[f.key] === f.value;
+    });
+  }
+
   async maybeSingle() {
     const db = getMockDb();
     const tableData = db[this.table] || [];
-    const filtered = tableData.filter((item: any) => {
-      return this.filters.every(f => item[f.key] === f.value);
-    });
+    const filtered = tableData.filter((item: any) => this.matchesFilters(item));
     return { data: filtered[0] || null, error: null };
   }
 
@@ -114,18 +129,14 @@ class MockQueryBuilder {
       const tableData = db[this.table] || [];
 
       if (this.isDelete) {
-        const remaining = tableData.filter((item: any) => {
-          return !this.filters.every(f => item[f.key] === f.value);
-        });
+        const remaining = tableData.filter((item: any) => !this.matchesFilters(item));
         const deletedCount = tableData.length - remaining.length;
         db[this.table] = remaining;
         const result = { data: null, error: null, count: deletedCount };
         return onfulfilled ? onfulfilled(result) : result;
       }
 
-      const filtered = tableData.filter((item: any) => {
-        return this.filters.every(f => item[f.key] === f.value);
-      });
+      const filtered = tableData.filter((item: any) => this.matchesFilters(item));
 
       const result = {
         data: filtered,

@@ -336,7 +336,10 @@ export default function WaitlistPage() {
           </div>
 
           <p className="text-anthracite-grey/30 text-xs mt-6">
-            © 2024 Nomaq · Privacy · Termini
+            © 2026 Nomaq ·{' '}
+            <Link href="/privacy" className="underline hover:text-anthracite-grey/60">Privacy</Link> ·{' '}
+            <Link href="/termini" className="underline hover:text-anthracite-grey/60">Termini</Link> ·{' '}
+            <Link href="/cookie-policy" className="underline hover:text-anthracite-grey/60">Cookie</Link>
           </p>
         </section>
       </main>

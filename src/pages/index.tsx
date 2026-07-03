@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import React from 'react';
 import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/router';
@@ -11,228 +12,6 @@ import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
 
-/* ─────────────────────────────────────────────
-   MOCK DATA
-───────────────────────────────────────────── */
-const FLIGHTS = [
-  {
-    id: 'flight-barcelona',
-    type: 'flight',
-    destination: 'Weekend a Barcellona',
-    country: 'Spagna',
-    price: 89,
-    originalPrice: 135,
-    description: 'Da Napoli · 2 notti · da 89€',
-    image: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?q=80&w=800&auto=format&fit=crop',
-    airline: 'EasyJet',
-    duration: '2h 10m',
-    date: 'Qualsiasi weekend',
-    rating: 4.8,
-    tag: 'BEST PRICE',
-    color: '#e05b7b',
-  },
-  {
-    id: 'flight-sicily',
-    type: 'flight',
-    destination: 'Mare in Sicilia',
-    country: 'Italia',
-    price: 129,
-    originalPrice: 195,
-    description: 'Partenza venerdì · hotel + volo · da 129€',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
-    airline: 'Ryanair',
-    duration: '1h 15m',
-    date: 'Partenza venerdì',
-    rating: 4.9,
-    tag: 'TOP CHOICES',
-    color: '#1a8a6b',
-  },
-  {
-    id: 'flight-bali',
-    type: 'flight',
-    destination: 'Bali',
-    country: 'Indonesia',
-    price: 389,
-    originalPrice: 620,
-    description: 'Spiagge di sabbia bianca, templi antichi e tramonti mozzafiato. Il paradiso esiste.',
-    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
-    airline: 'Qatar Airways',
-    duration: '14h 30m',
-    date: 'Lug 12 → Lug 19',
-    rating: 4.9,
-    tag: 'HOT DEAL',
-    color: '#1a8a6b',
-  },
-  {
-    id: 'flight-tokyo',
-    type: 'flight',
-    destination: 'Tokyo',
-    country: 'Giappone',
-    price: 541,
-    originalPrice: 890,
-    description: 'Metropoli futuristica incontra tradizione millenaria. Ramen, sakura e neon ovunque.',
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80',
-    airline: 'ANA Airlines',
-    duration: '12h 45m',
-    date: 'Ago 5 → Ago 15',
-    rating: 4.8,
-    tag: 'TOP PICK',
-    color: '#e05b7b',
-  },
-  {
-    id: 'flight-ny',
-    type: 'flight',
-    destination: 'New York',
-    country: 'Stati Uniti',
-    price: 312,
-    originalPrice: 480,
-    description: "The city that never sleeps. Brooklyn Bridge, Central Park e una pizza che vale il viaggio.",
-    image: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80',
-    airline: 'Delta Airlines',
-    duration: '10h 20m',
-    date: 'Set 1 → Set 8',
-    rating: 4.7,
-    tag: 'BEST PRICE',
-    color: '#3a6fbf',
-  },
-  {
-    id: 'flight-dubai',
-    type: 'flight',
-    destination: 'Dubai',
-    country: 'Emirati Arabi',
-    price: 245,
-    originalPrice: 420,
-    description: 'Grattacieli nel deserto, oro e lusso estremo. Un altro mondo, letteralmente.',
-    image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80',
-    airline: 'Emirates',
-    duration: '6h 15m',
-    date: 'Ott 10 → Ott 17',
-    rating: 4.9,
-    tag: 'FLASH DEAL',
-    color: '#d4a017',
-  },
-  {
-    id: 'flight-lisbon',
-    type: 'flight',
-    destination: 'Lisbona',
-    country: 'Portogallo',
-    price: 89,
-    originalPrice: 180,
-    description: 'Pastéis de nata, Fado e tramonti sull\'Atlantico. L\'Europa a portata di weekend.',
-    image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=800&q=80',
-    airline: 'TAP Portugal',
-    duration: '2h 50m',
-    date: 'Qualsiasi weekend',
-    rating: 4.8,
-    tag: 'WEEKEND',
-    color: '#e08030',
-  },
-];
-
-const HOTELS = [
-  {
-    id: 'hotel-santorini',
-    type: 'hotel',
-    destination: 'Santorini',
-    country: 'Grecia',
-    price: 180,
-    originalPrice: 320,
-    description: 'Suite con piscina a sfioro e vista panoramica sul calderone. Il tramonto più famoso del mondo.',
-    image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=80',
-    hotelName: 'Canaves Oia Suites',
-    stars: 5,
-    rating: 4.9,
-    nights: '7 notti',
-    date: 'Ago 20 → Ago 27',
-    tag: 'SUNSET VIEW',
-    color: '#4a90d9',
-  },
-  {
-    id: 'hotel-maldive',
-    type: 'hotel',
-    destination: 'Maldive',
-    country: 'Maldive',
-    price: 450,
-    originalPrice: 780,
-    description: 'Bungalow sull\'acqua cristallina. Coralli, mante e silenzi. La vacanza della vita.',
-    image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80',
-    hotelName: 'Baros Maldives',
-    stars: 5,
-    rating: 5.0,
-    nights: '10 notti',
-    date: 'Nov 1 → Nov 10',
-    tag: 'PARADISE',
-    color: '#00b4d8',
-  },
-  {
-    id: 'hotel-paris',
-    type: 'hotel',
-    destination: 'Parigi',
-    country: 'Francia',
-    price: 210,
-    originalPrice: 380,
-    description: 'Hotel boutique nel Marais con vista sulla Tour Eiffel. Colazione francese inclusa.',
-    image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80',
-    hotelName: 'Le Marais Secret',
-    stars: 4,
-    rating: 4.7,
-    nights: '5 notti',
-    date: 'Set 15 → Set 20',
-    tag: 'CITY VIEW',
-    color: '#8e5ea2',
-  },
-  {
-    id: 'hotel-amalfi',
-    type: 'hotel',
-    destination: 'Costiera Amalfitana',
-    country: 'Italia',
-    price: 195,
-    originalPrice: 340,
-    description: 'Terrazze sul mare, limoni e borghi color pastello. La dolce vita a picco sul blu.',
-    image: 'https://images.unsplash.com/photo-1533656338503-b22f63e96cd8?w=800&q=80',
-    hotelName: 'Villa Positano',
-    stars: 4,
-    rating: 4.8,
-    nights: '4 notti',
-    date: 'Giu 10 → Giu 14',
-    tag: 'SUNSET VIEW',
-    color: '#e08030',
-  },
-  {
-    id: 'hotel-rome',
-    type: 'hotel',
-    destination: 'Roma',
-    country: 'Italia',
-    price: 140,
-    originalPrice: 245,
-    description: 'Boutique hotel a due passi dal Pantheon. Colazione sul rooftop con vista cupole.',
-    image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80',
-    hotelName: 'Pantheon Suites',
-    stars: 4,
-    rating: 4.6,
-    nights: '3 notti',
-    date: 'Ott 3 → Ott 6',
-    tag: 'CITY VIEW',
-    color: '#8e5ea2',
-  },
-  {
-    id: 'hotel-barcelona',
-    type: 'hotel',
-    destination: 'Barcellona',
-    country: 'Spagna',
-    price: 165,
-    originalPrice: 290,
-    description: 'Design hotel nel Born, tapas bar e piscina panoramica sul tetto. Gaudí ovunque.',
-    image: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80',
-    hotelName: 'Casa Born',
-    stars: 4,
-    rating: 4.7,
-    nights: '4 notti',
-    date: 'Set 5 → Set 9',
-    tag: 'BEST RATE',
-    color: '#4a90d9',
-  },
-];
 
 const MOCK_DROPS = [
   {
@@ -965,11 +744,13 @@ function StayCard({
         <div>
           <h3 className="text-sm lg:text-base font-bold text-nomaq-navy truncate">{name}</h3>
           <p className="text-[11px] text-slate-500 truncate mt-0.5">{meta}</p>
-          <div className="flex items-center gap-1 text-[11px] mt-1.5">
-            <Star className="w-3 h-3 fill-nomaq-indigo text-nomaq-indigo" />
-            <span className="font-bold text-nomaq-indigo">{rating}</span>
-            {reviews !== null && <span className="text-slate-400">· {reviews} {t('reviews')}</span>}
-          </div>
+          {rating != null && (
+            <div className="flex items-center gap-1 text-[11px] mt-1.5">
+              <Star className="w-3 h-3 fill-nomaq-indigo text-nomaq-indigo" />
+              <span className="font-bold text-nomaq-indigo">{rating}</span>
+              {reviews !== null && <span className="text-slate-400">· {reviews} {t('reviews')}</span>}
+            </div>
+          )}
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-nomaq-navy">
@@ -2711,9 +2492,9 @@ export default function Home({
         if (Array.isArray(data)) {
           const formatted = data.map((item: any) => ({
             ...item,
-            originalPrice: Number(item.original_price),
+            originalPrice: item.original_price ? Number(item.original_price) : null,
             price: Number(item.price),
-            rating: Number(item.rating),
+            rating: item.rating ? Number(item.rating) : null,
             stars: item.stars ? Number(item.stars) : undefined,
             date: item.date_info || item.date,
           }));
@@ -2730,9 +2511,9 @@ export default function Home({
         if (Array.isArray(data)) {
           const formatted = data.map((item: any) => ({
             ...item,
-            originalPrice: Number(item.original_price),
+            originalPrice: item.original_price ? Number(item.original_price) : null,
             price: Number(item.price),
-            rating: Number(item.rating),
+            rating: item.rating ? Number(item.rating) : null,
             stars: item.stars ? Number(item.stars) : undefined,
             date: item.date_info || item.date,
           }));
@@ -2842,17 +2623,11 @@ export default function Home({
 
   const dismissNotif = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id));
 
-  // Pad the feed with curated mock deals (deduped by destination) so the
-  // grid always fills at least 6 uniform cards. Skipped in E2E and while a
-  // search filter is active.
-  const feedByTab = React.useMemo(() => {
-    const base = currentTab === 'vola-vola' ? flights : hotels;
-    if (isE2E || activeSearch || base.length >= 6) return base;
-    const mockPool = currentTab === 'vola-vola' ? FLIGHTS : HOTELS;
-    const seen = new Set(base.map((i: any) => String(i.destination).toLowerCase()));
-    const extras = mockPool.filter((m) => !seen.has(m.destination.toLowerCase()));
-    return [...base, ...extras];
-  }, [currentTab, flights, hotels, isE2E, activeSearch]);
+  // Feed = only rows coming from the API layer. Mock deals must never be
+  // mixed into the live feed: they carry invented prices indistinguishable
+  // from real offers (the padding this replaced was the primary source of
+  // "prices don't match" complaints).
+  const feedByTab = currentTab === 'vola-vola' ? flights : hotels;
 
   // Dynamic greeting: personalized when logged in, generic otherwise
   const firstName = (
@@ -3194,17 +2969,6 @@ export default function Home({
                 )}
               </div>
 
-              {/* Bottom suggestion card - preserved under the horizontal carousel */}
-              {feedByTab.length > 0 && (
-                <div className="mx-5 lg:mx-6 mb-4 mt-2">
-                  <div className="nomaq-card p-4 flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
-                    <span className="text-sm text-slate-500 flex-1">{t('tellNomaq')}</span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  </div>
-                </div>
-              )}
-
               {/* FAQ */}
               <FaqSection />
             </>
@@ -3256,6 +3020,20 @@ export default function Home({
               ))}
             </div>
           )}
+
+          {/* ── Footer legale (tutti i tab) ── */}
+          <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
+            <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-400" aria-label="Link legali">
+              <Link href="/note-legali" className="hover:text-nomaq-indigo transition-colors">{t('footerLegal')}</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/termini" className="hover:text-nomaq-indigo transition-colors">{t('footerTerms')}</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/privacy" className="hover:text-nomaq-indigo transition-colors">{t('footerPrivacy')}</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/cookie-policy" className="hover:text-nomaq-indigo transition-colors">{t('footerCookies')}</Link>
+            </nav>
+            <p className="text-2xs text-slate-300 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
+          </footer>
 
           {/* ── Bottom Nav ── */}
           <BottomNav
@@ -3314,23 +3092,25 @@ export async function getServerSideProps(context: any) {
     }
   }
 
-  // Map to common formats for server-side render
+  // Map to common formats for server-side render. originalPrice and rating
+  // pass through only when a real value exists: inventing a markup or a
+  // rating here would show fake discounts/stars on every card.
   let formattedFlights = flights.map((item: any) => ({
     ...item,
-    originalPrice: Number(item.original_price || item.originalPrice || item.price * 1.5),
+    originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
     price: Number(item.price),
-    rating: Number(item.rating || 4.5),
+    rating: item.rating ? Number(item.rating) : null,
     stars: item.stars ? Number(item.stars) : null,
-    date: item.date_info || item.date || 'Test Date',
+    date: item.date_info || item.date || '',
   }));
 
   let formattedHotels = hotels.map((item: any) => ({
     ...item,
-    originalPrice: Number(item.original_price || item.originalPrice || item.price * 1.5),
+    originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
     price: Number(item.price),
-    rating: Number(item.rating || 4.5),
+    rating: item.rating ? Number(item.rating) : null,
     stars: item.stars ? Number(item.stars) : null,
-    date: item.date_info || item.date || 'Test Date',
+    date: item.date_info || item.date || '',
   }));
 
   // Handle empty feed override for tests

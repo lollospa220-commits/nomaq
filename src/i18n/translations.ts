@@ -152,6 +152,17 @@ const it = {
   conciergeGreeting: 'Ciao! Sono il tuo concierge AI ✨ Posso consigliarti ristoranti, costruire itinerari, tradurre frasi e risolvere imprevisti di viaggio. Come posso aiutarti?',
   conciergeError: 'Il concierge non è al momento disponibile. Riprova tra qualche istante.',
 
+  /* ── Cookie banner ── */
+  cookieBannerText: 'Nomaq utilizza solo cookie tecnici, necessari al funzionamento del sito. Niente profilazione, niente marketing.',
+  cookieBannerPolicy: 'Cookie Policy',
+  cookieBannerOk: 'OK',
+
+  /* ── Footer legale ── */
+  footerLegal: 'Note legali',
+  footerTerms: 'Termini',
+  footerPrivacy: 'Privacy',
+  footerCookies: 'Cookie Policy',
+
   /* ── Auth / Profilo ── */
   authSignInTitle: 'Bentornato su Nomaq',
   authSignUpTitle: 'Crea il tuo account',
@@ -350,6 +361,17 @@ const en: Record<TranslationKey, string> = {
   askConcierge: 'Ask your concierge...',
   conciergeGreeting: "Hi! I'm your AI concierge ✨ I can recommend restaurants, build itineraries, translate phrases and solve travel hiccups. How can I help?",
   conciergeError: 'The concierge is unavailable right now. Please try again in a moment.',
+
+  /* ── Cookie banner ── */
+  cookieBannerText: 'Nomaq only uses technical cookies, required for the site to work. No profiling, no marketing.',
+  cookieBannerPolicy: 'Cookie Policy',
+  cookieBannerOk: 'OK',
+
+  /* ── Footer legale ── */
+  footerLegal: 'Legal notice',
+  footerTerms: 'Terms',
+  footerPrivacy: 'Privacy',
+  footerCookies: 'Cookie Policy',
 
   /* ── Auth / Profilo ── */
   authSignInTitle: 'Welcome back to Nomaq',
