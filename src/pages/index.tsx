@@ -2,7 +2,7 @@ import Head from 'next/head';
 import SEO from '@/components/SEO';
 import Link from 'next/link';
 import React from 'react';
-import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, Utensils, Map, Languages, Ticket, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppState, TabId } from '@/context/AppState';
 import { TranslationKey } from '@/i18n/translations';
@@ -1268,6 +1268,40 @@ const RADAR_TODAY: RadarDrop[] = [
   { id: 'radar-parigi-atene', from: 'Parigi', to: 'Atene', oldPrice: 430, newPrice: 300, airline: 'Transavia', dateIt: 'Giu 20', dateEn: 'Jun 20', monthIdx: 5, minsAgo: 9, img: 'athens' },
 ];
 
+/* City → IATA (metro codes where available) for building real Kiwi deep links
+   from Radar's curated routes. Covers every city used in the RADAR_* lists. */
+const CITY_IATA: Record<string, string> = {
+  parigi: 'PAR', paris: 'PAR',
+  'new york': 'NYC', newyork: 'NYC',
+  bali: 'DPS',
+  milano: 'MIL', milan: 'MIL',
+  tokyo: 'TYO',
+  roma: 'ROM', rome: 'ROM',
+  napoli: 'NAP', naples: 'NAP',
+  lisbona: 'LIS', lisbon: 'LIS',
+  santorini: 'JTR',
+  berlino: 'BER', berlin: 'BER',
+  reykjavik: 'REK',
+  amsterdam: 'AMS',
+  barcellona: 'BCN', barcelona: 'BCN',
+  marrakech: 'RAK',
+  atene: 'ATH', athens: 'ATH',
+};
+
+/* Real Kiwi.com affiliate deep link for a city→city route, replacing the old
+   generic google.com/flights dead-ends. When affilId (server KIWI_AFFILIATE_ID)
+   is present the click is tracked for commission; when absent it is still a
+   working Kiwi route search — never a dead end. */
+function buildKiwiDeepLink(from: string, to: string, affilId?: string): string {
+  const params = new URLSearchParams({ lang: 'it' });
+  const f = CITY_IATA[(from || '').trim().toLowerCase()];
+  const t = CITY_IATA[(to || '').trim().toLowerCase()];
+  if (f) params.set('from', f);
+  if (t) params.set('to', t);
+  if (affilId) params.set('affilid', affilId);
+  return `https://www.kiwi.com/deep?${params.toString()}`;
+}
+
 function RadarBadges({ d, small = false }: { d: RadarDrop; small?: boolean }) {
   const dropAmt = d.oldPrice - d.newPrice;
   const pct = Math.round((dropAmt / d.oldPrice) * 100);
@@ -1290,13 +1324,13 @@ function RadarRoute({ d, className = '' }: { d: RadarDrop; className?: string })
   );
 }
 
-function RadarBigCard({ d }: { d: RadarDrop }) {
-  const { t, lang } = useLanguage();
+function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
+  const { lang } = useLanguage();
   return (
     <div
       className="bg-white rounded-3xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
       data-testid={`drop-item-${d.id}`}
-      onClick={() => window.open('https://www.google.com/flights', '_blank')}
+      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative h-36 lg:h-40">
         <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
@@ -1306,7 +1340,7 @@ function RadarBigCard({ d }: { d: RadarDrop }) {
         <div className="min-w-0">
           <RadarRoute d={d} className="text-base" />
           <p className="text-xs text-slate-400 mt-1 truncate">
-            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn} · {d.minsAgo} {t('minAgo')}
+            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn}
           </p>
         </div>
         <div className="text-right flex-shrink-0">
@@ -1318,13 +1352,13 @@ function RadarBigCard({ d }: { d: RadarDrop }) {
   );
 }
 
-function RadarCompactCard({ d }: { d: RadarDrop }) {
-  const { t, lang } = useLanguage();
+function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
+  const { lang } = useLanguage();
   return (
     <div
       className="bg-white rounded-2xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex items-stretch"
       data-testid={`drop-item-${d.id}`}
-      onClick={() => window.open('https://www.google.com/flights', '_blank')}
+      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
         <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
@@ -1334,7 +1368,7 @@ function RadarCompactCard({ d }: { d: RadarDrop }) {
         <div className="min-w-0">
           <RadarRoute d={d} className="text-sm" />
           <p className="text-[11px] text-slate-400 mt-1 truncate">
-            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn} · {d.minsAgo} {t('minAgo')}
+            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -1351,7 +1385,7 @@ function RadarCompactCard({ d }: { d: RadarDrop }) {
   );
 }
 
-function RadarView({ simulatedDrops }: { simulatedDrops: any[] }) {
+function RadarView({ simulatedDrops, kiwiAffiliateId }: { simulatedDrops: any[]; kiwiAffiliateId?: string }) {
   const { t, lang } = useLanguage();
   const [city, setCity] = React.useState('Napoli');
   const [month, setMonth] = React.useState<number | null>(null);
@@ -1510,7 +1544,9 @@ function RadarView({ simulatedDrops }: { simulatedDrops: any[] }) {
           ) : (
             <div className="grid gap-5 lg:grid-cols-3">
               {items.map((d) =>
-                compact ? <RadarCompactCard key={d.id} d={d} /> : <RadarBigCard key={d.id} d={d} />
+                compact
+                  ? <RadarCompactCard key={d.id} d={d} affilId={kiwiAffiliateId} />
+                  : <RadarBigCard key={d.id} d={d} affilId={kiwiAffiliateId} />
               )}
             </div>
           )}
@@ -1708,30 +1744,6 @@ function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; a
           </div>
         </div>
         <p className="text-slate-500 text-sm">{t('conciergeSubtitle')}</p>
-      </div>
-
-      {/* Proactive Trip Widget */}
-      <div className="px-5 mb-4">
-        <div className="relative bg-white/70 backdrop-blur-lg border border-white/80 rounded-2xl p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-nomaq-indigo uppercase tracking-wide mb-0.5">{t('nextTrip')}</p>
-              <p className="text-sm font-bold text-nomaq-navy">Tokyo, Giappone 🇯🇵</p>
-              <p className="text-xs text-slate-500 mt-0.5">{t('in12Days')}</p>
-            </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
-              <div className="flex items-center gap-1">
-                <CloudSun className="w-4 h-4 text-amber-400" />
-                <span className="text-sm font-bold text-nomaq-navy">24°C</span>
-              </div>
-              <span className="text-[10px] text-slate-400">{t('weatherClear')}</span>
-            </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-[11px] text-slate-500">{t('allConfirmed')}</span>
-          </div>
-        </div>
       </div>
 
       {/* Quick Actions */}
@@ -2285,6 +2297,7 @@ export default function Home({
   initialWaitlistError,
   initialWaitlistSubmitted,
   initialWaitlistEmail,
+  kiwiAffiliateId,
 }: any) {
   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
   const { t, lang } = useLanguage();
@@ -2972,7 +2985,7 @@ export default function Home({
                 <DropsView simulatedDrops={simulatedDrops} isE2E={isE2E} onSimulateDrop={handleSimulateDrop} />
               </div>
             ) : (
-              <RadarView simulatedDrops={simulatedDrops} />
+              <RadarView simulatedDrops={simulatedDrops} kiwiAffiliateId={kiwiAffiliateId} />
             )
           )}
 
@@ -3233,6 +3246,9 @@ export async function getServerSideProps(context: any) {
       initialWaitlistError,
       initialWaitlistSubmitted,
       initialWaitlistEmail,
+      // Affiliate marker is inherently public (it ends up in outbound URLs);
+      // exposing it lets the client build tracked Kiwi deep links for Radar.
+      kiwiAffiliateId: process.env.KIWI_AFFILIATE_ID || '',
     },
   };
 }
