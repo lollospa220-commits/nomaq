@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import SEO from '@/components/SEO';
 import React from 'react';
 import { Share2, ArrowRight, Check, Star, TrendingDown, Bell, MapPin, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
@@ -100,14 +101,13 @@ export default function WaitlistPage() {
 
   return (
     <>
+      <SEO 
+        title="Nomaq — Entra in lista d'attesa. Vola al prezzo giusto."
+        description="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale. Sii il primo a saperlo."
+      />
       <Head>
-        <title>Nomaq — Entra in lista d'attesa. Vola al prezzo giusto.</title>
-        <meta name="description" content="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale. Unisciti a 2.847 viaggiatori che risparmiano in media €247 a viaggio." />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
         <meta name="theme-color" content="#4F46E5" />
-        <meta property="og:title" content="Nomaq — Vola al Prezzo Giusto" />
-        <meta property="og:description" content="L'app che ti avvisa quando i prezzi crollano. Sii il primo a saperlo." />
-        <meta property="og:image" content="https://nomaq.app/og.png" />
       </Head>
 
       <main

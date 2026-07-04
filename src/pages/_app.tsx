@@ -5,6 +5,7 @@ import { AppStateProvider } from '@/context/AppState';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AuthProvider } from '@/context/AuthContext';
 import CookieBanner from '@/components/CookieBanner';
+import { Analytics } from '@vercel/analytics/react';
 
 // Font self-hostati via next/font: nessuna richiesta a fonts.googleapis.com a
 // runtime (rilevante per la privacy policy) e un solo caricamento per l'app.
@@ -34,6 +35,7 @@ export default function App({ Component, pageProps }: AppProps) {
           `}</style>
           <Component {...pageProps} />
           <CookieBanner />
+          <Analytics />
         </AppStateProvider>
       </AuthProvider>
     </LanguageProvider>
