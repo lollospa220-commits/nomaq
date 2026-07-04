@@ -41,7 +41,7 @@ export default function WaitlistPage() {
   const [submitted, setSubmitted] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
-  const [count, setCount] = React.useState(2847);
+  const [count, setCount] = React.useState(0); // Start at 0, no fake inflation
 
   React.useEffect(() => {
     // Recupera il numero reale di iscritti salvati nel database
@@ -49,13 +49,11 @@ export default function WaitlistPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.count !== undefined) {
-          setCount(2847 + data.count);
-        } else {
-          setCount(2847 + Math.floor(Math.random() * 50));
+          setCount(data.count); // Mostra solo i dati reali
         }
       })
       .catch(() => {
-        setCount(2847 + Math.floor(Math.random() * 50));
+        // Fallimento silenzioso se DB non connesso, resta a 0 o mostra -
       });
   }, []);
 

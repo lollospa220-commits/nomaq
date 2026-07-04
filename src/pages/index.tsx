@@ -2375,7 +2375,12 @@ export default function Home({
       const res = await fetch('/api/ai-trip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: trimmed, flights: allFlights, hotels: allHotels, lang }),
+        body: JSON.stringify({
+          query: trimmed,
+          flights: allFlights.slice(0, 60),
+          hotels: allHotels.slice(0, 60),
+          lang,
+        }),
       });
       if (!res.ok) throw new Error('ai-trip unavailable');
       const data = await res.json();
