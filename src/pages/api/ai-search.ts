@@ -1,10 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { interpretTravelQuery } from '@/utils/aiSearch';
+import { createRateLimiter } from '@/utils/rateLimit';
+
+const limiter = createRateLimiter({ max: 20 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
+  if (limiter.isRateLimited(req)) {
+    return res.status(429).json({ error: 'Troppe richieste. Riprova tra poco.' });
   }
 
   const { query, flights, hotels, lang } = req.body || {};
@@ -14,13 +21,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const result = await interpretTravelQuery({
-      query,
-      flights: Array.isArray(flights) ? flights : [],
-      hotels: Array.isArray(hotels) ? hotels : [],
+      query: query.slice(0, 2000),
+      flights: Array.isArray(flights) ? flights.slice(0, 60) : [],
+      hotels: Array.isArray(hotels) ? hotels.slice(0, 60) : [],
       lang,
     });
     return res.status(200).json(result);
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    console.error('[ai-search] Error:', err.message);
+    return res.status(500).json({ error: 'Si è verificato un errore interno.' });
   }
 }

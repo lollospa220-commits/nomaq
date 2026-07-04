@@ -14,7 +14,16 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const generateUUID = () => {
-  return 'session-' + Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
+  // crypto.randomUUID is supported in all modern browsers and produces
+  // a cryptographically secure UUID v4 — unlike Math.random().
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return 'session-' + crypto.randomUUID();
+  }
+  // Fallback for older environments: crypto.getRandomValues
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return 'session-' + hex;
 };
 
 export const AppStateProvider: React.FC<{

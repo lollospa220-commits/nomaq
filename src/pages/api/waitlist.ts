@@ -1,31 +1,45 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/utils/supabaseClient';
+import { createRateLimiter } from '@/utils/rateLimit';
+
+const getLimiter = createRateLimiter({ max: 30 });
+const postLimiter = createRateLimiter({ max: 5 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
+    if (getLimiter.isRateLimited(req)) {
+      return res.status(429).json({ error: 'Troppe richieste. Riprova tra poco.' });
+    }
+
     try {
       const { count, error } = await supabase
         .from('waitlist')
         .select('*', { count: 'exact', head: true });
 
       if (error) {
-        return res.status(500).json({ error: error.message });
+        console.error('[waitlist] GET error:', error.message);
+        return res.status(500).json({ error: 'Si è verificato un errore interno.' });
       }
 
       return res.status(200).json({ count: count || 0 });
     } catch (err: any) {
-      return res.status(500).json({ error: err.message });
+      console.error('[waitlist] GET error:', err.message);
+      return res.status(500).json({ error: 'Si è verificato un errore interno.' });
     }
   }
 
   if (req.method === 'POST') {
+    if (postLimiter.isRateLimited(req)) {
+      return res.status(429).json({ error: 'Troppe richieste. Riprova tra poco.' });
+    }
+
     const { email } = req.body;
 
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ error: 'Email è richiesta' });
     }
 
-    const trimmed = email.trim();
+    const trimmed = email.trim().slice(0, 320);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmed)) {
       return res.status(400).json({ error: 'Formato email non valido' });
@@ -40,12 +54,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (error.code === '23505') {
           return res.status(409).json({ error: 'Questa email è già registrata alla nostra waitlist!' });
         }
-        return res.status(500).json({ error: error.message });
+        console.error('[waitlist] POST error:', error.message);
+        return res.status(500).json({ error: 'Si è verificato un errore interno.' });
       }
 
       return res.status(201).json({ success: true });
     } catch (err: any) {
-      return res.status(500).json({ error: err.message });
+      console.error('[waitlist] POST error:', err.message);
+      return res.status(500).json({ error: 'Si è verificato un errore interno.' });
     }
   }
 

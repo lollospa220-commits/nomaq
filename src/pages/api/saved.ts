@@ -1,14 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/utils/supabaseClient';
+import { createRateLimiter } from '@/utils/rateLimit';
+
+const limiter = createRateLimiter({ max: 30 });
+
+// Validate session ID format to prevent enumeration and injection.
+// Accepts both the old format (session-<base36>-<base36>) and the new
+// crypto.randomUUID format (session-<uuid>) and hex fallback (session-<32hex>).
+const SESSION_ID_RE = /^session-[a-z0-9-]{8,50}$/;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
+
+  if (limiter.isRateLimited(req)) {
+    return res.status(429).json({ error: 'Troppe richieste. Riprova tra poco.' });
+  }
 
   if (method === 'GET') {
     const { sessionId } = req.query;
 
     if (!sessionId || typeof sessionId !== 'string') {
       return res.status(400).json({ error: 'Session ID richiesto' });
+    }
+
+    if (!SESSION_ID_RE.test(sessionId)) {
+      return res.status(400).json({ error: 'Formato Session ID non valido' });
     }
 
     try {
@@ -18,12 +34,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('session_id', sessionId);
 
       if (savedError) {
-        return res.status(500).json({ error: savedError.message });
+        console.error('[saved] GET error:', savedError.message);
+        return res.status(500).json({ error: 'Si è verificato un errore interno.' });
       }
 
       return res.status(200).json(savedItems || []);
     } catch (err: any) {
-      return res.status(500).json({ error: err.message });
+      console.error('[saved] GET error:', err.message);
+      return res.status(500).json({ error: 'Si è verificato un errore interno.' });
     }
   }
 
@@ -32,6 +50,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!itemId || !itemType || !sessionId) {
       return res.status(400).json({ error: 'Dati mancanti (itemId, itemType, sessionId)' });
+    }
+
+    if (typeof sessionId !== 'string' || !SESSION_ID_RE.test(sessionId)) {
+      return res.status(400).json({ error: 'Formato Session ID non valido' });
+    }
+
+    if (typeof itemId !== 'string' || itemId.length > 200) {
+      return res.status(400).json({ error: 'Formato itemId non valido' });
+    }
+
+    if (typeof itemType !== 'string' || !['flight', 'hotel'].includes(itemType)) {
+      return res.status(400).json({ error: 'itemType deve essere "flight" o "hotel"' });
     }
 
     try {
@@ -50,7 +80,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .eq('item_id', itemId);
 
         if (deleteError) {
-          return res.status(500).json({ error: deleteError.message });
+          console.error('[saved] DELETE error:', deleteError.message);
+          return res.status(500).json({ error: 'Si è verificato un errore interno.' });
         }
 
         return res.status(200).json({ action: 'removed', itemId });
@@ -66,13 +97,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ]);
 
         if (insertError) {
-          return res.status(500).json({ error: insertError.message });
+          console.error('[saved] INSERT error:', insertError.message);
+          return res.status(500).json({ error: 'Si è verificato un errore interno.' });
         }
 
         return res.status(201).json({ action: 'added', itemId });
       }
     } catch (err: any) {
-      return res.status(500).json({ error: err.message });
+      console.error('[saved] Error:', err.message);
+      return res.status(500).json({ error: 'Si è verificato un errore interno.' });
     }
   }
 
