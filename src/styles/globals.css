@@ -127,18 +127,26 @@
     background: rgba(79, 70, 229, 0.06);
   }
 
-  /* ── Feed card ── */
+  /* ── Feed card ──
+     Radius 16px = rounded-2xl del markup (prima 20px in conflitto).
+     Hover: lift + ombra, niente scale (lo scale sfoca il testo). */
   .feed-card {
     position: relative;
-    border-radius: 20px;
+    border-radius: 16px;
     overflow: hidden;
     background: white;
+    border: 1px solid rgba(15, 23, 42, 0.04);
     box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .feed-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06);
   }
 
   .feed-card:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.99);
   }
 
   /* ── Drop badge (preserved for test compat) ── */
@@ -200,6 +208,21 @@
     background: #4F46E5;
     color: white;
     border-color: #4F46E5;
+  }
+
+  /* ── Tag badge (single restrained treatment, no per-category rainbow) ── */
+  .nomaq-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(79, 70, 229, 0.07);
+    color: #4F46E5;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 }
 
@@ -281,20 +304,20 @@
   }
 
   .slide-up {
-    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .bounce-in {
-    animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: bounceIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @keyframes bounceIn {
-    from { opacity: 0; transform: scale(0.85); }
+    from { opacity: 0; transform: scale(0.96); }
     to { opacity: 1; transform: scale(1); }
   }
 
@@ -323,5 +346,68 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* ── Search aura (anello conico rotante attorno alla barra AI) ── */
+  .search-aura { position: relative; }
+  .search-aura::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    background: conic-gradient(
+      from 0deg,
+      rgba(124, 58, 237, 0) 0deg,
+      rgba(124, 58, 237, 0.55) 90deg,
+      rgba(79, 70, 229, 0.55) 180deg,
+      rgba(167, 139, 250, 0.55) 270deg,
+      rgba(124, 58, 237, 0) 360deg
+    );
+    filter: blur(11px);
+    opacity: 0.55;
+    transition: opacity 0.4s ease;
+    animation: aura-spin 6s linear infinite;
+  }
+  .search-aura--active::before { opacity: 0.95; }
+  @keyframes aura-spin {
+    to { transform: rotate(1turn); }
+  }
+
+  /* ── Marquee (righe di tag a scorrimento continuo, direzioni opposte) ──
+     Ogni chip porta il proprio margine destro: le due metà del track sono
+     identiche, così translateX(-50%) chiude il loop senza scatti. */
+  .marquee {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+  .marquee__track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+  }
+  .marquee__track--right { animation: marquee-right 46s linear infinite; }
+  .marquee__track--left { animation: marquee-left 54s linear infinite; }
+  .marquee:hover .marquee__track,
+  .marquee:focus-within .marquee__track { animation-play-state: paused; }
+  @keyframes marquee-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes marquee-right {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .search-aura::before { animation: none; }
+    .marquee__track--right,
+    .marquee__track--left { animation: none; }
+    .marquee {
+      overflow-x: auto;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .marquee::-webkit-scrollbar { display: none; }
   }
 }

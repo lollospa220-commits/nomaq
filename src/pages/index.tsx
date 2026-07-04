@@ -236,23 +236,9 @@ function FeedCard({
   const rawTag = item.tag || '';
   const cleanTag = rawTag.replace(/^[^\w\s]+\s*/, '').trim();
 
-  const tagColors: Record<string, string> = {
-    'BEST PRICE': 'bg-emerald-50 text-emerald-700',
-    'TOP PICK': 'bg-violet-50 text-violet-700',
-    'HOT DEAL': 'bg-rose-50 text-rose-700',
-    'FLASH DEAL': 'bg-amber-50 text-amber-700',
-    'WEEKEND': 'bg-blue-50 text-blue-700',
-    'SUNSET VIEW': 'bg-orange-50 text-orange-700',
-    'PARADISE': 'bg-cyan-50 text-cyan-700',
-    'CITY VIEW': 'bg-purple-50 text-purple-700',
-    'BEST RATE': 'bg-violet-50 text-violet-700',
-    'FLIGHT DEAL': 'bg-blue-50 text-blue-700',
-  };
-  const tagClass = tagColors[cleanTag] || 'bg-slate-50 text-slate-700';
-
   return (
     <div
-      className="feed-card glassmorphism glass-card animate-slide-up rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform duration-200 flex flex-col overflow-hidden w-full h-full"
+      className="feed-card animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group"
       data-testid="feed-item"
       data-id={item.id}
       onClick={() => {
@@ -261,12 +247,12 @@ function FeedCard({
         }
       }}
     >
-      {/* Image (Top half) */}
-      <div className="relative w-full h-28 lg:h-44 flex-shrink-0 overflow-hidden rounded-t-2xl">
+      {/* Image (Top half) — zoom lento su hover, cifra tipica dei siti premium */}
+      <div className="relative w-full h-28 lg:h-44 flex-shrink-0 overflow-hidden">
         <img
           src={item.image || getDestinationImage(item.destination, item.id || 'item')}
           alt={item.destination}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           loading="lazy"
           onError={(e) => {
             const fallback = getDestinationImage(item.destination, item.id || 'item');
@@ -283,55 +269,53 @@ function FeedCard({
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
-          className={`absolute top-2 left-2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${isSaved
-            ? 'bg-nomaq-lavender filled text-electric-orange'
-            : 'bg-white/80 backdrop-blur-sm'
-            }`}
+          aria-label={isSaved ? 'Rimuovi dai preferiti' : 'Salva nei preferiti'}
+          className={`absolute top-2 left-2 w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-200 ${
+            isSaved ? 'bg-nomaq-lavender' : 'bg-white/85 backdrop-blur-sm'
+          }`}
         >
           <Heart
-            className={`w-4 h-4 transition-all ${isSaved ? 'text-nomaq-violet fill-nomaq-violet' : 'text-slate-400'}`}
-            strokeWidth={2}
+            className={`w-4 h-4 transition-colors ${isSaved ? 'text-nomaq-violet fill-nomaq-violet' : 'text-slate-500'}`}
+            strokeWidth={1.5}
           />
         </button>
+        {/* Tag in overlay sull'immagine: il titolo sotto resta a piena larghezza
+            (a 375px badge+titolo sulla stessa riga spezzavano "Weekend a…") */}
+        {cleanTag && (
+          <span className="nomaq-badge absolute top-2 right-2 bg-white/90 backdrop-blur-sm">{cleanTag}</span>
+        )}
       </div>
 
       {/* Content (Bottom half) */}
-      <div className="flex-1 p-3 flex flex-col justify-between min-w-0 bg-white/40">
-        {/* Row 1: Destination title (left) and Tag badge (right).
-            line-clamp-2 (non truncate): a 375px la colonna è stretta e un
-            titolo come "Weekend a Barcellona" diventerebbe "Weeke…". */}
-        <div className="flex justify-between items-start gap-2 mb-1 min-h-[32px] lg:min-h-0">
-          <h3 className="text-xs lg:text-base font-bold text-nomaq-navy leading-snug line-clamp-2 flex-1">{item.destination}</h3>
-          {cleanTag && (
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-bold ${tagClass} flex-shrink-0`}>
-              <Sparkles className="w-2 h-2 mr-0.5 inline-block" /> {cleanTag}
-            </span>
-          )}
+      <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0 bg-white/40">
+        {/* Row 1: titolo a piena larghezza (il tag vive sull'immagine) */}
+        <div className="mb-1 min-h-[36px] lg:min-h-0">
+          <h3 className="text-sm lg:text-base font-semibold text-nomaq-navy leading-snug line-clamp-2">{item.destination}</h3>
         </div>
 
         {/* Row 2: Descriptive text / Flight details */}
-        <p className="text-[10px] lg:text-xs text-slate-500 leading-snug line-clamp-2 mb-2 min-h-[28px] lg:min-h-[32px]">{item.description}</p>
+        <p className="text-xs text-slate-500 leading-snug line-clamp-2 mb-2.5 min-h-[32px]">{item.description}</p>
 
         {/* Row 3 (Footer): Country/Airline (left) and Prices (right) */}
         <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-1 text-slate-400 text-[9px] truncate flex-1 pr-1">
+          <div className="flex items-center gap-1.5 text-slate-500 text-[11px] truncate flex-1 pr-1">
             {item.type === 'flight' ? (
               <>
-                <Plane className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                <Plane className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                 <span className="truncate">{item.airline || 'Airline'}</span>
               </>
             ) : (
               <>
-                <Hotel className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                <Hotel className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                 <span className="truncate">{item.hotelName || item.country}</span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0 text-xs">
+          <div className="flex items-baseline gap-1.5 flex-shrink-0 tabular-nums">
             {discount > 0 && (
-              <span className="text-slate-400 text-[10px] line-through">€{item.originalPrice}</span>
+              <span className="text-slate-400 text-[11px] line-through">€{item.originalPrice}</span>
             )}
-            <span className="text-nomaq-indigo font-bold">€{item.price}</span>
+            <span className="text-nomaq-indigo font-semibold text-sm">€{item.price}</span>
           </div>
         </div>
       </div>
@@ -2605,51 +2589,55 @@ export default function Home({
     .trim()
     .split(/\s+/)[0];
   const greeting = user && firstName
-    ? `${t('welcomeBack')}, ${firstName} ✈️`
-    : `${t('welcome')} ✈️`;
+    ? `${t('welcomeBack')}, ${firstName}`
+    : t('welcome');
 
-  // Quick suggestion data for home view
+  // Quick suggestion data for home view.
+  // Icone monocrome a tratto sottile (1.5): un solo accento (Sorprendimi),
+  // il resto neutro — niente arcobaleno di pallini colorati.
   const quickSuggestions = [
     {
-      icon: <Wand2 className="w-3.5 h-3.5 text-nomaq-violet animate-pulse" strokeWidth={2.5} />,
+      icon: <Wand2 className="w-4 h-4 text-nomaq-indigo" strokeWidth={1.5} />,
       text: t('surpriseMe'),
-      bg: 'bg-nomaq-lavender/50',
       isSurprise: true,
     },
     {
-      icon: <Plane className="w-3.5 h-3.5 text-blue-500" strokeWidth={2.5} />,
+      icon: <Plane className="w-4 h-4 text-slate-400" strokeWidth={1.5} />,
       text: t('flightsUnder100'),
-      bg: 'bg-blue-50/80'
     },
-    { 
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-violet-500">
-          <path d="M3 5c6-2 12-2 18 0M5 9h14M8 5v15M16 5v15" />
-        </svg>
-      ), 
+    {
+      icon: <MapPin className="w-4 h-4 text-slate-400" strokeWidth={1.5} />,
       text: t('oneWayJapan'),
-      bg: 'bg-violet-50/80'
     },
-    { 
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-orange-500">
-          <path d="M12 2v20M5 21a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2M7 19l2-7h6l2 7M10 12l2-7 2 7M9 15h6" />
-        </svg>
-      ), 
+    {
+      icon: <Landmark className="w-4 h-4 text-slate-400" strokeWidth={1.5} />,
       text: t('weekendParis'),
-      bg: 'bg-orange-50/80'
     },
     {
-      icon: <Palmtree className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2.5} />,
+      icon: <Palmtree className="w-4 h-4 text-slate-400" strokeWidth={1.5} />,
       text: t('beachHolidays'),
-      bg: 'bg-emerald-50/80'
     },
     {
-      icon: <Snowflake className="w-3.5 h-3.5 text-sky-500" strokeWidth={2.5} />,
+      icon: <Snowflake className="w-4 h-4 text-slate-400" strokeWidth={1.5} />,
       text: t('skiTrips'),
-      bg: 'bg-sky-50/80'
     },
   ];
+
+  // Seconda riga del marquee (scorre in senso opposto): sole label, tono
+  // destinazione/vibe, nessuna icona — così le due righe non sembrano gemelle.
+  const marqueeRowB = [
+    t('chipCityBreak'), t('chipLastMinute'), t('chipRomantic'),
+    t('chipTropical'), t('chipUnder300'), t('chipAurora'),
+  ];
+  const surpriseQueries = [
+    'Weekend a Parigi sotto i 150€',
+    'Spiaggia tropicale a Dicembre',
+    'Gita in montagna low cost',
+    'Volo diretto last minute',
+    'Migliori hotel a Tokyo',
+  ];
+  const runQuick = (text: string) => { setAiQuery(text); handleSearch(text); };
+  const runSurprise = () => runQuick(surpriseQueries[Math.floor(Math.random() * surpriseQueries.length)]);
 
   return (
     <>
@@ -2709,168 +2697,162 @@ export default function Home({
           {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
           {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
             <div className="px-5 lg:px-6 mb-5">
-              {/* Centered top block; two-column hero on desktop */}
-              <div className="text-center mb-6 lg:mb-12 lg:pt-12 lg:grid lg:grid-cols-[1fr_1.4fr] lg:gap-12 lg:items-center lg:text-left">
-                {/* Left column: greeting + headline + tagline */}
-                <div className="lg:pr-2">
-                  <p className="text-slate-500 text-sm font-medium mb-2 select-none" data-testid="home-greeting">
+              {/* Hero: stack verticale centrato (titolo → search → 2 marquee di tag) */}
+              <div className="relative mb-8 lg:mb-14 lg:pt-14">
+                {/* Foreground */}
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  {/* Eyebrow */}
+                  <p className="text-slate-500 text-[11px] font-medium uppercase tracking-[0.18em] mb-3 select-none" data-testid="home-greeting">
                     {greeting}
                   </p>
-                  <h1 className="font-display text-display-md lg:text-display-lg text-nomaq-navy leading-tight mb-5 lg:mb-4">
-                    {t('headline')}<span className="text-[#EC4899] font-sans font-bold">?</span>
+                  {/* Titolo */}
+                  <h1 className="font-display text-display-md lg:text-display-lg text-nomaq-navy leading-tight mb-3">
+                    {t('headline')}<span className="italic text-nomaq-indigo">?</span>
                   </h1>
-                  <p className="hidden lg:block text-slate-500 text-base leading-relaxed max-w-sm">
+                  {/* Tagline (slate-600: contrasto sicuro sopra i pixel dell'orb) */}
+                  <p className="text-slate-600 text-sm lg:text-base leading-relaxed max-w-md mb-7">
                     {t('heroTagline')}
                   </p>
-                </div>
 
-                {/* Right column: AI search + filters + quick suggestions */}
-                <div className="lg:min-w-0">
-                {/* AI Search bar (Centered, relative container) */}
-                <div className="relative mx-auto mb-3">
-                  <div className="bg-white/95 backdrop-blur-md rounded-full shadow-soft flex items-center h-16 pl-5 pr-2 border border-white/60 text-left">
-                    {/* Center text input */}
-                    <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
-                      <input
-                        type="text"
-                        value={aiQuery}
-                        onChange={(e) => setAiQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleSearch(aiQuery);
-                          }
-                        }}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                        placeholder={t('searchPlaceholder')}
-                        className="w-full bg-transparent border-none outline-none text-slate-800 text-xs sm:text-sm leading-snug font-medium placeholder-slate-400 focus:ring-0 focus:outline-none"
-                      />
-                    </div>
-                    
-                    {/* Separator */}
-                    <div className="h-6 w-px bg-slate-100 mx-3" />
-                    
-                    {/* Right Sparkles Image Button */}
-                    <button 
-                      onClick={() => handleSearch(aiQuery)}
-                      disabled={isSearching}
-                      className="w-12 h-12 flex items-center justify-center flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none"
-                    >
-                      {isSearching ? (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-nomaq-violet to-nomaq-indigo flex items-center justify-center shadow-soft">
-                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
+                  {/* AI Search bar con anello aura animato */}
+                  <div className="relative w-full max-w-2xl">
+                    <div className={`search-aura rounded-full ${isFocused ? 'search-aura--active' : ''}`}>
+                      <div className="relative bg-white/95 backdrop-blur-md rounded-full shadow-soft flex items-center h-16 pl-6 pr-2 border border-white/70 text-left">
+                        <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
+                          <input
+                            type="text"
+                            value={aiQuery}
+                            onChange={(e) => setAiQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSearch(aiQuery);
+                              }
+                            }}
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                            placeholder={t('searchPlaceholder')}
+                            className="w-full bg-transparent border-none outline-none text-slate-800 text-base leading-snug font-normal placeholder-slate-400 focus:ring-0 focus:outline-none"
+                          />
                         </div>
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-white border border-slate-100 shadow-soft flex items-center justify-center">
-                          <ThreeSparklesIcon className="w-7 h-7 text-nomaq-navy" />
-                        </div>
-                      )}
-                    </button>
-                  </div>
 
-                  {/* Absolute Dropdown for recent searches */}
-                  {isFocused && (
-                    <div className="absolute left-0 right-0 top-[68px] z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-2xl p-4 border border-slate-100 text-left animate-fade-in">
-                      <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>
-                      <div className="flex flex-col gap-2">
+                        {/* Separator */}
+                        <div className="h-6 w-px bg-slate-100 mx-3" />
+
+                        {/* Right Sparkles Button */}
                         <button
-                          onMouseDown={() => {
-                            setAiQuery(t('recentSearch1'));
-                            handleSearch(t('recentSearch1'));
-                          }}
-                          className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
+                          onClick={() => handleSearch(aiQuery)}
+                          disabled={isSearching}
+                          aria-label={t('searchPlaceholder')}
+                          className="w-12 h-12 flex items-center justify-center flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none"
                         >
-                          <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{t('recentSearch1')}</span>
-                        </button>
-                        <button
-                          onMouseDown={() => {
-                            setAiQuery(t('recentSearch2'));
-                            handleSearch(t('recentSearch2'));
-                          }}
-                          className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
-                        >
-                          <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{t('recentSearch2')}</span>
+                          {isSearching ? (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-nomaq-violet to-nomaq-indigo flex items-center justify-center shadow-soft">
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-white border border-slate-100 shadow-soft flex items-center justify-center">
+                              <ThreeSparklesIcon className="w-7 h-7 text-nomaq-navy" />
+                            </div>
+                          )}
                         </button>
                       </div>
+                    </div>
+
+                    {/* Dropdown ricerche recenti */}
+                    {isFocused && (
+                      <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-2xl p-4 border border-slate-100 text-left animate-fade-in">
+                        <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onMouseDown={() => runQuick(t('recentSearch1'))}
+                            className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
+                          >
+                            <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />
+                            <span className="truncate">{t('recentSearch1')}</span>
+                          </button>
+                          <button
+                            onMouseDown={() => runQuick(t('recentSearch2'))}
+                            className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
+                          >
+                            <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />
+                            <span className="truncate">{t('recentSearch2')}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI trip generation status */}
+                  {isSearching && (
+                    <div className="flex items-center justify-center gap-2 mt-4 text-xs font-semibold text-nomaq-violet animate-pulse" data-testid="trip-loading">
+                      <ThreeSparklesIcon className="w-4 h-4" />
+                      {t('tripLoading')}
                     </div>
                   )}
-                </div>
 
-                {/* AI trip generation status */}
-                {isSearching && (
-                  <div className="flex items-center justify-center gap-2 mt-3 text-xs font-semibold text-nomaq-violet animate-pulse" data-testid="trip-loading">
-                    <ThreeSparklesIcon className="w-4 h-4" />
-                    {t('tripLoading')}
-                  </div>
-                )}
-
-                {/* Compact Filters Row (Micro-UI) */}
-                <div className="flex flex-row gap-2 mt-3 overflow-x-auto lg:overflow-visible lg:flex-wrap scrollbar-none [&::-webkit-scrollbar]:hidden w-full px-1 scroll-fade-x">
-                  <button className="rounded-full px-3 py-1 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white/45 transition-colors whitespace-nowrap">
-                    {t('filterDirect')}
-                  </button>
-                  <button className="rounded-full px-3 py-1 text-xs font-medium border border-nomaq-indigo/30 bg-nomaq-lavender/50 text-nomaq-violet hover:bg-nomaq-lavender/70 transition-colors whitespace-nowrap">
-                    {t('filterLuggage')}
-                  </button>
-                  <button className="rounded-full px-3 py-1 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white/45 transition-colors whitespace-nowrap">
-                    {t('filterFlexible')}
-                  </button>
-                </div>
-
-                {/* Combined Tag & Sorprendimi Row */}
-                <div className="flex flex-row items-center justify-start gap-2 overflow-x-auto lg:overflow-visible lg:flex-wrap lg:pb-0 pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden w-full mt-6 lg:mt-4 scroll-fade-x">
-                  {quickSuggestions.map((s) => (
-                    <button 
-                      key={s.text} 
-                      onClick={() => {
-                        if (s.isSurprise) {
-                          const randomQueries = [
-                            'Weekend a Parigi sotto i 150€',
-                            'Spiaggia tropicale a Dicembre',
-                            'Gita in montagna low cost',
-                            'Volo diretto last minute',
-                            'Migliori hotel a Tokyo'
-                          ];
-                          const selected = randomQueries[Math.floor(Math.random() * randomQueries.length)];
-                          setAiQuery(selected);
-                          handleSearch(selected);
-                        } else {
-                          setAiQuery(s.text);
-                          handleSearch(s.text);
-                        }
-                      }}
-                      className={`nomaq-pill text-xs flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm transition-all duration-200 flex-shrink-0 ${
-                        s.isSurprise 
-                          ? 'border-nomaq-indigo/35 bg-nomaq-lavender/40 text-nomaq-violet hover:bg-nomaq-lavender/60' 
-                          : 'border-slate-100/90 bg-white/95 hover:border-nomaq-indigo/30 text-slate-700'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${s.bg}`}>
-                        {s.icon}
+                  {/* Due righe di tag in marquee, direzioni opposte.
+                      Riga A → verso destra · Riga B → verso sinistra.
+                      Pausa su hover/focus per rendere i chip cliccabili. */}
+                  <div className="w-full mt-8 space-y-3">
+                    <div className="marquee">
+                      <div className="marquee__track marquee__track--right">
+                        {[...quickSuggestions, ...quickSuggestions].map((s, i) => {
+                          const dup = i >= quickSuggestions.length;
+                          return (
+                            <button
+                              key={`a-${i}`}
+                              aria-hidden={dup ? 'true' : undefined}
+                              tabIndex={dup ? -1 : 0}
+                              onClick={() => (s.isSurprise ? runSurprise() : runQuick(s.text))}
+                              className={`mr-3 flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-soft transition-colors duration-200 whitespace-nowrap ${
+                                s.isSurprise
+                                  ? 'border-nomaq-indigo/30 bg-nomaq-lavender/40 hover:bg-nomaq-lavender/60'
+                                  : 'border-slate-200/80 bg-white/90 hover:border-nomaq-indigo/30'
+                              }`}
+                            >
+                              {s.icon}
+                              <span className={`text-xs font-medium ${s.isSurprise ? 'text-nomaq-indigo' : 'text-slate-600'}`}>{s.text}</span>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <span className={`text-[11px] font-semibold ${s.isSurprise ? 'text-nomaq-violet' : 'text-slate-700'}`}>{s.text}</span>
-                    </button>
-                  ))}
-                </div>
+                    </div>
+                    <div className="marquee">
+                      <div className="marquee__track marquee__track--left">
+                        {[...marqueeRowB, ...marqueeRowB].map((label, i) => {
+                          const dup = i >= marqueeRowB.length;
+                          return (
+                            <button
+                              key={`b-${i}`}
+                              aria-hidden={dup ? 'true' : undefined}
+                              tabIndex={dup ? -1 : 0}
+                              onClick={() => runQuick(label)}
+                              className="mr-3 px-4 py-2.5 rounded-full border border-slate-200/80 bg-white/80 text-xs font-medium text-slate-600 hover:border-nomaq-indigo/30 hover:text-nomaq-navy transition-colors whitespace-nowrap"
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Section label row */}
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-                  <span className="text-sm lg:text-base font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
+              {/* Section label row — serif come gli altri titoli di sezione (FAQ, Radar) */}
+              <div className="flex items-baseline justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-nomaq-indigo" strokeWidth={1.5} />
+                  <h2 className="font-display text-xl lg:text-2xl text-nomaq-navy">{t('pickedForYou')}</h2>
                 </div>
                 <button
                   onClick={() => setShowAllDeals(!showAllDeals)}
-                  className="hidden lg:flex items-center gap-1 text-sm font-semibold text-nomaq-indigo hover:text-nomaq-violet transition-colors"
+                  className="hidden lg:flex items-center gap-1 text-sm font-medium text-nomaq-indigo hover:text-nomaq-violet transition-colors"
                 >
-                  {t('seeAllDeals')} <ArrowRight className="w-4 h-4" />
+                  {t('seeAllDeals')} <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </button>
               </div>
             </div>
