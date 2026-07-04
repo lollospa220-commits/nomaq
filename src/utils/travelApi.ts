@@ -5,6 +5,30 @@ const DUFFEL_OFFERS_URL = 'https://api.duffel.com/air/offer_requests';
 const TRAVELPAYOUTS_PRICES_URL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
 const RAPIDAPI_HOTELS_URL = 'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels';
 
+// ── In-memory result cache ──────────────────────────────────────────────
+// Both getServerSideProps and the /api/{flights,hotels} routes call the
+// fetchers, and each fetcher seeds Supabase + hits external APIs (Duffel /
+// Travelpayouts / RapidAPI, up to 10s each). Without caching, every page view
+// repeats all of that. A serverless isolate lives long enough that a short TTL
+// collapses bursts of requests into a single upstream round-trip. Prices for a
+// deals feed don't need sub-10-minute freshness. A non-empty result is cached
+// for 10 min; an empty one (transient upstream failure) only for 30s so the
+// feed recovers quickly.
+const FULL_TTL_MS = 10 * 60 * 1000;
+const EMPTY_TTL_MS = 30 * 1000;
+type CacheEntry = { expiresAt: number; data: any[] };
+const resultCache = new Map<string, CacheEntry>();
+
+async function withCache(key: string, produce: () => Promise<any[]>): Promise<any[]> {
+  const now = Date.now();
+  const hit = resultCache.get(key);
+  if (hit && now < hit.expiresAt) return hit.data;
+  const data = await produce();
+  const ttl = Array.isArray(data) && data.length > 0 ? FULL_TTL_MS : EMPTY_TTL_MS;
+  resultCache.set(key, { expiresAt: now + ttl, data });
+  return data;
+}
+
 // Mix of European LCC routes (easyJet is on Duffel via Direct Connect;
 // Ryanair is not distributed by Duffel) and long-haul picks. Shared by the
 // Travelpayouts and Duffel fetchers.
@@ -317,7 +341,11 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
 }
 
 // Fetch Flights: Travelpayouts (prezzi reali) → Duffel (solo token live) → cache Supabase
-export async function fetchRealFlights() {
+export function fetchRealFlights() {
+  return withCache('flights', computeRealFlights);
+}
+
+async function computeRealFlights() {
   await seedDefaultRows();
 
   // 1) Travelpayouts prima di Duffel: sono prezzi di mercato reali.
@@ -473,7 +501,11 @@ function parseHotelPrice(raw: any): number | null {
 }
 
 // Fetch Hotels via RapidAPI (TripAdvisor/Booking)
-export async function fetchRealHotels() {
+export function fetchRealHotels() {
+  return withCache('hotels', computeRealHotels);
+}
+
+async function computeRealHotels() {
   await seedDefaultRows();
 
   const rapidApiKey = process.env.RAPIDAPI_KEY;

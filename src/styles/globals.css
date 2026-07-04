@@ -26,14 +26,20 @@
     position: relative;
   }
 
-  /* Background image - Senza titolo */
+  /* Ambient background: pure CSS mesh gradient (replaces a 776 KB bg.png that
+     was fetched full-screen on every route). Zero bytes, zero requests, no
+     LCP/bandwidth cost — soft lavender (top-left) → warm peach (top-right) →
+     airy blue (bottom), over a near-white base. */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -1;
-    background: url('/images/bg.png') no-repeat center center;
-    background-size: cover;
+    background:
+      radial-gradient(60% 55% at 100% 0%, rgba(251, 211, 141, 0.55) 0%, rgba(251, 211, 141, 0) 60%),
+      radial-gradient(65% 60% at 0% 0%, rgba(167, 139, 250, 0.45) 0%, rgba(167, 139, 250, 0) 60%),
+      radial-gradient(80% 70% at 50% 118%, rgba(191, 219, 254, 0.5) 0%, rgba(191, 219, 254, 0) 62%),
+      linear-gradient(180deg, #f7f5ff 0%, #ffffff 55%, #fbfaff 100%);
   }
 
   /* Custom scrollbar */

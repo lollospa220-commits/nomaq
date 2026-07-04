@@ -2449,6 +2449,7 @@ export default function Home({
         if (Array.isArray(data)) {
           const formatted = data.map((item: any) => ({
             ...item,
+            type: item.type || 'flight',
             originalPrice: item.original_price ? Number(item.original_price) : null,
             price: Number(item.price),
             rating: item.rating ? Number(item.rating) : null,
@@ -2468,6 +2469,8 @@ export default function Home({
         if (Array.isArray(data)) {
           const formatted = data.map((item: any) => ({
             ...item,
+            type: item.type || 'hotel',
+            hotelName: item.hotel_name || item.hotelName || null,
             originalPrice: item.original_price ? Number(item.original_price) : null,
             price: Number(item.price),
             rating: item.rating ? Number(item.rating) : null,
@@ -2645,13 +2648,50 @@ export default function Home({
   const runQuick = (text: string) => { setAiQuery(text); handleSearch(text); };
   const runSurprise = () => runQuick(surpriseQueries[Math.floor(Math.random() * surpriseQueries.length)]);
 
+  // ── Structured data (JSON-LD) for rich results. FAQPage is emitted only on
+  // the home tab, where the FAQ is actually rendered on the page. ──
+  const jsonLdGraph: any[] = [
+    {
+      '@type': 'Organization',
+      '@id': 'https://nomaq.app/#organization',
+      name: 'Nomaq',
+      url: 'https://nomaq.app',
+      logo: 'https://nomaq.app/images/logo.png',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://nomaq.app/#website',
+      url: 'https://nomaq.app',
+      name: 'Nomaq',
+      inLanguage: lang === 'en' ? 'en' : 'it',
+      publisher: { '@id': 'https://nomaq.app/#organization' },
+    },
+  ];
+  if (currentTab === 'vola-vola') {
+    jsonLdGraph.push({
+      '@type': 'FAQPage',
+      mainEntity: [1, 2, 3, 4, 5, 6].map((n) => ({
+        '@type': 'Question',
+        name: t(`faq${n}q` as TranslationKey),
+        acceptedAnswer: { '@type': 'Answer', text: t(`faq${n}a` as TranslationKey) },
+      })),
+    });
+  }
+  const jsonLd = { '@context': 'https://schema.org', '@graph': jsonLdGraph };
+
   return (
     <>
+      <SEO
+        title="Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI"
+        description="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno."
+      />
       <Head>
-        <title>Nomaq — Smart Travel Deals</title>
-        <meta name="description" content="Nomaq: l'app che rileva i crolli di prezzo su voli e hotel in tempo reale. Vola di più, spendi meno." />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#4F46E5" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </Head>
 
       <main className="min-h-screen pb-24 lg:pb-10" data-testid="app-root">
@@ -3048,6 +3088,7 @@ export async function getServerSideProps(context: any) {
   // rating here would show fake discounts/stars on every card.
   let formattedFlights = flights.map((item: any) => ({
     ...item,
+    type: item.type || 'flight',
     originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
     price: Number(item.price),
     rating: item.rating ? Number(item.rating) : null,
@@ -3057,6 +3098,8 @@ export async function getServerSideProps(context: any) {
 
   let formattedHotels = hotels.map((item: any) => ({
     ...item,
+    type: item.type || 'hotel',
+    hotelName: item.hotel_name || item.hotelName || null,
     originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
     price: Number(item.price),
     rating: item.rating ? Number(item.rating) : null,
@@ -3166,6 +3209,13 @@ export async function getServerSideProps(context: any) {
   }
   if (query.error) {
     initialWaitlistError = String(query.error);
+  }
+
+  // Let the CDN cache the anonymous shell — greeting, saved items and auth are
+  // all resolved client-side, so the server HTML is identical for every
+  // anonymous visitor. Never cache E2E / query-param-driven variants.
+  if (!isE2E && Object.keys(query).length === 0 && context.res) {
+    context.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
   }
 
   return {

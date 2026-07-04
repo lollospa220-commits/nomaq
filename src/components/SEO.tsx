@@ -11,11 +11,14 @@ interface SEOProps {
 export default function SEO({
   title = 'Nomaq — Vola al Prezzo Giusto',
   description = "L'app che monitora le rotte in tempo reale e ti avvisa quando i prezzi di voli e hotel crollano.",
-  image = 'https://nomaq.app/og.png',
+  image = 'https://nomaq.app/images/logo.png',
   type = 'website',
 }: SEOProps) {
   const router = useRouter();
-  const canonicalUrl = `https://nomaq.app${router.asPath === '/' ? '' : router.asPath}`;
+  // Strip query string from the canonical: ?saved=…, ?drops=… etc. are UI
+  // state, not distinct indexable pages.
+  const path = (router.asPath || '/').split('?')[0];
+  const canonicalUrl = `https://nomaq.app${path === '/' ? '' : path}`;
 
   return (
     <Head>
@@ -25,6 +28,8 @@ export default function SEO({
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
+      <meta property="og:site_name" content="Nomaq" />
+      <meta property="og:locale" content="it_IT" />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />

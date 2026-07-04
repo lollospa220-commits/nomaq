@@ -106,7 +106,7 @@ export default function WaitlistPage() {
         description="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale. Sii il primo a saperlo."
       />
       <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#4F46E5" />
       </Head>
 
