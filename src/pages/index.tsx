@@ -2714,10 +2714,9 @@ export default function Home({
                     {t('heroTagline')}
                   </p>
 
-                  {/* AI Search bar con anello aura animato */}
+                  {/* AI Search bar */}
                   <div className="relative w-full max-w-2xl">
-                    <div className={`search-aura rounded-full ${isFocused ? 'search-aura--active' : ''}`}>
-                      <div className="relative bg-white/95 backdrop-blur-md rounded-full shadow-soft flex items-center h-16 pl-6 pr-2 border border-white/70 text-left">
+                    <div className="relative bg-white/95 backdrop-blur-md rounded-full shadow-soft flex items-center h-16 pl-6 pr-2 border border-slate-100 text-left">
                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
                           <input
                             type="text"
@@ -2759,9 +2758,8 @@ export default function Home({
                           )}
                         </button>
                       </div>
-                    </div>
 
-                    {/* Dropdown ricerche recenti */}
+                      {/* Dropdown ricerche recenti */}
                     {isFocused && (
                       <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-2xl p-4 border border-slate-100 text-left animate-fade-in">
                         <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>

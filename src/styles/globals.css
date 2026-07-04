@@ -347,32 +347,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
-  /* ── Search aura (anello conico rotante attorno alla barra AI) ── */
-  .search-aura { position: relative; }
-  .search-aura::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 9999px;
-    background: conic-gradient(
-      from 0deg,
-      rgba(124, 58, 237, 0) 0deg,
-      rgba(124, 58, 237, 0.55) 90deg,
-      rgba(79, 70, 229, 0.55) 180deg,
-      rgba(167, 139, 250, 0.55) 270deg,
-      rgba(124, 58, 237, 0) 360deg
-    );
-    filter: blur(11px);
-    opacity: 0.55;
-    transition: opacity 0.4s ease;
-    animation: aura-spin 6s linear infinite;
-  }
-  .search-aura--active::before { opacity: 0.95; }
-  @keyframes aura-spin {
-    to { transform: rotate(1turn); }
-  }
-
   /* ── Marquee (righe di tag a scorrimento continuo, direzioni opposte) ──
      Ogni chip porta il proprio margine destro: le due metà del track sono
      identiche, così translateX(-50%) chiude il loop senza scatti. */
@@ -400,7 +374,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .search-aura::before { animation: none; }
     .marquee__track--right,
     .marquee__track--left { animation: none; }
     .marquee {
