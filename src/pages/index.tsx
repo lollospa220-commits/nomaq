@@ -75,11 +75,11 @@ const MOCK_DROPS = [
    UI COMPONENTS
 ───────────────────────────────────────────── */
 
-function NomaqLogo() {
+function NomaqLogo({ isDarkBackground }: { isDarkBackground?: boolean }) {
   return (
     <div className="flex items-center justify-center py-4">
       <img
-        src="/images/logo.png"
+        src={isDarkBackground ? "/images/logo-white.png" : "/images/logo.png"}
         alt="Nomaq Logo"
         className="h-[90px] w-auto object-contain"
         loading="eager"
@@ -89,7 +89,7 @@ function NomaqLogo() {
 }
 
 /* ── Language Switcher (IT/EN) ── */
-function LanguageSwitcher() {
+function LanguageSwitcher({ isDarkBackground }: { isDarkBackground?: boolean }) {
   const { lang, setLang } = useLanguage();
   return (
     <div
@@ -118,7 +118,7 @@ function LanguageSwitcher() {
 
 
 /* ── Desktop top navbar ── */
-function DesktopNav({ activeTab, onNavigate }: { activeTab: TabId; onNavigate: (id: TabId) => void }) {
+function DesktopNav({ activeTab, onNavigate, isDarkBackground }: { activeTab: TabId; onNavigate: (id: TabId) => void; isDarkBackground?: boolean }) {
   const { t } = useLanguage();
   const items: { id: TabId; label: string }[] = [
     { id: 'vola-vola', label: t('navFlights') },
@@ -134,8 +134,9 @@ function DesktopNav({ activeTab, onNavigate }: { activeTab: TabId; onNavigate: (
     >
       <div className="max-w-6xl mx-auto h-20 px-6 flex items-center justify-between">
         <img
-          src="/images/logo.png"
+          src={isDarkBackground ? "/images/logo-white.png" : "/images/logo.png"}
           alt="Nomaq"
+          onError={(e) => { e.currentTarget.src = "/images/logo.png" }}
           className="h-[60px] w-auto object-contain cursor-pointer -ml-8"
           onClick={() => onNavigate('vola-vola')}
         />
@@ -151,7 +152,9 @@ function DesktopNav({ activeTab, onNavigate }: { activeTab: TabId; onNavigate: (
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
                   isActive
                     ? 'bg-nomaq-lavender text-nomaq-indigo'
-                    : 'text-nomaq-navy hover:bg-slate-50 hover:text-nomaq-indigo'
+                    : isDarkBackground 
+                      ? 'text-white hover:bg-white/10 hover:text-white'
+                      : 'text-nomaq-navy hover:bg-slate-50 hover:text-nomaq-indigo'
                 }`}
               >
                 {item.label}
@@ -1999,10 +2002,8 @@ export default function Home({
       </a>
 
       <main id="main-content" className="min-h-screen pb-24 lg:pb-10 relative z-0" data-testid="app-root">
-        {/* Full-screen fixed globe background */}
-        <GlobeGL />
         {/* ── Desktop top navbar ── */}
-        <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} />
+        <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
 
         <div className={`mx-auto ${queryObj.desktop === 'true' ? 'max-w-4xl' : 'max-w-md lg:max-w-6xl'}`}>
           {/* Hidden active view for tests */}
@@ -2010,9 +2011,9 @@ export default function Home({
 
           {/* ── Logo Header (with language switcher) — mobile only ── */}
           <div className="relative lg:hidden">
-            <NomaqLogo />
+            <NomaqLogo isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
             <div className="absolute right-5 top-1/2 -translate-y-1/2">
-              <LanguageSwitcher />
+              <LanguageSwitcher isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
             </div>
           </div>
 
@@ -2049,6 +2050,9 @@ export default function Home({
           {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
           {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
             <div className="px-5 lg:px-6 mb-5">
+              {/* Full-screen fixed globe background rendered only when Hero is active */}
+              <GlobeGL />
+
               {/* Hero: ora trasparente, fa vedere il GlobeGL fisso sul retro. */}
               <div className="relative mb-8 lg:mb-14 px-5 py-12 lg:px-10 lg:py-20">
                 {/* Velo per staccare il testo dal globo e dare profondità */}

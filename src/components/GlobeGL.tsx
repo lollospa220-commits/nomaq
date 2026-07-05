@@ -92,7 +92,7 @@ export default function GlobeGL() {
       .ringRepeatPeriod(1700);
 
     // Inquadratura: Europa/Africa in vista, alba in alto
-    globe.pointOfView({ lat: 22, lng: 8, altitude: 2.2 }, 0);
+    globe.pointOfView({ lat: 22, lng: 8, altitude: 1.1 }, 0);
 
     // Controlli: niente interazione utente, solo auto-rotazione lenta
     const controls = globe.controls();
@@ -145,5 +145,7 @@ export default function GlobeGL() {
     };
   }, []);
 
-  return <div ref={ref} className="fixed inset-0 w-screen h-screen -z-50 pointer-events-none" aria-hidden="true" />;
+  // Aggiungiamo un background scuro al canvas container così il globo scuro
+  // non fluttua sul body chiaro, creando il look "dark mode premium".
+  return <div ref={ref} className="fixed inset-0 w-screen h-screen -z-50 pointer-events-none bg-[#0a0a1a]" aria-hidden="true" />;
 }
