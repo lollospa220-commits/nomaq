@@ -1998,7 +1998,7 @@ export default function Home({
         Salta al contenuto
       </a>
 
-      <main id="main-content" className="min-h-screen pb-24 lg:pb-10 relative" data-testid="app-root">
+      <main id="main-content" className="min-h-screen pb-24 lg:pb-10 relative z-0" data-testid="app-root">
         {/* Full-screen fixed globe background */}
         <GlobeGL />
         {/* ── Desktop top navbar ── */}
