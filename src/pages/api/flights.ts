@@ -16,6 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const flights = await fetchRealFlights();
+    // Deals feed tolerates minutes of staleness; let the CDN serve it.
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1800');
     return res.status(200).json(flights);
   } catch (err: any) {
     console.error('[flights] Error:', err.message);

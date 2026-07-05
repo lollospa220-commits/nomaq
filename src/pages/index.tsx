@@ -13,6 +13,11 @@ import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
+import { buildKiwiDeepLink } from '@/utils/kiwiLink';
+import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
+import SmartImage from '@/components/SmartImage';
+import ProfiloView from '@/components/views/ProfiloView';
+import ConciergeView from '@/components/views/ConciergeView';
 
 // Globo WebGL (Globe.gl/three.js): code-split e solo lato client (ssr:false),
 // caricato dopo il first paint così non pesa sul bundle iniziale.
@@ -111,19 +116,6 @@ function LanguageSwitcher() {
   );
 }
 
-/* ── Sparkles send button (3 stars, like the original mobile version) ── */
-function ThreeSparklesIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      {/* big 4-point star */}
-      <path d="M12 2 C12.5 6.5 14.5 8.5 19 9 C14.5 9.5 12.5 11.5 12 16 C11.5 11.5 9.5 9.5 5 9 C9.5 8.5 11.5 6.5 12 2 Z" />
-      {/* small star bottom-right */}
-      <path d="M18.5 13.5 C18.75 15.55 19.7 16.5 21.75 16.75 C19.7 17 18.75 17.95 18.5 20 C18.25 17.95 17.3 17 15.25 16.75 C17.3 16.5 18.25 15.55 18.5 13.5 Z" />
-      {/* small star bottom-left */}
-      <path d="M7 15.5 C7.2 17.15 7.95 17.9 9.6 18.1 C7.95 18.3 7.2 19.05 7 20.7 C6.8 19.05 6.05 18.3 4.4 18.1 C6.05 17.9 6.8 17.15 7 15.5 Z" />
-    </svg>
-  );
-}
 
 /* ── Desktop top navbar ── */
 function DesktopNav({ activeTab, onNavigate }: { activeTab: TabId; onNavigate: (id: TabId) => void }) {
@@ -247,23 +239,29 @@ function FeedCard({
       className="feed-card animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group"
       data-testid="feed-item"
       data-id={item.id}
+      role="button"
+      tabIndex={0}
+      aria-label={`${item.destination} — €${item.price}`}
       onClick={() => {
         if (item.booking_url) {
+          window.open(item.booking_url, '_blank');
+        }
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && item.booking_url) {
+          e.preventDefault();
           window.open(item.booking_url, '_blank');
         }
       }}
     >
       {/* Image (Top half) — zoom lento su hover, cifra tipica dei siti premium */}
       <div className="relative w-full h-28 lg:h-44 flex-shrink-0 overflow-hidden">
-        <img
+        <SmartImage
           src={item.image || getDestinationImage(item.destination, item.id || 'item')}
+          fallbackSrc={getDestinationImage(item.destination, item.id || 'item')}
           alt={item.destination}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          loading="lazy"
-          onError={(e) => {
-            const fallback = getDestinationImage(item.destination, item.id || 'item');
-            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
-          }}
+          sizes="(min-width: 1024px) 300px, 45vw"
+          className="transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
         {/* Save button */}
         <button
@@ -406,6 +404,7 @@ function StaysView({
                 placeholder="Napoli, Italia"
                 className={valueCls}
                 data-testid="stays-destination"
+                aria-label={t('destLabel')}
               />
             </div>
           </div>
@@ -445,6 +444,7 @@ function StaysView({
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
                 className={`${valueCls} cursor-pointer appearance-none pr-4`}
+                aria-label={t('guestsLabel')}
               >
                 {[1, 2, 3, 4, 5, 6].map((n) => (
                   <option key={n} value={n}>
@@ -463,6 +463,7 @@ function StaysView({
                 value={stayType}
                 onChange={(e) => setStayType(e.target.value)}
                 className={`${valueCls} cursor-pointer appearance-none pr-4`}
+                aria-label={t('stayTypeLabel')}
               >
                 <option value="all">{t('allStays')}</option>
                 <option value="hotel">{t('typeHotel')}</option>
@@ -538,10 +539,12 @@ function StaysView({
             onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
           >
             <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
-              <img
+              <SmartImage
                 src={featured.image || getDestinationImage(featured.destination, featured.id || 'featured')}
+                fallbackSrc={getDestinationImage(featured.destination, featured.id || 'featured')}
                 alt={featured.destination}
-                className="absolute inset-0 w-full h-full object-cover"
+                sizes="(min-width: 1024px) 60vw, 100vw"
+                priority
               />
               <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-xs font-bold text-nomaq-navy flex items-center gap-1.5 shadow-soft">
                 <Tag className="w-3.5 h-3.5 text-nomaq-indigo" /> {t('bestValue')}
@@ -674,15 +677,11 @@ function StayCard({
       onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank'); }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 rounded-2xl overflow-hidden min-h-[104px]">
-        <img
+        <SmartImage
           src={image}
+          fallbackSrc={getDestinationImage(name, id)}
           alt={name}
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            const fallback = getDestinationImage(name, id);
-            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
-          }}
+          sizes="128px"
         />
         <button
           data-testid="save-button"
@@ -1062,10 +1061,10 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
         {/* Hotel card */}
         <div className={`${glass} overflow-hidden flex flex-col`} data-testid="trip-hotel">
           <div className="relative h-36 lg:h-40 flex-shrink-0">
-            <img
+            <SmartImage
               src={getDestinationImage(meta.destination, h?.name || 'hotel')}
-              alt={h?.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              alt={h?.name || meta.destination || 'Hotel'}
+              sizes="(min-width: 1024px) 40vw, 100vw"
             />
             {h?.badge && (
               <span className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-white px-3 py-1.5 rounded-full bg-emerald-500 shadow-sm">
@@ -1273,6 +1272,7 @@ const RADAR_TODAY: RadarDrop[] = [
   { id: 'radar-parigi-atene', from: 'Parigi', to: 'Atene', oldPrice: 430, newPrice: 300, airline: 'Transavia', dateIt: 'Giu 20', dateEn: 'Jun 20', monthIdx: 5, minsAgo: 9, img: 'athens' },
 ];
 
+
 function RadarBadges({ d, small = false }: { d: RadarDrop; small?: boolean }) {
   const dropAmt = d.oldPrice - d.newPrice;
   const pct = Math.round((dropAmt / d.oldPrice) * 100);
@@ -1295,23 +1295,23 @@ function RadarRoute({ d, className = '' }: { d: RadarDrop; className?: string })
   );
 }
 
-function RadarBigCard({ d }: { d: RadarDrop }) {
-  const { t, lang } = useLanguage();
+function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
+  const { lang } = useLanguage();
   return (
     <div
       className="bg-white rounded-3xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
       data-testid={`drop-item-${d.id}`}
-      onClick={() => window.open('https://www.google.com/flights', '_blank')}
+      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative h-36 lg:h-40">
-        <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="(min-width: 1024px) 33vw, 100vw" />
         <RadarBadges d={d} />
       </div>
       <div className="p-4 flex items-end justify-between gap-3">
         <div className="min-w-0">
           <RadarRoute d={d} className="text-base" />
           <p className="text-xs text-slate-400 mt-1 truncate">
-            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn} · {d.minsAgo} {t('minAgo')}
+            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn}
           </p>
         </div>
         <div className="text-right flex-shrink-0">
@@ -1323,23 +1323,23 @@ function RadarBigCard({ d }: { d: RadarDrop }) {
   );
 }
 
-function RadarCompactCard({ d }: { d: RadarDrop }) {
-  const { t, lang } = useLanguage();
+function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
+  const { lang } = useLanguage();
   return (
     <div
       className="bg-white rounded-2xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex items-stretch"
       data-testid={`drop-item-${d.id}`}
-      onClick={() => window.open('https://www.google.com/flights', '_blank')}
+      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
-        <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="128px" />
         <RadarBadges d={d} small />
       </div>
       <div className="flex-1 px-3.5 py-3 flex items-center justify-between gap-3 min-w-0">
         <div className="min-w-0">
           <RadarRoute d={d} className="text-sm" />
           <p className="text-[11px] text-slate-400 mt-1 truncate">
-            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn} · {d.minsAgo} {t('minAgo')}
+            {d.airline} · {lang === 'it' ? d.dateIt : d.dateEn}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -1356,7 +1356,7 @@ function RadarCompactCard({ d }: { d: RadarDrop }) {
   );
 }
 
-function RadarView({ simulatedDrops }: { simulatedDrops: any[] }) {
+function RadarView({ simulatedDrops, kiwiAffiliateId }: { simulatedDrops: any[]; kiwiAffiliateId?: string }) {
   const { t, lang } = useLanguage();
   const [city, setCity] = React.useState('Napoli');
   const [month, setMonth] = React.useState<number | null>(null);
@@ -1515,7 +1515,9 @@ function RadarView({ simulatedDrops }: { simulatedDrops: any[] }) {
           ) : (
             <div className="grid gap-5 lg:grid-cols-3">
               {items.map((d) =>
-                compact ? <RadarCompactCard key={d.id} d={d} /> : <RadarBigCard key={d.id} d={d} />
+                compact
+                  ? <RadarCompactCard key={d.id} d={d} affilId={kiwiAffiliateId} />
+                  : <RadarBigCard key={d.id} d={d} affilId={kiwiAffiliateId} />
               )}
             </div>
           )}
@@ -1532,716 +1534,7 @@ function RadarView({ simulatedDrops }: { simulatedDrops: any[] }) {
   );
 }
 
-/* ── Salvati View ── */
-function SalvatiView({ savedIds, allItems, onUnsave }: { savedIds: string[]; allItems: any[]; onUnsave: (id: string) => void }) {
-  const saved = allItems.filter((i) => savedIds.includes(i.id));
 
-  return (
-    <div className="px-5 pb-4 animate-fade-in" data-testid="salvati-list">
-      {/* Header */}
-      <div className="mb-5">
-        <h1 className="font-display text-display-lg text-nomaq-navy flex items-center gap-2 mb-1">Saved<Sparkles className="w-6 h-6 text-nomaq-indigo" /></h1>
-        <p className="text-slate-500 text-sm">Keep an eye on your favorite flights and stays.</p>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-5">
-        <button className="nomaq-pill active">All</button>
-        <button className="nomaq-pill"><Plane className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> Flights</button>
-        <button className="nomaq-pill"><Hotel className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> Stays</button>
-      </div>
-
-      {saved.length === 0 ? (
-        <div className="text-center py-16" data-testid="salvati-empty">
-          <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Heart className="w-8 h-8 text-nomaq-indigo/40" />
-          </div>
-          <p className="text-slate-500 font-semibold text-lg">No saved trips yet</p>
-          <p className="text-slate-400 text-sm mt-1">Explore the feed and save deals you love!</p>
-        </div>
-      ) : (
-        <>
-          {/* Summary card */}
-          <div className="nomaq-card p-4 mb-4 flex items-center gap-3">
-            <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-            <div className="flex-1 min-w-0">
-              <span className="text-sm text-nomaq-navy font-medium">
-                Watching <span className="font-bold">{saved.length} saved trip{saved.length !== 1 ? 's' : ''}</span>
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
-          </div>
-
-          {/* Saved items */}
-          <div className="space-y-3">
-            {saved.map((item, idx) => {
-              const discount = item.originalPrice
-                ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
-                : 0;
-              return (
-                <div
-                  key={item.id}
-                  className="nomaq-card overflow-hidden animate-slide-up cursor-pointer hover:scale-[1.01] transition-transform duration-200"
-                  style={{ animationDelay: `${idx * 60}ms` }}
-                  data-testid={`saved-item-${item.id}`}
-                  onClick={() => {
-                    if (item.booking_url) {
-                      window.open(item.booking_url, '_blank');
-                    }
-                  }}
-                >
-                  <div className="flex gap-0">
-                    {/* Image */}
-                    <div className="relative w-[110px] min-h-[130px] flex-shrink-0 overflow-hidden">
-                      <img
-                        src={item.image || 'fallback-placeholder.jpg'}
-                        alt={item.destination}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0">
-                      <div>
-                        {/* Type badge */}
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md mb-1.5 ${item.type === 'flight' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
-                          }`}>
-                          {item.type === 'flight' ? <><Plane className="w-3 h-3" /> Flight</> : <><Hotel className="w-3 h-3" /> Stay</>}
-                        </span>
-
-                        {/* Title */}
-                        <h4 className="text-sm font-bold text-nomaq-navy leading-snug truncate">{item.destination}</h4>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{item.date}</div>
-                      </div>
-
-                      {/* Price row */}
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-1.5">
-                          {discount > 0 && (
-                            <span className="text-nomaq-coral text-xs line-through">€{item.originalPrice}</span>
-                          )}
-                          <span className="text-nomaq-navy font-bold">€{item.price}</span>
-                          {discount > 0 && (
-                            <span className="bg-nomaq-lavender text-nomaq-violet text-[10px] font-bold px-1.5 py-0.5 rounded">
-                              -{discount}%
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          data-testid={`unsave-btn-${item.id}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onUnsave(item.id);
-                          }}
-                          className="text-slate-400 hover:text-nomaq-coral transition-colors"
-                        >
-                          <Heart className="w-4 h-4 fill-nomaq-violet text-nomaq-violet" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-center mt-6">
-            <p className="text-slate-400 text-xs flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> We'll alert you when prices move.</p>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ── Concierge View ── */
-function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; allItems: any[]; onUnsave: (id: string) => void }) {
-  const { t, lang } = useLanguage();
-  const [chatInput, setChatInput] = React.useState('');
-  const [messages, setMessages] = React.useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
-  const [thinking, setThinking] = React.useState(false);
-  const chatEndRef = React.useRef<HTMLDivElement>(null);
-  // Synchronous guard: the `thinking` state updates in the next render, so a
-  // rapid double-Enter could otherwise fire two requests.
-  const sendingRef = React.useRef(false);
-  const saved = allItems.filter((i) => savedIds.includes(i.id));
-
-  React.useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages, thinking]);
-
-  const sendMessage = async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || thinking || sendingRef.current) return;
-    sendingRef.current = true;
-    const next: Array<{ role: 'user' | 'assistant'; content: string }> = [...messages, { role: 'user', content: trimmed }];
-    setMessages(next);
-    setChatInput('');
-    setThinking(true);
-    try {
-      const res = await fetch('/api/concierge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next.slice(-12), lang }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.reply) throw new Error(data.error || 'no reply');
-      setMessages((m) => [...m, { role: 'assistant', content: data.reply }]);
-    } catch {
-      setMessages((m) => [...m, { role: 'assistant', content: t('conciergeError') }]);
-    }
-    sendingRef.current = false;
-    setThinking(false);
-  };
-
-  const quickActions = [
-    { icon: <Utensils className="w-4 h-4" />, label: t('qaRestaurants') },
-    { icon: <Map className="w-4 h-4" />, label: t('qaItinerary') },
-    { icon: <Languages className="w-4 h-4" />, label: t('qaTranslator') },
-    { icon: <Ticket className="w-4 h-4" />, label: t('qaTickets') },
-  ];
-
-  return (
-    <div className="flex flex-col h-full bg-slate-50 animate-fade-in" style={{ minHeight: 'calc(100vh - 120px)' }}>
-      {/* Header */}
-      <div className="px-5 pt-5 pb-3">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="font-display text-display-lg text-nomaq-navy">Concierge</h1>
-          <div className="w-9 h-9 rounded-full bg-nomaq-lavender flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-nomaq-indigo" />
-          </div>
-        </div>
-        <p className="text-slate-500 text-sm">{t('conciergeSubtitle')}</p>
-      </div>
-
-      {/* Proactive Trip Widget */}
-      <div className="px-5 mb-4">
-        <div className="relative bg-white/70 backdrop-blur-lg border border-white/80 rounded-2xl p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-nomaq-indigo uppercase tracking-wide mb-0.5">{t('nextTrip')}</p>
-              <p className="text-sm font-bold text-nomaq-navy">Tokyo, Giappone 🇯🇵</p>
-              <p className="text-xs text-slate-500 mt-0.5">{t('in12Days')}</p>
-            </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
-              <div className="flex items-center gap-1">
-                <CloudSun className="w-4 h-4 text-amber-400" />
-                <span className="text-sm font-bold text-nomaq-navy">24°C</span>
-              </div>
-              <span className="text-[10px] text-slate-400">{t('weatherClear')}</span>
-            </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-[11px] text-slate-500">{t('allConfirmed')}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="px-5 mb-4">
-        <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none pb-1 scroll-fade-x">
-          {quickActions.map((action, idx) => (
-            <button
-              key={idx}
-              onClick={() => sendMessage(action.label)}
-              disabled={thinking}
-              className="flex-shrink-0 flex items-center gap-2 bg-white border border-slate-100 rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-nomaq-lavender hover:border-nomaq-indigo/20 hover:text-nomaq-indigo active:scale-95 transition-all duration-200 shadow-soft cursor-pointer whitespace-nowrap disabled:opacity-50"
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Chat Area */}
-      <div className="flex-1 px-5 space-y-4 pb-4 overflow-y-auto" data-testid="concierge-chat">
-        {/* AI greeting */}
-        <div className="flex justify-start gap-2">
-          <div className="w-8 h-8 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0 mt-1">
-            <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-          </div>
-          <div className="max-w-[80%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 text-sm shadow-sm text-slate-700 whitespace-pre-line">
-            {t('conciergeGreeting')}
-          </div>
-        </div>
-
-        {/* Conversation */}
-        {messages.map((msg, idx) =>
-          msg.role === 'user' ? (
-            <div key={idx} className="flex justify-end">
-              <div className="max-w-[80%] bg-nomaq-navy text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm shadow-sm whitespace-pre-line">
-                {msg.content}
-              </div>
-            </div>
-          ) : (
-            <div key={idx} className="flex justify-start gap-2">
-              <div className="w-8 h-8 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0 mt-1">
-                <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-              </div>
-              <div className="max-w-[80%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 text-sm shadow-sm text-slate-700 whitespace-pre-line">
-                {msg.content}
-              </div>
-            </div>
-          )
-        )}
-
-        {/* Typing indicator */}
-        {thinking && (
-          <div className="flex justify-start gap-2" data-testid="concierge-thinking">
-            <div className="w-8 h-8 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0 mt-1">
-              <Sparkles className="w-4 h-4 text-nomaq-indigo animate-pulse" />
-            </div>
-            <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3.5 shadow-sm flex items-center gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="w-1.5 h-1.5 bg-nomaq-indigo/50 rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* Hidden SalvatiView for E2E test compatibility */}
-      <div style={{ display: 'none' }} aria-hidden="true" data-testid="salvati-list">
-        {saved.length === 0 ? (
-          <div data-testid="salvati-empty">
-            <p>No saved trips yet</p>
-          </div>
-        ) : (
-          saved.map((item) => (
-            <div key={item.id} data-testid={`saved-item-${item.id}`}>
-              <h4 className="truncate">{item.destination}</h4>
-              <button
-                data-testid={`unsave-btn-${item.id}`}
-                onClick={() => onUnsave(item.id)}
-                className="filled text-electric-orange"
-              >
-                <Heart className="w-4 h-4 fill-nomaq-violet text-nomaq-violet" />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Chat Input Bar — su mobile resta sopra la BottomNav fissa (60px +
-          safe area) che altrimenti la coprirebbe; su lg la nav è nascosta. */}
-      <div className="sticky bottom-[calc(60px+env(safe-area-inset-bottom,0px))] lg:bottom-0 px-4 pb-3 lg:pb-5 pt-3 bg-slate-50/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-full px-4 py-3 shadow-soft">
-          <button className="text-slate-400 hover:text-nomaq-indigo transition-colors flex-shrink-0">
-            <Paperclip className="w-5 h-5" />
-          </button>
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') sendMessage(chatInput);
-            }}
-            placeholder={t('askConcierge')}
-            data-testid="concierge-input"
-            className="flex-1 bg-transparent text-sm text-slate-700 placeholder-slate-400 outline-none"
-          />
-          <button
-            onClick={() => sendMessage(chatInput)}
-            disabled={thinking || !chatInput.trim()}
-            data-testid="concierge-send"
-            className="w-9 h-9 rounded-full bg-nomaq-indigo flex items-center justify-center flex-shrink-0 hover:bg-nomaq-violet active:scale-90 transition-all shadow-sm disabled:opacity-50"
-          >
-            <Send className="w-4 h-4 text-white" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Profilo / Auth / Waitlist View ── */
-function ProfiloView({
-  initialCount,
-  initialError,
-  initialSubmitted,
-  initialEmail,
-  isE2E,
-}: {
-  initialCount?: number;
-  initialError?: string | null;
-  initialSubmitted?: boolean;
-  initialEmail?: string;
-  isE2E?: boolean;
-} = {}) {
-  const { t, lang } = useLanguage();
-  const { user, profile, signIn, signUp, signOut } = useAuth();
-
-  const [email, setEmail] = React.useState(initialEmail || '');
-  const [submitted, setSubmitted] = React.useState(initialSubmitted || false);
-  const [error, setError] = React.useState<string | null>(initialError || null);
-  const [copied, setCopied] = React.useState(false);
-  const [count, setCount] = React.useState(initialCount || 2847);
-
-  // Auth form state
-  const [authMode, setAuthMode] = React.useState<'signin' | 'signup'>('signin');
-  const [authName, setAuthName] = React.useState('');
-  const [authEmail, setAuthEmail] = React.useState('');
-  const [authPassword, setAuthPassword] = React.useState('');
-  const [authError, setAuthError] = React.useState<string | null>(null);
-  const [authInfo, setAuthInfo] = React.useState<string | null>(null);
-  const [authBusy, setAuthBusy] = React.useState(false);
-
-  React.useEffect(() => {
-    fetch('/api/waitlist')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.count !== undefined) {
-          setCount(2847 + data.count);
-        }
-      })
-      .catch(() => { });
-  }, []);
-
-  const mapAuthError = (msg: string): string => {
-    const m = msg.toLowerCase();
-    if (msg === 'AUTH_UNAVAILABLE') return t('authUnavailable');
-    if (m.includes('invalid login credentials')) return t('errInvalidCredentials');
-    if (m.includes('already registered') || m.includes('already exists')) return t('errUserExists');
-    if (m.includes('password') && (m.includes('at least') || m.includes('6'))) return t('errPasswordShort');
-    if (m.includes('email not confirmed')) return t('errEmailNotConfirmed');
-    return msg || t('errGeneric');
-  };
-
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    setAuthInfo(null);
-    const em = authEmail.trim();
-    if (!em || !authPassword || (authMode === 'signup' && !authName.trim())) {
-      setAuthError(t('errRequiredFields'));
-      return;
-    }
-    setAuthBusy(true);
-    try {
-      if (authMode === 'signin') {
-        const { error: err } = await signIn(em, authPassword);
-        if (err) setAuthError(mapAuthError(err));
-      } else {
-        const { error: err, needsConfirmation } = await signUp(authName.trim(), em, authPassword);
-        if (err) {
-          setAuthError(mapAuthError(err));
-        } else if (needsConfirmation) {
-          setAuthInfo(t('confirmEmailSent'));
-          setAuthMode('signin');
-          setAuthPassword('');
-        }
-      }
-    } catch {
-      setAuthError(t('errGeneric'));
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const trimmed = email.trim();
-    if (!trimmed) { setError(t('waitlistErrEmpty')); return; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) { setError(t('waitlistErrInvalid')); return; }
-
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: trimmed }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || t('waitlistErrGeneric'));
-        return;
-      }
-      setSubmitted(true);
-      setEmail(trimmed);
-      setCount((prev) => prev + 1);
-    } catch (err) {
-      setError(t('waitlistErrConn'));
-    }
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: 'Nomaq Drop', text: 'Ho trovato un\'offerta pazzesca su Nomaq!', url: 'https://nomaq.app' });
-    } else {
-      navigator.clipboard.writeText('https://nomaq.app');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  /* ── Logged-in profile ── */
-  if (user) {
-    const displayName =
-      profile?.full_name || user.user_metadata?.full_name || user.email || '';
-    const initial = (displayName.trim().charAt(0) || '?').toUpperCase();
-    const memberSince = profile?.created_at
-      ? new Date(profile.created_at).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-GB', {
-          month: 'long',
-          year: 'numeric',
-        })
-      : null;
-
-    return (
-      <div className="px-5 pb-4 space-y-5 animate-fade-in" data-testid="profile-view">
-        <div className="pt-2">
-          <h1 className="font-display text-display-lg text-nomaq-navy mb-1">{t('yourProfile')}</h1>
-        </div>
-
-        {/* Profile card */}
-        <div className="nomaq-card p-5" data-testid="profile-card">
-          <div className="flex items-center gap-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={displayName}
-                className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-nomaq-violet to-nomaq-indigo flex items-center justify-center flex-shrink-0 shadow-soft">
-                <span className="text-white text-2xl font-bold">{initial}</span>
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-bold text-nomaq-navy truncate" data-testid="profile-name">
-                {displayName}
-              </h2>
-              <p className="text-sm text-slate-500 truncate" data-testid="profile-email">{user.email}</p>
-              {memberSince && (
-                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  {t('memberSince')} {memberSince}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Feature pills */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          <span className="nomaq-pill text-xs"><Calendar className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillEarlyAccess')}</span>
-          <span className="nomaq-pill text-xs"><Settings className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillAI')}</span>
-          <span className="nomaq-pill text-xs"><Tag className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillDeals')}</span>
-        </div>
-
-        {/* Logout */}
-        <button
-          data-testid="logout-button"
-          onClick={() => signOut()}
-          className="w-full py-3 rounded-xl text-nomaq-coral font-semibold text-sm flex items-center justify-center gap-2 border-2 border-nomaq-coral/20 hover:bg-red-50 transition-all active:scale-[0.98]"
-        >
-          <LogOut className="w-4 h-4" />
-          {t('logout')}
-        </button>
-      </div>
-    );
-  }
-
-  /* ── Not logged in: auth + waitlist ──
-     Rendered even while the session is loading so SSR always contains
-     the waitlist form (E2E tests parse server HTML only). */
-  return (
-    <div className="px-5 pb-4 space-y-5 animate-fade-in" data-testid="profile-view">
-      {/* Auth Card (hidden in E2E mode: tests expect the waitlist email input
-          to be the first input[type=email] in the profile view) */}
-      {!isE2E && (
-      <div className="nomaq-card p-5 mt-2">
-        <div className="text-center mb-4">
-          <h2 className="font-display text-xl text-nomaq-navy mb-1 flex items-center justify-center gap-2">
-            <User className="w-5 h-5 text-nomaq-indigo" />
-            {authMode === 'signin' ? t('authSignInTitle') : t('authSignUpTitle')}
-          </h2>
-          <p className="text-slate-500 text-xs">
-            {authMode === 'signin' ? t('authSignInSubtitle') : t('authSignUpSubtitle')}
-          </p>
-        </div>
-
-        <form data-testid="auth-form" onSubmit={handleAuthSubmit} className="space-y-3">
-          {authMode === 'signup' && (
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('fullNameLabel')}</label>
-              <input
-                type="text"
-                data-testid="auth-name-input"
-                placeholder={t('fullNamePlaceholder')}
-                value={authName}
-                onChange={(e) => setAuthName(e.target.value)}
-                autoComplete="name"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
-              />
-            </div>
-          )}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('emailLabel')}</label>
-            <input
-              type="email"
-              data-testid="auth-email-input"
-              placeholder="you@example.com"
-              value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)}
-              autoComplete="email"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('passwordLabel')}</label>
-            <input
-              type="password"
-              data-testid="auth-password-input"
-              placeholder={t('passwordPlaceholder')}
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
-            />
-          </div>
-
-          {authError && (
-            <div data-testid="auth-error" className="text-red-500 text-xs font-medium px-1">{authError}</div>
-          )}
-          {authInfo && (
-            <div data-testid="auth-info" className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-xs font-medium">
-              {authInfo}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            data-testid="auth-submit"
-            disabled={authBusy}
-            className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', boxShadow: '0 4px 16px rgba(124, 58, 237, 0.3)' }}
-          >
-            {authBusy
-              ? t('authWorking')
-              : (
-                <>
-                  {authMode === 'signin' ? t('signInBtn') : t('signUpBtn')} <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-          </button>
-        </form>
-
-        <div className="text-center mt-4">
-          <button
-            type="button"
-            data-testid="auth-toggle-mode"
-            onClick={() => {
-              setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
-              setAuthError(null);
-              setAuthInfo(null);
-            }}
-            className="text-xs text-slate-500"
-          >
-            {authMode === 'signin' ? t('noAccount') : t('haveAccount')}{' '}
-            <span className="text-nomaq-indigo font-semibold">
-              {authMode === 'signin' ? t('signUpBtn') : t('signInBtn')}
-            </span>
-          </button>
-        </div>
-      </div>
-      )}
-
-      {/* Waitlist Hero */}
-      <div className="flex flex-col items-center pt-2 mb-2 text-center">
-        <h1 className="font-display text-display-md text-nomaq-navy leading-tight mb-3 flex items-center justify-center gap-2">
-          <span>{t('waitlistHeroA')}<br />{t('waitlistHeroB')}</span><Sparkles className="w-6 h-6 text-nomaq-indigo" />
-        </h1>
-        <p className="text-slate-500 text-sm leading-relaxed">
-          {t('waitlistSub')}
-        </p>
-      </div>
-
-      {/* Form Card */}
-      <div className="nomaq-card p-5">
-        <form data-testid="waitlist-form" onSubmit={handleSubmit} className="space-y-3">
-          {!submitted ? (
-            <>
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{t('emailAddress')}</label>
-                <input
-                  type="email"
-                  data-testid="waitlist-email-input"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
-                />
-              </div>
-              {error && (
-                <div data-testid="waitlist-error" className="text-red-500 text-xs font-medium px-1">{error}</div>
-              )}
-              <button
-                type="submit"
-                data-testid="waitlist-submit"
-                className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', boxShadow: '0 4px 16px rgba(124, 58, 237, 0.3)' }}
-              >
-                <Sparkles className="w-4 h-4 mr-1" /> {t('joinWaitlist')} <ArrowRight className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
-            <div className="space-y-3">
-              <div data-testid="waitlist-success" className="animate-bounce-in bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-                <div className="flex justify-center mb-1"><PartyPopper className="w-6 h-6 text-emerald-500" /></div>
-                <div className="text-emerald-700 font-bold text-sm">{t('youreIn')}</div>
-                <div className="text-emerald-600 text-xs mt-1">{email}</div>
-              </div>
-              <button
-                data-testid="share-button"
-                onClick={handleShare}
-                className="w-full py-3 rounded-xl text-nomaq-indigo font-semibold text-sm flex items-center justify-center gap-2 border-2 border-nomaq-indigo/20 hover:bg-nomaq-lavender transition-all"
-              >
-                <Share2 className="w-4 h-4" />
-                {copied ? t('linkCopied') : t('shareDrop')}
-              </button>
-            </div>
-          )}
-        </form>
-      </div>
-
-      {/* Early members note */}
-      <div className="flex justify-center text-center">
-        <p className="text-slate-500 text-xs leading-relaxed flex items-center justify-center gap-1">
-          <Sparkles className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('earlyMembers')}
-        </p>
-      </div>
-
-      {/* Feature pills */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        <span className="nomaq-pill text-xs"><Calendar className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillEarlyAccess')}</span>
-        <span className="nomaq-pill text-xs"><Settings className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillAI')}</span>
-        <span className="nomaq-pill text-xs"><Tag className="w-3.5 h-3.5 inline-block text-nomaq-indigo" /> {t('pillDeals')}</span>
-      </div>
-
-      {/* No spam footer */}
-      <div className="flex justify-center text-center pb-2">
-        <p className="text-slate-400 text-xs flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> {t('noSpam')}</p>
-      </div>
-
-      {/* Counter */}
-      <div className="text-center">
-        <span className="text-slate-400 text-xs">
-          {count.toLocaleString()} {t('travelersJoined')}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 /* ── Toast Notification ── */
 function ToastNotification({ notif, onDismiss }: { notif: any; onDismiss: (id: string) => void }) {
@@ -2290,6 +1583,7 @@ export default function Home({
   initialWaitlistError,
   initialWaitlistSubmitted,
   initialWaitlistEmail,
+  kiwiAffiliateId,
 }: any) {
   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
   const { t, lang } = useLanguage();
@@ -2454,6 +1748,7 @@ export default function Home({
         if (Array.isArray(data)) {
           const formatted = data.map((item: any) => ({
             ...item,
+            type: item.type || 'flight',
             originalPrice: item.original_price ? Number(item.original_price) : null,
             price: Number(item.price),
             rating: item.rating ? Number(item.rating) : null,
@@ -2473,6 +1768,8 @@ export default function Home({
         if (Array.isArray(data)) {
           const formatted = data.map((item: any) => ({
             ...item,
+            type: item.type || 'hotel',
+            hotelName: item.hotel_name || item.hotelName || null,
             originalPrice: item.original_price ? Number(item.original_price) : null,
             price: Number(item.price),
             rating: item.rating ? Number(item.rating) : null,
@@ -2650,19 +1947,60 @@ export default function Home({
   const runQuick = (text: string) => { setAiQuery(text); handleSearch(text); };
   const runSurprise = () => runQuick(surpriseQueries[Math.floor(Math.random() * surpriseQueries.length)]);
 
+  // ── Structured data (JSON-LD) for rich results. FAQPage is emitted only on
+  // the home tab, where the FAQ is actually rendered on the page. ──
+  const jsonLdGraph: any[] = [
+    {
+      '@type': 'Organization',
+      '@id': 'https://nomaq.app/#organization',
+      name: 'Nomaq',
+      url: 'https://nomaq.app',
+      logo: 'https://nomaq.app/images/logo.png',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://nomaq.app/#website',
+      url: 'https://nomaq.app',
+      name: 'Nomaq',
+      inLanguage: lang === 'en' ? 'en' : 'it',
+      publisher: { '@id': 'https://nomaq.app/#organization' },
+    },
+  ];
+  if (currentTab === 'vola-vola') {
+    jsonLdGraph.push({
+      '@type': 'FAQPage',
+      mainEntity: [1, 2, 3, 4, 5, 6].map((n) => ({
+        '@type': 'Question',
+        name: t(`faq${n}q` as TranslationKey),
+        acceptedAnswer: { '@type': 'Answer', text: t(`faq${n}a` as TranslationKey) },
+      })),
+    });
+  }
+  const jsonLd = { '@context': 'https://schema.org', '@graph': jsonLdGraph };
+
   return (
     <>
+      <SEO
+        title="Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI"
+        description="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno."
+      />
       <Head>
-        <title>Nomaq — Smart Travel Deals</title>
-        <meta name="description" content="Nomaq: l'app che rileva i crolli di prezzo su voli e hotel in tempo reale. Vola di più, spendi meno." />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#4F46E5" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </Head>
 
-      <main className="min-h-screen pb-24 lg:pb-10 relative" data-testid="app-root">
+      {/* WCAG 2.4.1 — skip link: first focusable element, jumps past the nav. */}
+      <a href="#main-content" className="skip-link">
+        Salta al contenuto
+      </a>
+
+      <main id="main-content" className="min-h-screen pb-24 lg:pb-10 relative" data-testid="app-root">
         {/* Full-screen fixed globe background */}
         <GlobeGL />
-        
         {/* ── Desktop top navbar ── */}
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} />
 
@@ -2945,7 +2283,7 @@ export default function Home({
                 <DropsView simulatedDrops={simulatedDrops} isE2E={isE2E} onSimulateDrop={handleSimulateDrop} />
               </div>
             ) : (
-              <RadarView simulatedDrops={simulatedDrops} />
+              <RadarView simulatedDrops={simulatedDrops} kiwiAffiliateId={kiwiAffiliateId} />
             )
           )}
 
@@ -2988,7 +2326,7 @@ export default function Home({
 
           {/* ── Footer legale (tutti i tab) ── */}
           <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
-            <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-400" aria-label="Link legali">
+            <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-500" aria-label="Link legali">
               <Link href="/note-legali" className="hover:text-nomaq-indigo transition-colors">{t('footerLegal')}</Link>
               <span aria-hidden="true">·</span>
               <Link href="/termini" className="hover:text-nomaq-indigo transition-colors">{t('footerTerms')}</Link>
@@ -2997,7 +2335,7 @@ export default function Home({
               <span aria-hidden="true">·</span>
               <Link href="/cookie-policy" className="hover:text-nomaq-indigo transition-colors">{t('footerCookies')}</Link>
             </nav>
-            <p className="text-2xs text-slate-300 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
+            <p className="text-2xs text-slate-500 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
           </footer>
 
           {/* ── Bottom Nav ── */}
@@ -3062,6 +2400,7 @@ export async function getServerSideProps(context: any) {
   // rating here would show fake discounts/stars on every card.
   let formattedFlights = flights.map((item: any) => ({
     ...item,
+    type: item.type || 'flight',
     originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
     price: Number(item.price),
     rating: item.rating ? Number(item.rating) : null,
@@ -3071,6 +2410,8 @@ export async function getServerSideProps(context: any) {
 
   let formattedHotels = hotels.map((item: any) => ({
     ...item,
+    type: item.type || 'hotel',
+    hotelName: item.hotel_name || item.hotelName || null,
     originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
     price: Number(item.price),
     rating: item.rating ? Number(item.rating) : null,
@@ -3182,6 +2523,13 @@ export async function getServerSideProps(context: any) {
     initialWaitlistError = String(query.error);
   }
 
+  // Let the CDN cache the anonymous shell — greeting, saved items and auth are
+  // all resolved client-side, so the server HTML is identical for every
+  // anonymous visitor. Never cache E2E / query-param-driven variants.
+  if (!isE2E && Object.keys(query).length === 0 && context.res) {
+    context.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
+  }
+
   return {
     props: {
       query,
@@ -3197,6 +2545,9 @@ export async function getServerSideProps(context: any) {
       initialWaitlistError,
       initialWaitlistSubmitted,
       initialWaitlistEmail,
+      // Affiliate marker is inherently public (it ends up in outbound URLs);
+      // exposing it lets the client build tracked Kiwi deep links for Radar.
+      kiwiAffiliateId: process.env.KIWI_AFFILIATE_ID || '',
     },
   };
 }
