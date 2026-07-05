@@ -2,6 +2,7 @@ import Head from 'next/head';
 import SEO from '@/components/SEO';
 import Link from 'next/link';
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppState, TabId } from '@/context/AppState';
@@ -12,6 +13,10 @@ import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
+
+// Globo WebGL (Globe.gl/three.js): code-split e solo lato client (ssr:false),
+// caricato dopo il first paint così non pesa sul bundle iniziale.
+const GlobeGL = dynamic(() => import('@/components/GlobeGL'), { ssr: false });
 
 
 const MOCK_DROPS = [
@@ -2654,7 +2659,10 @@ export default function Home({
         <meta name="theme-color" content="#4F46E5" />
       </Head>
 
-      <main className="min-h-screen pb-24 lg:pb-10" data-testid="app-root">
+      <main className="min-h-screen pb-24 lg:pb-10 relative" data-testid="app-root">
+        {/* Full-screen fixed globe background */}
+        <GlobeGL />
+        
         {/* ── Desktop top navbar ── */}
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} />
 
@@ -2703,20 +2711,23 @@ export default function Home({
           {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
           {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
             <div className="px-5 lg:px-6 mb-5">
-              {/* Hero: stack verticale centrato (titolo → search → 2 marquee di tag) */}
-              <div className="relative mb-8 lg:mb-14 lg:pt-14">
+              {/* Hero: ora trasparente, fa vedere il GlobeGL fisso sul retro. */}
+              <div className="relative mb-8 lg:mb-14 px-5 py-12 lg:px-10 lg:py-20">
+                {/* Velo per staccare il testo dal globo e dare profondità */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0a0a1e]/30 via-transparent to-[#141036]/60" />
+
                 {/* Foreground */}
                 <div className="relative z-10 flex flex-col items-center text-center">
                   {/* Eyebrow */}
-                  <p className="text-slate-500 text-[11px] font-medium uppercase tracking-[0.18em] mb-3 select-none" data-testid="home-greeting">
+                  <p className="text-violet-300/70 text-[11px] font-medium uppercase tracking-[0.2em] mb-3 select-none" data-testid="home-greeting">
                     {greeting}
                   </p>
                   {/* Titolo */}
-                  <h1 className="font-display text-display-md lg:text-display-lg text-nomaq-navy leading-tight mb-3">
-                    {t('headline')}<span className="italic text-nomaq-indigo">?</span>
+                  <h1 className="font-display text-display-md lg:text-display-lg text-white leading-tight mb-3 [text-shadow:0_2px_24px_rgba(10,8,30,0.6)]">
+                    {t('headline')}<span className="italic text-violet-400">?</span>
                   </h1>
-                  {/* Tagline (slate-600: contrasto sicuro sopra i pixel dell'orb) */}
-                  <p className="text-slate-600 text-sm lg:text-base leading-relaxed max-w-md mb-7">
+                  {/* Tagline */}
+                  <p className="text-slate-300 text-sm lg:text-base leading-relaxed max-w-md mb-7">
                     {t('heroTagline')}
                   </p>
 
@@ -2811,14 +2822,14 @@ export default function Home({
                               aria-hidden={dup ? 'true' : undefined}
                               tabIndex={dup ? -1 : 0}
                               onClick={() => (s.isSurprise ? runSurprise() : runQuick(s.text))}
-                              className={`mr-3 flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-soft transition-colors duration-200 whitespace-nowrap ${
+                              className={`mr-3 flex items-center gap-2 px-4 py-2.5 rounded-full border backdrop-blur-md transition-colors duration-200 whitespace-nowrap ${
                                 s.isSurprise
-                                  ? 'border-nomaq-indigo/30 bg-nomaq-lavender/40 hover:bg-nomaq-lavender/60'
-                                  : 'border-slate-200/80 bg-white/90 hover:border-nomaq-indigo/30'
+                                  ? 'border-violet-400/40 bg-violet-500/20 hover:bg-violet-500/30'
+                                  : 'border-white/15 bg-white/10 hover:bg-white/15'
                               }`}
                             >
                               {s.icon}
-                              <span className={`text-xs font-medium ${s.isSurprise ? 'text-nomaq-indigo' : 'text-slate-600'}`}>{s.text}</span>
+                              <span className={`text-xs font-medium ${s.isSurprise ? 'text-violet-200' : 'text-slate-100'}`}>{s.text}</span>
                             </button>
                           );
                         })}
@@ -2834,7 +2845,7 @@ export default function Home({
                               aria-hidden={dup ? 'true' : undefined}
                               tabIndex={dup ? -1 : 0}
                               onClick={() => runQuick(label)}
-                              className="mr-3 px-4 py-2.5 rounded-full border border-slate-200/80 bg-white/80 text-xs font-medium text-slate-600 hover:border-nomaq-indigo/30 hover:text-nomaq-navy transition-colors whitespace-nowrap"
+                              className="mr-3 px-4 py-2.5 rounded-full border border-white/15 bg-white/10 backdrop-blur-md text-xs font-medium text-slate-100 hover:bg-white/15 transition-colors whitespace-nowrap"
                             >
                               {label}
                             </button>
@@ -2862,7 +2873,9 @@ export default function Home({
             </div>
           )}
 
-
+          {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
+              Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
+          <div className="relative z-10 bg-[#FAFAFF] rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-12">
 
           {/* ── AI search summary + suggested package ── */}
           {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage) && (
@@ -2971,6 +2984,7 @@ export default function Home({
               ))}
             </div>
           )}
+          </div>
 
           {/* ── Footer legale (tutti i tab) ── */}
           <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
