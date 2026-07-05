@@ -77,11 +77,11 @@ const MOCK_DROPS = [
 
 function NomaqLogo({ isDarkBackground }: { isDarkBackground?: boolean }) {
   return (
-    <div className="flex items-center justify-center py-4">
+    <div className="flex items-center justify-center py-3.5 px-16">
       <img
         src="/images/logo.png"
         alt="Nomaq Logo"
-        className={`h-[90px] w-auto object-contain ${isDarkBackground ? 'brightness-0 invert' : ''}`}
+        className={`h-16 w-auto object-contain ${isDarkBackground ? 'brightness-0 invert' : ''}`}
         loading="eager"
       />
     </div>
@@ -136,7 +136,7 @@ function DesktopNav({ activeTab, onNavigate, isDarkBackground }: { activeTab: Ta
         <img
           src="/images/logo.png"
           alt="Nomaq"
-          className={`h-[60px] w-auto object-contain cursor-pointer -ml-8 ${isDarkBackground ? 'brightness-0 invert' : ''}`}
+          className={`h-12 w-auto object-contain cursor-pointer ${isDarkBackground ? 'brightness-0 invert' : ''}`}
           onClick={() => onNavigate('vola-vola')}
         />
         <nav className="flex items-center gap-1" aria-label="Navigazione principale desktop">
@@ -195,7 +195,7 @@ function FaqSection() {
               key={i}
               onClick={() => setOpen(isOpen ? null : i)}
               aria-expanded={isOpen}
-              className="nomaq-card bg-white/80 backdrop-blur-sm text-left p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow duration-200"
+              className="nomaq-card backdrop-blur-md text-left p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow duration-200"
             >
               <span className="w-7 h-7 rounded-full bg-nomaq-lavender text-nomaq-indigo flex items-center justify-center flex-shrink-0 text-xs font-bold">
                 Q
@@ -238,7 +238,7 @@ function FeedCard({
 
   return (
     <div
-      className="feed-card animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group"
+      className="feed-card backdrop-blur-md animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group"
       data-testid="feed-item"
       data-id={item.id}
       role="button"
@@ -535,7 +535,7 @@ function StaysView({
         {/* Featured stay: primo hotel reale del catalogo, nessun dato inventato */}
         {featured ? (
           <div
-            className="rounded-3xl overflow-hidden bg-white shadow-card border border-white/70 flex flex-col lg:flex-row cursor-pointer"
+            className="rounded-3xl overflow-hidden bg-white/60 backdrop-blur-md shadow-card border border-white/70 flex flex-col lg:flex-row cursor-pointer"
             data-testid="feed-item"
             data-id={featured.id}
             onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
@@ -629,7 +629,7 @@ function StaysView({
       </div>
 
       {/* ── Trust strip ── */}
-      <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-5 bg-white/75 backdrop-blur-sm rounded-3xl p-5 lg:p-6 shadow-soft border border-white/70">
+      <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-5 bg-white/55 backdrop-blur-md rounded-3xl p-5 lg:p-6 shadow-soft border border-white/70">
         {trustItems.map(({ Icon, title, sub }) => (
           <div key={title} className="flex items-start gap-3">
             <span className="w-10 h-10 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0">
@@ -673,7 +673,7 @@ function StayCard({
 }) {
   return (
     <div
-      className="nomaq-card bg-white/90 backdrop-blur-sm flex gap-3 p-3 items-stretch hover:shadow-card-hover transition-shadow duration-200 cursor-pointer"
+      className="nomaq-card bg-white/60 backdrop-blur-md flex gap-3 p-3 items-stretch hover:shadow-card-hover transition-shadow duration-200 cursor-pointer"
       data-testid="feed-item"
       data-id={id}
       onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank'); }}
@@ -1301,7 +1301,7 @@ function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
   const { lang } = useLanguage();
   return (
     <div
-      className="bg-white rounded-3xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+      className="bg-white/55 backdrop-blur-md rounded-3xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
       data-testid={`drop-item-${d.id}`}
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
@@ -1329,7 +1329,7 @@ function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
   const { lang } = useLanguage();
   return (
     <div
-      className="bg-white rounded-2xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex items-stretch"
+      className="bg-white/55 backdrop-blur-md rounded-2xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex items-stretch"
       data-testid={`drop-item-${d.id}`}
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
@@ -2084,7 +2084,7 @@ export default function Home({
 
                   {/* AI Search bar */}
                   <div className="relative w-full max-w-2xl">
-                    <div className="liquid-glass-light backdrop-blur-xl backdrop-saturate-150 relative rounded-full flex items-center h-16 pl-6 pr-2 text-left">
+                    <div className="bg-white/95 backdrop-blur-md border border-white/70 shadow-[0_10px_34px_rgba(15,23,42,0.20)] relative rounded-full flex items-center h-16 pl-6 pr-2 text-left">
                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
                           <input
                             type="text"
@@ -2226,7 +2226,7 @@ export default function Home({
 
           {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
               Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
-          <div className="relative z-10 bg-[#FAFAFF] rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-24 lg:pb-16">
+          <div className="relative z-10 bg-gradient-to-b from-white/40 to-white/90 backdrop-blur-2xl backdrop-saturate-150 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16">
 
           {/* ── AI search summary + suggested package ── */}
           {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage) && (

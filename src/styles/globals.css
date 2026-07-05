@@ -217,9 +217,9 @@
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    background: white;
-    border: 1px solid rgba(15, 23, 42, 0.04);
-    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 8px 28px rgba(15, 23, 42, 0.12);
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -281,10 +281,10 @@
 
   /* ── Nomaq card style ── */
   .nomaq-card {
-    background: white;
+    background: rgba(255, 255, 255, 0.55);
     border-radius: 20px;
-    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.03);
-    border: 1px solid rgba(15, 23, 42, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 8px 24px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.6);
   }
 
   /* ── Pill/chip style ── */
