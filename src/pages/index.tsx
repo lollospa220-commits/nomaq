@@ -234,8 +234,17 @@ function FeedCard({
       className="feed-card animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group"
       data-testid="feed-item"
       data-id={item.id}
+      role="button"
+      tabIndex={0}
+      aria-label={`${item.destination} — €${item.price}`}
       onClick={() => {
         if (item.booking_url) {
+          window.open(item.booking_url, '_blank');
+        }
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && item.booking_url) {
+          e.preventDefault();
           window.open(item.booking_url, '_blank');
         }
       }}
@@ -390,6 +399,7 @@ function StaysView({
                 placeholder="Napoli, Italia"
                 className={valueCls}
                 data-testid="stays-destination"
+                aria-label={t('destLabel')}
               />
             </div>
           </div>
@@ -429,6 +439,7 @@ function StaysView({
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
                 className={`${valueCls} cursor-pointer appearance-none pr-4`}
+                aria-label={t('guestsLabel')}
               >
                 {[1, 2, 3, 4, 5, 6].map((n) => (
                   <option key={n} value={n}>
@@ -447,6 +458,7 @@ function StaysView({
                 value={stayType}
                 onChange={(e) => setStayType(e.target.value)}
                 className={`${valueCls} cursor-pointer appearance-none pr-4`}
+                aria-label={t('stayTypeLabel')}
               >
                 <option value="all">{t('allStays')}</option>
                 <option value="hotel">{t('typeHotel')}</option>
@@ -1976,7 +1988,12 @@ export default function Home({
         />
       </Head>
 
-      <main className="min-h-screen pb-24 lg:pb-10" data-testid="app-root">
+      {/* WCAG 2.4.1 — skip link: first focusable element, jumps past the nav. */}
+      <a href="#main-content" className="skip-link">
+        Salta al contenuto
+      </a>
+
+      <main id="main-content" className="min-h-screen pb-24 lg:pb-10" data-testid="app-root">
         {/* ── Desktop top navbar ── */}
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} />
 
@@ -2296,7 +2313,7 @@ export default function Home({
 
           {/* ── Footer legale (tutti i tab) ── */}
           <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
-            <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-400" aria-label="Link legali">
+            <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-500" aria-label="Link legali">
               <Link href="/note-legali" className="hover:text-nomaq-indigo transition-colors">{t('footerLegal')}</Link>
               <span aria-hidden="true">·</span>
               <Link href="/termini" className="hover:text-nomaq-indigo transition-colors">{t('footerTerms')}</Link>
@@ -2305,7 +2322,7 @@ export default function Home({
               <span aria-hidden="true">·</span>
               <Link href="/cookie-policy" className="hover:text-nomaq-indigo transition-colors">{t('footerCookies')}</Link>
             </nav>
-            <p className="text-2xs text-slate-300 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
+            <p className="text-2xs text-slate-500 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
           </footer>
 
           {/* ── Bottom Nav ── */}

@@ -13,6 +13,9 @@
   html {
     scroll-behavior: smooth;
     overscroll-behavior: none;
+    /* Light-only UI: tell the UA so native controls (date pickers, scrollbars)
+       don't render in a clashing dark theme. */
+    color-scheme: light;
   }
 
   body {
@@ -52,6 +55,24 @@
   ::-webkit-scrollbar-thumb {
     background: rgba(79, 70, 229, 0.2);
     border-radius: 10px;
+  }
+
+  /* WCAG 2.4.7 — keyboard focus is always visible, even where components set
+     Tailwind's `outline-none` (that only suppresses the mouse :focus ring). */
+  *:focus-visible {
+    outline: 2px solid #4F46E5 !important;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+/* WCAG 2.3.3 — honour the user's reduced-motion preference across the app. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -169,6 +190,25 @@
   /* ── Safe area ── */
   .pb-safe {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
+  }
+
+  /* ── Skip link (WCAG 2.4.1) ── off-screen until keyboard-focused, then
+     slides into view. Explicit class avoids Tailwind sr-only ordering pitfalls. */
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 100;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #4f46e5;
+    font-weight: 600;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+    transition: top 0.15s ease;
+  }
+  .skip-link:focus {
+    top: 12px;
   }
 
   /* ── Bottom nav ── */
