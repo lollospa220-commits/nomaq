@@ -76,12 +76,14 @@ const MOCK_DROPS = [
 ───────────────────────────────────────────── */
 
 function NomaqLogo({ isDarkBackground }: { isDarkBackground?: boolean }) {
+  // -translate-x-4 (−16px) sull'img: centra OTTICAMENTE la parola "Nomaq", che
+  // le stelline a sinistra spingono ~16px a destra del centro geometrico.
   return (
-    <div className="flex items-center justify-center py-3.5 px-16">
+    <div className="flex items-center justify-center py-3.5">
       <img
         src="/images/logo.png"
         alt="Nomaq Logo"
-        className={`h-16 w-auto object-contain ${isDarkBackground ? 'brightness-0 invert' : ''}`}
+        className={`h-16 w-auto object-contain -translate-x-4 ${isDarkBackground ? 'brightness-0 invert' : ''}`}
         loading="eager"
       />
     </div>
@@ -170,7 +172,7 @@ function DesktopNav({ activeTab, onNavigate, isDarkBackground }: { activeTab: Ta
 }
 
 /* ── FAQ section ── */
-function FaqSection() {
+function FaqSection({ isDarkBackground }: { isDarkBackground?: boolean }) {
   const { t } = useLanguage();
   const [open, setOpen] = React.useState<number | null>(null);
   const faqs = [
@@ -184,8 +186,8 @@ function FaqSection() {
   return (
     <section className="px-5 lg:px-6 pb-10 mt-2" data-testid="faq-section">
       <div className="flex items-center gap-2 mb-4">
-        <ThreeSparklesIcon className="w-5 h-5 text-nomaq-indigo" />
-        <h2 className="text-base lg:text-xl font-bold text-nomaq-navy">{t('faqTitle')}</h2>
+        <ThreeSparklesIcon className={`w-5 h-5 ${isDarkBackground ? 'text-violet-300' : 'text-nomaq-indigo'}`} />
+        <h2 className={`text-base lg:text-xl font-bold ${isDarkBackground ? 'text-white text-on-globe' : 'text-nomaq-navy'}`}>{t('faqTitle')}</h2>
       </div>
       <div className="grid gap-3 lg:grid-cols-2 lg:gap-x-6">
         {faqs.map((faq, i) => {
@@ -293,7 +295,7 @@ function FeedCard({
       </div>
 
       {/* Content (Bottom half) */}
-      <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0 bg-white/40">
+      <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0 bg-white/80">
         {/* Row 1: titolo a piena larghezza (il tag vive sull'immagine) */}
         <div className="mb-1 min-h-[36px] lg:min-h-0">
           <h3 className="text-sm lg:text-base font-semibold text-nomaq-navy leading-snug line-clamp-2">{item.destination}</h3>
@@ -1847,6 +1849,9 @@ export default function Home({
 
   const currentTab = activeTab;
   const currentSaved = savedItems;
+  // Home (vola-vola, non in modalità piano) mostra il globo scuro dietro:
+  // lo sheet è trasparente e i testi "nudi" (titolo FAQ, footer) diventano chiari.
+  const isDarkBackground = currentTab === 'vola-vola' && !tripPlan;
 
   const handleSimulateDrop = () => {
     const allFeed = currentTab === 'vola-vola' ? flights : currentTab === 'soggiorna' ? hotels : feedItems;
@@ -2226,13 +2231,13 @@ export default function Home({
 
           {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
               Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
-          <div className="relative z-10 bg-gradient-to-b from-white/40 to-white/90 backdrop-blur-2xl backdrop-saturate-150 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16">
+          <div className={`relative z-10 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16 ${isDarkBackground ? 'bg-transparent' : 'bg-gradient-to-b from-white/40 to-white/90 backdrop-blur-2xl backdrop-saturate-150'}`}>
 
           {/* ── AI search summary + suggested package ── */}
           {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage) && (
             <div className="px-5 lg:px-6 mb-4" data-testid="ai-search-result">
               {aiSummary && (
-                <div className="nomaq-card bg-nomaq-lavender/40 border-nomaq-indigo/15 p-4 flex items-start gap-3 mb-3">
+                <div className="nomaq-card bg-nomaq-lavender/90 backdrop-blur-md border-nomaq-indigo/15 p-4 flex items-start gap-3 mb-3">
                   <ThreeSparklesIcon className="w-4 h-4 text-nomaq-indigo flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-nomaq-navy leading-snug">{aiSummary}</p>
                 </div>
@@ -2285,7 +2290,7 @@ export default function Home({
               </div>
 
               {/* FAQ */}
-              <FaqSection />
+              <FaqSection isDarkBackground={isDarkBackground} />
             </>
           )}
 
@@ -2339,7 +2344,7 @@ export default function Home({
           {/* ── Footer legale (tutti i tab) — dentro il foglio chiaro così resta
               leggibile anche sopra il globo scuro della home ── */}
           <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
-            <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-500" aria-label="Link legali">
+            <nav className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs ${isDarkBackground ? 'text-white/85 text-on-globe' : 'text-slate-500'}`} aria-label="Link legali">
               <Link href="/note-legali" className="hover:text-nomaq-indigo transition-colors">{t('footerLegal')}</Link>
               <span aria-hidden="true">·</span>
               <Link href="/termini" className="hover:text-nomaq-indigo transition-colors">{t('footerTerms')}</Link>
@@ -2348,7 +2353,7 @@ export default function Home({
               <span aria-hidden="true">·</span>
               <Link href="/cookie-policy" className="hover:text-nomaq-indigo transition-colors">{t('footerCookies')}</Link>
             </nav>
-            <p className="text-2xs text-slate-500 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
+            <p className={`text-2xs mt-2 ${isDarkBackground ? 'text-white/75 text-on-globe' : 'text-slate-500'}`}>© 2026 Nomaq · nomaq061@gmail.com</p>
           </footer>
           </div>
 

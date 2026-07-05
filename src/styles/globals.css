@@ -217,9 +217,9 @@
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 8px 28px rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 34px rgba(15, 23, 42, 0.22);
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -281,10 +281,20 @@
 
   /* ── Nomaq card style ── */
   .nomaq-card {
-    background: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.85);
     border-radius: 20px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 8px 24px rgba(15, 23, 42, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 34px rgba(15, 23, 42, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+  }
+
+  /* Testo chiaro leggibile sopra il globo scuro animato (titolo FAQ, footer su
+     home): ombra morbida per stacco su qualunque zona del globo. */
+  .text-on-globe {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .feed-card, .nomaq-card { background: rgba(255, 255, 255, 0.96); backdrop-filter: none; -webkit-backdrop-filter: none; }
   }
 
   /* ── Pill/chip style ── */
