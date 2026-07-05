@@ -2049,6 +2049,16 @@ export default function Home({
           {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
           {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
             <div className="px-5 lg:px-6 mb-5">
+              {/* Backdrop scuro statico (SSR) dietro al globo: la hero a testo
+                  chiaro resta leggibile subito, prima che il globo WebGL
+                  (dynamic, ssr:false) carichi — e anche se WebGL non è
+                  disponibile. Sotto il globo (-z-60) e sopra il gradiente
+                  chiaro del body. */}
+              <div
+                className="fixed inset-0 -z-[60]"
+                aria-hidden="true"
+                style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
+              />
               {/* Full-screen fixed globe background rendered only when Hero is active */}
               <GlobeGL />
 
@@ -2074,7 +2084,7 @@ export default function Home({
 
                   {/* AI Search bar */}
                   <div className="relative w-full max-w-2xl">
-                    <div className="relative bg-white/95 backdrop-blur-md rounded-full shadow-soft flex items-center h-16 pl-6 pr-2 border border-slate-100 text-left">
+                    <div className="liquid-glass-light backdrop-blur-xl backdrop-saturate-150 relative rounded-full flex items-center h-16 pl-6 pr-2 text-left">
                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
                           <input
                             type="text"
@@ -2119,7 +2129,7 @@ export default function Home({
 
                       {/* Dropdown ricerche recenti */}
                     {isFocused && (
-                      <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-2xl p-4 border border-slate-100 text-left animate-fade-in">
+                      <div className="liquid-glass-light backdrop-blur-xl backdrop-saturate-150 absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl p-4 text-left animate-fade-in">
                         <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>
                         <div className="flex flex-col gap-2">
                           <button
@@ -2163,10 +2173,10 @@ export default function Home({
                               aria-hidden={dup ? 'true' : undefined}
                               tabIndex={dup ? -1 : 0}
                               onClick={() => (s.isSurprise ? runSurprise() : runQuick(s.text))}
-                              className={`mr-3 flex items-center gap-2 px-4 py-2.5 rounded-full border backdrop-blur-md transition-colors duration-200 whitespace-nowrap ${
+                              className={`mr-3 flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-200 whitespace-nowrap ${
                                 s.isSurprise
-                                  ? 'border-violet-400/40 bg-transparent hover:bg-violet-500/20'
-                                  : 'border-white/15 bg-transparent hover:bg-white/10'
+                                  ? 'liquid-glass liquid-glass-violet'
+                                  : 'liquid-glass'
                               }`}
                             >
                               {s.icon}
@@ -2186,7 +2196,7 @@ export default function Home({
                               aria-hidden={dup ? 'true' : undefined}
                               tabIndex={dup ? -1 : 0}
                               onClick={() => runQuick(label)}
-                              className="mr-3 px-4 py-2.5 rounded-full border border-white/15 bg-transparent backdrop-blur-md text-xs font-medium text-slate-100 hover:bg-white/10 transition-colors whitespace-nowrap"
+                              className="liquid-glass mr-3 px-4 py-2.5 rounded-full text-xs font-medium text-slate-100 transition-all whitespace-nowrap"
                             >
                               {label}
                             </button>

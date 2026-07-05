@@ -38,7 +38,7 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bottom-nav pb-safe glassmorphism lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 bottom-nav pb-safe glassmorphism backdrop-blur-xl backdrop-saturate-150 lg:hidden"
       data-testid="bottom-nav"
       role="navigation"
       aria-label="Navigazione principale"
