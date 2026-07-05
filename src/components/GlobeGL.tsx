@@ -102,7 +102,9 @@ export default function GlobeGL() {
     controls.autoRotate = !reduced;
     controls.autoRotateSpeed = 0.45;
 
-    globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Per performance estreme e caricamento rapido limitiamo il pixel ratio a 1
+    // (o al max 1.25 su schermi molto densi) per alleggerire GPU e batteria.
+    globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
 
     // Illuminazione: alba calda dall'alto, resto in ombra
     const amb = new THREE.AmbientLight(0xffffff, 0.22);

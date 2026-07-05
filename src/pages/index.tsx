@@ -79,9 +79,9 @@ function NomaqLogo({ isDarkBackground }: { isDarkBackground?: boolean }) {
   return (
     <div className="flex items-center justify-center py-4">
       <img
-        src={isDarkBackground ? "/images/logo-white.png" : "/images/logo.png"}
+        src="/images/logo.png"
         alt="Nomaq Logo"
-        className="h-[90px] w-auto object-contain"
+        className={`h-[90px] w-auto object-contain ${isDarkBackground ? 'brightness-0 invert' : ''}`}
         loading="eager"
       />
     </div>
@@ -134,10 +134,9 @@ function DesktopNav({ activeTab, onNavigate, isDarkBackground }: { activeTab: Ta
     >
       <div className="max-w-6xl mx-auto h-20 px-6 flex items-center justify-between">
         <img
-          src={isDarkBackground ? "/images/logo-white.png" : "/images/logo.png"}
+          src="/images/logo.png"
           alt="Nomaq"
-          onError={(e) => { e.currentTarget.src = "/images/logo.png" }}
-          className="h-[60px] w-auto object-contain cursor-pointer -ml-8"
+          className={`h-[60px] w-auto object-contain cursor-pointer -ml-8 ${isDarkBackground ? 'brightness-0 invert' : ''}`}
           onClick={() => onNavigate('vola-vola')}
         />
         <nav className="flex items-center gap-1" aria-label="Navigazione principale desktop">
@@ -2056,7 +2055,7 @@ export default function Home({
               {/* Hero: ora trasparente, fa vedere il GlobeGL fisso sul retro. */}
               <div className="relative mb-8 lg:mb-14 px-5 py-12 lg:px-10 lg:py-20">
                 {/* Velo per staccare il testo dal globo e dare profondità */}
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0a0a1e]/30 via-transparent to-[#141036]/60" />
+
 
                 {/* Foreground */}
                 <div className="relative z-10 flex flex-col items-center text-center">
@@ -2166,8 +2165,8 @@ export default function Home({
                               onClick={() => (s.isSurprise ? runSurprise() : runQuick(s.text))}
                               className={`mr-3 flex items-center gap-2 px-4 py-2.5 rounded-full border backdrop-blur-md transition-colors duration-200 whitespace-nowrap ${
                                 s.isSurprise
-                                  ? 'border-violet-400/40 bg-violet-500/20 hover:bg-violet-500/30'
-                                  : 'border-white/15 bg-white/10 hover:bg-white/15'
+                                  ? 'border-violet-400/40 bg-transparent hover:bg-violet-500/20'
+                                  : 'border-white/15 bg-transparent hover:bg-white/10'
                               }`}
                             >
                               {s.icon}
@@ -2187,7 +2186,7 @@ export default function Home({
                               aria-hidden={dup ? 'true' : undefined}
                               tabIndex={dup ? -1 : 0}
                               onClick={() => runQuick(label)}
-                              className="mr-3 px-4 py-2.5 rounded-full border border-white/15 bg-white/10 backdrop-blur-md text-xs font-medium text-slate-100 hover:bg-white/15 transition-colors whitespace-nowrap"
+                              className="mr-3 px-4 py-2.5 rounded-full border border-white/15 bg-transparent backdrop-blur-md text-xs font-medium text-slate-100 hover:bg-white/10 transition-colors whitespace-nowrap"
                             >
                               {label}
                             </button>
@@ -2202,12 +2201,12 @@ export default function Home({
               {/* Section label row — serif come gli altri titoli di sezione (FAQ, Radar) */}
               <div className="flex items-baseline justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-nomaq-indigo" strokeWidth={1.5} />
-                  <h2 className="font-display text-xl lg:text-2xl text-nomaq-navy">{t('pickedForYou')}</h2>
+                  <Sparkles className="w-4 h-4 text-violet-300" strokeWidth={1.5} />
+                  <h2 className="font-display text-xl lg:text-2xl text-white">{t('pickedForYou')}</h2>
                 </div>
                 <button
                   onClick={() => setShowAllDeals(!showAllDeals)}
-                  className="hidden lg:flex items-center gap-1 text-sm font-medium text-nomaq-indigo hover:text-nomaq-violet transition-colors"
+                  className="hidden lg:flex items-center gap-1 text-sm font-medium text-violet-300 hover:text-white transition-colors"
                 >
                   {t('seeAllDeals')} <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </button>
@@ -2217,7 +2216,7 @@ export default function Home({
 
           {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
               Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
-          <div className="relative z-10 bg-[#FAFAFF] rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-12">
+          <div className="relative z-10 bg-[#FAFAFF] rounded-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-12">
 
           {/* ── AI search summary + suggested package ── */}
           {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage) && (
