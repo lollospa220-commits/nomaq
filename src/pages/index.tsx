@@ -2000,7 +2000,7 @@ export default function Home({
         Salta al contenuto
       </a>
 
-      <main id="main-content" className="min-h-screen pb-24 lg:pb-10 relative z-0" data-testid="app-root">
+      <main id="main-content" className="min-h-screen relative z-0" data-testid="app-root">
         {/* ── Desktop top navbar ── */}
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
 
@@ -2216,7 +2216,7 @@ export default function Home({
 
           {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
               Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
-          <div className="relative z-10 bg-[#FAFAFF] rounded-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-12">
+          <div className="relative z-10 bg-[#FAFAFF] rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-24 lg:pb-16">
 
           {/* ── AI search summary + suggested package ── */}
           {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage) && (
@@ -2325,9 +2325,9 @@ export default function Home({
               ))}
             </div>
           )}
-          </div>
 
-          {/* ── Footer legale (tutti i tab) ── */}
+          {/* ── Footer legale (tutti i tab) — dentro il foglio chiaro così resta
+              leggibile anche sopra il globo scuro della home ── */}
           <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
             <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-500" aria-label="Link legali">
               <Link href="/note-legali" className="hover:text-nomaq-indigo transition-colors">{t('footerLegal')}</Link>
@@ -2340,6 +2340,7 @@ export default function Home({
             </nav>
             <p className="text-2xs text-slate-500 mt-2">© 2026 Nomaq · nomaq061@gmail.com</p>
           </footer>
+          </div>
 
           {/* ── Bottom Nav ── */}
           <BottomNav
