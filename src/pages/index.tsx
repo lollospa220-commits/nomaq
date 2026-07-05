@@ -14,6 +14,7 @@ import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
 import { buildKiwiDeepLink } from '@/utils/kiwiLink';
 import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
+import SmartImage from '@/components/SmartImage';
 import ProfiloView from '@/components/views/ProfiloView';
 import ConciergeView from '@/components/views/ConciergeView';
 
@@ -241,15 +242,12 @@ function FeedCard({
     >
       {/* Image (Top half) — zoom lento su hover, cifra tipica dei siti premium */}
       <div className="relative w-full h-28 lg:h-44 flex-shrink-0 overflow-hidden">
-        <img
+        <SmartImage
           src={item.image || getDestinationImage(item.destination, item.id || 'item')}
+          fallbackSrc={getDestinationImage(item.destination, item.id || 'item')}
           alt={item.destination}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          loading="lazy"
-          onError={(e) => {
-            const fallback = getDestinationImage(item.destination, item.id || 'item');
-            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
-          }}
+          sizes="(min-width: 1024px) 300px, 45vw"
+          className="transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
         {/* Save button */}
         <button
@@ -524,10 +522,12 @@ function StaysView({
             onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
           >
             <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
-              <img
+              <SmartImage
                 src={featured.image || getDestinationImage(featured.destination, featured.id || 'featured')}
+                fallbackSrc={getDestinationImage(featured.destination, featured.id || 'featured')}
                 alt={featured.destination}
-                className="absolute inset-0 w-full h-full object-cover"
+                sizes="(min-width: 1024px) 60vw, 100vw"
+                priority
               />
               <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-xs font-bold text-nomaq-navy flex items-center gap-1.5 shadow-soft">
                 <Tag className="w-3.5 h-3.5 text-nomaq-indigo" /> {t('bestValue')}
@@ -660,15 +660,11 @@ function StayCard({
       onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank'); }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 rounded-2xl overflow-hidden min-h-[104px]">
-        <img
+        <SmartImage
           src={image}
+          fallbackSrc={getDestinationImage(name, id)}
           alt={name}
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            const fallback = getDestinationImage(name, id);
-            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
-          }}
+          sizes="128px"
         />
         <button
           data-testid="save-button"
@@ -1048,10 +1044,10 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
         {/* Hotel card */}
         <div className={`${glass} overflow-hidden flex flex-col`} data-testid="trip-hotel">
           <div className="relative h-36 lg:h-40 flex-shrink-0">
-            <img
+            <SmartImage
               src={getDestinationImage(meta.destination, h?.name || 'hotel')}
-              alt={h?.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              alt={h?.name || meta.destination || 'Hotel'}
+              sizes="(min-width: 1024px) 40vw, 100vw"
             />
             {h?.badge && (
               <span className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-white px-3 py-1.5 rounded-full bg-emerald-500 shadow-sm">
@@ -1291,7 +1287,7 @@ function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative h-36 lg:h-40">
-        <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="(min-width: 1024px) 33vw, 100vw" />
         <RadarBadges d={d} />
       </div>
       <div className="p-4 flex items-end justify-between gap-3">
@@ -1319,7 +1315,7 @@ function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
-        <img src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="128px" />
         <RadarBadges d={d} small />
       </div>
       <div className="flex-1 px-3.5 py-3 flex items-center justify-between gap-3 min-w-0">
