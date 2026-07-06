@@ -3,7 +3,7 @@ import SEO from '@/components/SEO';
 import Link from 'next/link';
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { Heart, MapPin, Calendar, Clock, Share2, Bell, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, Settings, User, LogOut, Gift, Globe, Shield, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, PartyPopper, Tag, Palmtree, Wand2, MessageCircle, Paperclip, Send, Mic, CloudSun, Utensils, Map, Languages, Ticket, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, User, Globe, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, Tag, Palmtree, Wand2, Utensils, Map, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppState, TabId } from '@/context/AppState';
 import { TranslationKey } from '@/i18n/translations';

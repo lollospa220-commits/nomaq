@@ -7,8 +7,6 @@ interface AppContextType {
   setActiveTab: (tab: TabId) => void;
   savedItems: string[];
   toggleSaveItem: (id: string, itemType?: 'flight' | 'hotel') => void;
-  drops: string[];
-  addDrop: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -33,7 +31,6 @@ export const AppStateProvider: React.FC<{
 }> = ({ children, initialTab, initialSavedItems }) => {
   const [activeTab, setActiveTab] = useState<TabId>(initialTab || 'vola-vola');
   const [savedItems, setSavedItems] = useState<string[]>(initialSavedItems || []);
-  const [drops, setDrops] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
 
   useEffect(() => {
@@ -83,10 +80,6 @@ export const AppStateProvider: React.FC<{
     }
   };
 
-  const addDrop = (id: string) => {
-    setDrops((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  };
-
   return (
     <AppContext.Provider
       value={{
@@ -94,8 +87,6 @@ export const AppStateProvider: React.FC<{
         setActiveTab,
         savedItems,
         toggleSaveItem,
-        drops,
-        addDrop,
       }}
     >
       {children}
