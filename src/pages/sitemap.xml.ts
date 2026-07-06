@@ -1,37 +1,35 @@
 import { GetServerSideProps } from 'next';
+import { SITE_URL } from '@/utils/siteUrl';
 
-const DOMAIN = 'https://nomaq.app';
+// Dominio centralizzato (vedi utils/siteUrl.ts): prima era hardcoded nomaq.app
+// mentre il deploy girava su un sottodominio Vercel → sitemap incoerente.
+const DOMAIN = SITE_URL;
 
-function generateSiteMap() {
+type Entry = { path: string; changefreq: string; priority: string };
+
+const ENTRIES: Entry[] = [
+  { path: '/', changefreq: 'daily', priority: '1.0' },
+  { path: '/soggiorna', changefreq: 'daily', priority: '0.9' },
+  { path: '/waitlist', changefreq: 'weekly', priority: '0.8' },
+  { path: '/note-legali', changefreq: 'monthly', priority: '0.3' },
+  { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
+  { path: '/termini', changefreq: 'monthly', priority: '0.3' },
+  { path: '/cookie-policy', changefreq: 'monthly', priority: '0.3' },
+];
+
+function generateSiteMap(lastmod: string) {
+  const urls = ENTRIES.map(
+    (e) => `  <url>
+    <loc>${DOMAIN}${e.path}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${e.changefreq}</changefreq>
+    <priority>${e.priority}</priority>
+  </url>`
+  ).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
-   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-     <url>
-       <loc>${DOMAIN}/</loc>
-       <changefreq>daily</changefreq>
-       <priority>1.0</priority>
-     </url>
-     <url>
-       <loc>${DOMAIN}/waitlist</loc>
-       <changefreq>weekly</changefreq>
-       <priority>0.8</priority>
-     </url>
-     <url>
-       <loc>${DOMAIN}/privacy</loc>
-       <changefreq>monthly</changefreq>
-       <priority>0.3</priority>
-     </url>
-     <url>
-       <loc>${DOMAIN}/termini</loc>
-       <changefreq>monthly</changefreq>
-       <priority>0.3</priority>
-     </url>
-     <url>
-       <loc>${DOMAIN}/cookie-policy</loc>
-       <changefreq>monthly</changefreq>
-       <priority>0.3</priority>
-     </url>
-   </urlset>
- `;
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>`;
 }
 
 export default function SiteMap() {
@@ -39,13 +37,15 @@ export default function SiteMap() {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const sitemap = generateSiteMap();
+  const lastmod = new Date().toISOString().split('T')[0];
+  const sitemap = generateSiteMap(lastmod);
 
-  res.setHeader('Content-Type', 'text/xml');
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/xml; charset=utf-8');
+  // La sitemap cambia di rado: lasciala cachare al CDN per un giorno.
+  res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
   res.write(sitemap);
   res.end();
 
-  return {
-    props: {},
-  };
+  return { props: {} };
 };

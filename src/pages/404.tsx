@@ -7,6 +7,7 @@ export default function Custom404() {
     <>
       <Head>
         <title>Pagina non trovata — Nomaq</title>
+        <meta name="robots" content="noindex, follow" />
       </Head>
       <main className="min-h-screen bg-mesh flex flex-col items-center justify-center p-6 text-center" data-testid="app-root">
         <div className="glass-card max-w-md w-full p-8 rounded-3xl animate-fade-in" data-testid="not-found">

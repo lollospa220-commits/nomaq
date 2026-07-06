@@ -14,6 +14,7 @@ import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
 import { buildKiwiDeepLink } from '@/utils/kiwiLink';
+import { SITE_URL } from '@/utils/siteUrl';
 import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
 import SmartImage from '@/components/SmartImage';
 import ProfiloView from '@/components/views/ProfiloView';
@@ -1589,10 +1590,37 @@ function ToastNotification({ notif, onDismiss }: { notif: any; onDismiss: (id: s
 /* ─────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────── */
+// Titolo + description per tab: ogni tab è una route SSR distinta (initialTab
+// impostato in getServerSideProps) → l'HTML iniziale che Google indicizza porta
+// meta corretti, non identici su tutti i tab.
+const SEO_META: Record<string, { title: string; description: string }> = {
+  'vola-vola': {
+    title: "Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI",
+    description: "Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno.",
+  },
+  soggiorna: {
+    title: 'Soggiorni e hotel al prezzo giusto — Nomaq',
+    description: "Hotel e soggiorni selezionati dall'AI al miglior rapporto qualità/prezzo. Cerca qualsiasi destinazione e prenota senza pensieri.",
+  },
+  drops: {
+    title: 'Radar prezzi voli in tempo reale — Nomaq',
+    description: "Il Radar Nomaq monitora le rotte e segnala i cali di prezzo appena avvengono. Non perdere più un'offerta.",
+  },
+  salvati: {
+    title: 'Concierge AI di viaggio — Nomaq',
+    description: 'Il Concierge AI di Nomaq pianifica il viaggio perfetto: ristoranti, itinerari, trasporti, su misura per te.',
+  },
+  profilo: {
+    title: 'Il tuo profilo — Nomaq',
+    description: 'Gestisci il tuo profilo Nomaq, i viaggi salvati e le preferenze.',
+  },
+};
+
 export default function Home({
   query,
   resolvedUrl,
   isE2E,
+  noindex,
   initialFlights,
   initialHotels,
   initialSimulatedDrops,
@@ -2008,18 +2036,18 @@ export default function Home({
   const jsonLdGraph: any[] = [
     {
       '@type': 'Organization',
-      '@id': 'https://nomaq.app/#organization',
+      '@id': `${SITE_URL}/#organization`,
       name: 'Nomaq',
-      url: 'https://nomaq.app',
-      logo: 'https://nomaq.app/images/logo.png',
+      url: SITE_URL,
+      logo: `${SITE_URL}/images/logo.png`,
     },
     {
       '@type': 'WebSite',
-      '@id': 'https://nomaq.app/#website',
-      url: 'https://nomaq.app',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
       name: 'Nomaq',
       inLanguage: lang === 'en' ? 'en' : 'it',
-      publisher: { '@id': 'https://nomaq.app/#organization' },
+      publisher: { '@id': `${SITE_URL}/#organization` },
     },
   ];
   if (currentTab === 'vola-vola') {
@@ -2033,13 +2061,11 @@ export default function Home({
     });
   }
   const jsonLd = { '@context': 'https://schema.org', '@graph': jsonLdGraph };
+  const seoMeta = SEO_META[currentTab] || SEO_META['vola-vola'];
 
   return (
     <>
-      <SEO
-        title="Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI"
-        description="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno."
-      />
+      <SEO title={seoMeta.title} description={seoMeta.description} noindex={noindex} />
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#4F46E5" />
@@ -2603,6 +2629,9 @@ export async function getServerSideProps(context: any) {
       query,
       resolvedUrl,
       isE2E,
+      // noindex sui deploy di PREVIEW Vercel (mai in produzione): evita che gli
+      // URL *.vercel.app di anteprima creino contenuti duplicati su Google.
+      noindex: process.env.VERCEL_ENV === 'preview',
       initialTab,
       initialSavedItems,
       initialFlights: formattedFlights,

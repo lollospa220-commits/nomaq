@@ -1,6 +1,6 @@
 import React from 'react';
-import Head from 'next/head';
 import Link from 'next/link';
+import SEO from '@/components/SEO';
 
 const LEGAL_PAGES = [
   { href: '/note-legali', label: 'Note legali' },
@@ -42,10 +42,7 @@ export default function LegalLayout({ title, description, current, subtitle, chi
 
   return (
     <>
-      <Head>
-        <title>{`${title} — Nomaq`}</title>
-        <meta name="description" content={description} />
-      </Head>
+      <SEO title={`${title} — Nomaq`} description={description} />
       <main className="min-h-screen" data-testid="legal-page">
         <div className="max-w-2xl mx-auto px-5 py-10">
           <Link href="/" className="text-nomaq-indigo font-semibold text-sm">
