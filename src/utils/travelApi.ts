@@ -4,6 +4,7 @@ import { getDestinationImage, ensureVariedImages } from './destinationImages';
 const DUFFEL_OFFERS_URL = 'https://api.duffel.com/air/offer_requests';
 const TRAVELPAYOUTS_PRICES_URL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
 const RAPIDAPI_HOTELS_URL = 'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels';
+const RAPIDAPI_SEARCH_LOCATION_URL = 'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchLocation';
 
 // ── In-memory result cache ──────────────────────────────────────────────
 // Both getServerSideProps and the /api/{flights,hotels} routes call the
@@ -420,6 +421,94 @@ export async function fetchLiveFares(originIata: string, destIata: string, limit
   });
 
   return data as LiveFare[];
+}
+
+// Hotel reali per una destinazione ARBITRARIA (non solo i due geoId fissi del
+// feed): risolve prima nome → geoId con searchLocation, poi interroga
+// searchHotels per prezzi reali. È ciò che rende la ricerca hotel live per
+// qualsiasi luogo. Restituisce fino a `limit` hotel con prezzo reale ordinati
+// per prezzo, oppure [] se manca la chiave / geoId non risolto / nessun dato /
+// qualsiasi errore — così il chiamante ricade sulle stime AI. Cache per-query.
+export type LiveHotel = {
+  name: string;
+  price: number;          // prezzo a notte reale rilevato
+  rating: number | null;
+  stars: number | null;
+};
+
+export async function fetchLiveHotels(destinationName: string, limit = 6): Promise<LiveHotel[]> {
+  const rapidApiKey = process.env.RAPIDAPI_KEY;
+  if (!rapidApiKey || rapidApiKey.startsWith('YOUR_')) return [];
+  const query = String(destinationName || '').trim();
+  if (!query) return [];
+
+  const data = await withCache(`livehotel-${query.toLowerCase()}`, async () => {
+    try {
+      const headers = {
+        'x-rapidapi-key': rapidApiKey,
+        'x-rapidapi-host': 'tripadvisor16.p.rapidapi.com',
+      };
+
+      // 1) nome destinazione → geoId (TripAdvisor). Il geoId è numerico; lo si
+      // estrae in modo difensivo da più campi possibili della risposta.
+      const locRes = await fetch(`${RAPIDAPI_SEARCH_LOCATION_URL}?query=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(8000),
+        headers,
+      });
+      if (!locRes.ok) return [];
+      const locJson = await locRes.json();
+      const locList = Array.isArray(locJson?.data) ? locJson.data : [];
+      let geoId: string | null = null;
+      for (const loc of locList) {
+        for (const c of [loc?.geoId, loc?.documentId, loc?.locationId, loc?.geo_id]) {
+          if (c == null) continue;
+          const digits = String(c).match(/\d{3,}/)?.[0]; // i geoId sono ≥3 cifre
+          if (digits) { geoId = digits; break; }
+        }
+        if (geoId) break;
+      }
+      if (!geoId) return [];
+
+      // 2) geoId → hotel reali per una finestra vicina (3 notti).
+      const checkIn = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const checkOut = new Date(Date.now() + 48 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const url = `${RAPIDAPI_HOTELS_URL}?geoId=${encodeURIComponent(geoId)}&checkIn=${checkIn}&checkOut=${checkOut}&pageNumber=1&currency=EUR`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
+      if (!res.ok) return [];
+      const json = await res.json();
+      const hotelData = Array.isArray(json?.data?.data) ? json.data.data : [];
+
+      const hotels: LiveHotel[] = [];
+      const seen = new Set<string>();
+      for (const hotel of hotelData) {
+        const price = parseHotelPrice(hotel?.priceForDisplay)
+          ?? parseHotelPrice(hotel?.priceDetails)
+          ?? parseHotelPrice(hotel?.priceSummary);
+        if (price == null) continue;
+        // I titoli TripAdvisor arrivano spesso con un rank "1. Hotel …": rimuovilo.
+        const name = String(hotel?.title || hotel?.name || '').replace(/^\d+\.\s*/, '').trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const rawRating = Number(hotel?.bubbleRating?.rating);
+        const rawStars = Number(hotel?.hotelClass ?? hotel?.starRating);
+        hotels.push({
+          name,
+          price,
+          rating: Number.isFinite(rawRating) && rawRating > 0 ? Number(rawRating.toFixed(1)) : null,
+          stars: Number.isFinite(rawStars) && rawStars > 0 ? Math.round(rawStars) : null,
+        });
+      }
+      hotels.sort((a, b) => a.price - b.price);
+      return hotels.slice(0, Math.min(Math.max(Math.round(limit), 1), 20));
+    } catch (err) {
+      console.warn(`Live hotels fetch failed for ${query}:`, err);
+      return [];
+    }
+  });
+
+  return data as LiveHotel[];
 }
 
 // Fetch Flights: Travelpayouts (prezzi reali) → Duffel (solo token live) → cache Supabase

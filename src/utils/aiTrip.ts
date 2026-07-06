@@ -7,7 +7,7 @@
  */
 
 import { getDestinationImage } from './destinationImages';
-import { fetchLiveFares } from './travelApi';
+import { fetchLiveFares, fetchLiveHotels } from './travelApi';
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 
@@ -86,6 +86,8 @@ export type DestinationCard = {
   originalPrice: null;   // never a fake struck price
   airline?: string;      // flight only
   hotelName?: string;    // hotel only
+  rating?: number;       // hotel: valutazione reale (mostrata nel DetailSheet)
+  stars?: number;        // hotel: classe stelle reale
   image: string;
   booking_url: string;
   tag: string;           // 'STIMA AI' (stima) | 'PREZZO REALE'/'LIVE PRICE' (reale)
@@ -507,7 +509,7 @@ async function normalizeDestination(parsed: any, lang?: string): Promise<AiTripR
     })
     .filter(Boolean) as DestinationCard[];
 
-  const hotels: DestinationCard[] = rawHotels
+  const aiHotels: DestinationCard[] = rawHotels
     .map((h: any, i: number): DestinationCard | null => {
       const price = num(h?.priceEstimate);
       const name = String(h?.name || '').trim();
@@ -533,41 +535,62 @@ async function normalizeDestination(parsed: any, lang?: string): Promise<AiTripR
     })
     .filter(Boolean) as DestinationCard[];
 
-  // ── Ricerca live: prezzi REALI di mercato per la rotta MXP → destinazione ──
-  // Un solo round-trip Travelpayouts (tutti i voli sono verso lo stesso luogo).
-  // Se ci sono dati reali sostituiscono/anticipano le stime AI; su qualsiasi
-  // fallimento restano le stime, quindi il caso peggiore = comportamento attuale.
+  // ── Ricerca live: prezzi REALI per questa destinazione ──────────────────
+  // Voli: una richiesta Travelpayouts sulla rotta MXP → destinazione (tutti i
+  // voli sono verso lo stesso luogo). Hotel: nome → geoId → prezzi TripAdvisor.
+  // Le due chiamate sono indipendenti → in parallelo. Se ci sono dati reali
+  // sostituiscono/anticipano le stime AI; su qualsiasi fallimento restano le
+  // stime, quindi il caso peggiore = comportamento attuale.
   const destIata = pickDestIata(rawFlights);
-  let liveFlights: DestinationCard[] = [];
-  if (destIata) {
-    try {
-      const fares = await fetchLiveFares('MXP', destIata, 6);
-      liveFlights = fares.map((f, i): DestinationCard => ({
-        id: `live-flight-${slug}-${f.airlineCode || 'xx'}-${f.departureDay}`,
-        type: 'flight',
-        destination: isEn ? `Flight to ${destination}` : `Volo per ${destination}`,
-        country,
-        description: isEn
-          ? `Real market fare (Travelpayouts) MXP → ${destIata} with ${f.airline}, one-way on ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Observed price, subject to availability.`
-          : `Tariffa reale di mercato (Travelpayouts) MXP → ${destIata} con ${f.airline}, solo andata il ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Prezzo osservato, soggetto a disponibilità.`,
-        price: f.price,
-        originalPrice: null,
-        airline: f.airline,
-        image: getDestinationImage(destination, `live-flight-${destination}-${i}`),
-        booking_url: liveFareFlightUrl('MXP', destIata, f.departureDay),
-        tag: isEn ? 'LIVE PRICE' : 'PREZZO REALE',
-        estimate: false,
-      }));
-    } catch {
-      // rete/parse KO → si tengono le stime AI
-    }
-  }
+  const [fares, liveHotelsRaw] = await Promise.all([
+    destIata ? fetchLiveFares('MXP', destIata, 6).catch(() => []) : Promise.resolve([]),
+    fetchLiveHotels(destination, 6).catch(() => []),
+  ]);
 
-  // Con ≥3 tariffe reali si mostra SOLO il reale (lista pulita e coerente); con
-  // 1-2 si anticipano al reale e si completa con le stime AI; con 0 solo stime.
+  const liveFlights: DestinationCard[] = (fares as Awaited<ReturnType<typeof fetchLiveFares>>).map((f, i): DestinationCard => ({
+    id: `live-flight-${slug}-${f.airlineCode || 'xx'}-${f.departureDay}`,
+    type: 'flight',
+    destination: isEn ? `Flight to ${destination}` : `Volo per ${destination}`,
+    country,
+    description: isEn
+      ? `Real market fare (Travelpayouts) MXP → ${destIata} with ${f.airline}, one-way on ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Observed price, subject to availability.`
+      : `Tariffa reale di mercato (Travelpayouts) MXP → ${destIata} con ${f.airline}, solo andata il ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Prezzo osservato, soggetto a disponibilità.`,
+    price: f.price,
+    originalPrice: null,
+    airline: f.airline,
+    image: getDestinationImage(destination, `live-flight-${destination}-${i}`),
+    booking_url: liveFareFlightUrl('MXP', destIata as string, f.departureDay),
+    tag: isEn ? 'LIVE PRICE' : 'PREZZO REALE',
+    estimate: false,
+  }));
+
+  const liveHotels: DestinationCard[] = (liveHotelsRaw as Awaited<ReturnType<typeof fetchLiveHotels>>).map((h, i): DestinationCard => ({
+    id: `live-hotel-${slug}-${i}`,
+    type: 'hotel',
+    destination: h.name,
+    country,
+    description: isEn
+      ? `Real price found on TripAdvisor for ${h.name}, ${destination}${h.stars ? ` · ${h.stars}★` : ''}. Price per night for the selected dates, subject to availability.`
+      : `Prezzo reale rilevato su TripAdvisor per ${h.name}, ${destination}${h.stars ? ` · ${h.stars}★` : ''}. Prezzo a notte per le date indicate, soggetto a disponibilità.`,
+    price: h.price,
+    originalPrice: null,
+    hotelName: h.name,
+    ...(h.rating != null ? { rating: h.rating } : {}),
+    ...(h.stars != null ? { stars: h.stars } : {}),
+    image: getDestinationImage(destination, `live-hotel-${destination}-${i}`),
+    booking_url: destinationHotelUrl(h.name, destination),
+    tag: isEn ? 'LIVE PRICE' : 'PREZZO REALE',
+    estimate: false,
+  }));
+
+  // Con ≥3 risultati reali si mostra SOLO il reale (lista pulita e coerente);
+  // con 1-2 si anticipa il reale e si completa con le stime AI; con 0 solo stime.
   const flights = liveFlights.length >= 3
     ? liveFlights.slice(0, 8)
     : [...liveFlights, ...aiFlights].slice(0, 8);
+  const hotels = liveHotels.length >= 3
+    ? liveHotels.slice(0, 8)
+    : [...liveHotels, ...aiHotels].slice(0, 8);
 
   if (flights.length === 0 && hotels.length === 0) {
     throw new Error('Destination mode produced no usable cards');
