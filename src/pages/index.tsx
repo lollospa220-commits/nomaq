@@ -15,6 +15,7 @@ import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
 import { buildKiwiDeepLink } from '@/utils/kiwiLink';
 import { SITE_URL } from '@/utils/siteUrl';
+import { formatFlight, formatHotel } from '@/utils/normalizeItem';
 import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
 import SmartImage from '@/components/SmartImage';
 import ProfiloView from '@/components/views/ProfiloView';
@@ -1843,15 +1844,7 @@ export default function Home({
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const formatted = data.map((item: any) => ({
-            ...item,
-            type: item.type || 'flight',
-            originalPrice: item.original_price ? Number(item.original_price) : null,
-            price: Number(item.price),
-            rating: item.rating ? Number(item.rating) : null,
-            stars: item.stars ? Number(item.stars) : undefined,
-            date: item.date_info || item.date,
-          }));
+          const formatted = data.map(formatFlight);
           setAllFlights(formatted);
           setFlights(formatted);
         }
@@ -1862,16 +1855,7 @@ export default function Home({
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const formatted = data.map((item: any) => ({
-            ...item,
-            type: item.type || 'hotel',
-            hotelName: item.hotel_name || item.hotelName || null,
-            originalPrice: item.original_price ? Number(item.original_price) : null,
-            price: Number(item.price),
-            rating: item.rating ? Number(item.rating) : null,
-            stars: item.stars ? Number(item.stars) : undefined,
-            date: item.date_info || item.date,
-          }));
+          const formatted = data.map(formatHotel);
           setAllHotels(formatted);
           setHotels(formatted);
         }
@@ -2509,26 +2493,8 @@ export async function getServerSideProps(context: any) {
   // Map to common formats for server-side render. originalPrice and rating
   // pass through only when a real value exists: inventing a markup or a
   // rating here would show fake discounts/stars on every card.
-  let formattedFlights = flights.map((item: any) => ({
-    ...item,
-    type: item.type || 'flight',
-    originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
-    price: Number(item.price),
-    rating: item.rating ? Number(item.rating) : null,
-    stars: item.stars ? Number(item.stars) : null,
-    date: item.date_info || item.date || '',
-  }));
-
-  let formattedHotels = hotels.map((item: any) => ({
-    ...item,
-    type: item.type || 'hotel',
-    hotelName: item.hotel_name || item.hotelName || null,
-    originalPrice: item.original_price || item.originalPrice ? Number(item.original_price || item.originalPrice) : null,
-    price: Number(item.price),
-    rating: item.rating ? Number(item.rating) : null,
-    stars: item.stars ? Number(item.stars) : null,
-    date: item.date_info || item.date || '',
-  }));
+  let formattedFlights = flights.map(formatFlight);
+  let formattedHotels = hotels.map(formatHotel);
 
   // Handle empty feed override for tests
   if (query.feed === 'empty') {
