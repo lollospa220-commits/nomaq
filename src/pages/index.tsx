@@ -389,6 +389,7 @@ function StaysView({
       {/* ── Hero: headline full width, search widget below ── */}
       <div className="lg:pt-10 mb-8 text-center lg:text-left">
         <div className="mb-6 lg:mb-8">
+          <p className="text-nomaq-indigo/70 text-[11px] font-medium uppercase tracking-[0.2em] mb-3">{t('staysEyebrow')}</p>
           <h1 className="font-display text-display-md lg:text-display-lg text-nomaq-navy leading-tight mb-3 lg:max-w-3xl">
             {t('staysHeadline')}
           </h1>
@@ -396,7 +397,7 @@ function StaysView({
         </div>
 
         {/* Search widget */}
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl lg:rounded-full shadow-soft border border-white/60 p-2 flex flex-col lg:flex-row lg:items-center text-left">
+        <div className="bg-white/95 backdrop-blur-md rounded-3xl lg:rounded-full shadow-[0_10px_34px_rgba(15,23,42,0.20)] border border-white/70 p-2 flex flex-col lg:flex-row lg:items-center text-left">
           <div className={`${fieldBase} flex-1 lg:min-w-[170px]`}>
             <MapPin className="w-5 h-5 text-nomaq-indigo flex-shrink-0" />
             <div className="min-w-0 flex-1">
@@ -482,7 +483,7 @@ function StaysView({
             disabled={isSearching}
             data-testid="stays-search-btn"
             aria-label={t('destLabel')}
-            className="m-2 lg:m-1 w-full lg:w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center flex-shrink-0 shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
+            className="m-2 lg:m-1 w-full lg:w-12 h-12 rounded-full bg-gradient-to-br from-nomaq-violet to-nomaq-indigo text-white flex items-center justify-center flex-shrink-0 shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
           >
             {isSearching ? (
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -538,7 +539,7 @@ function StaysView({
         {/* Featured stay: primo hotel reale del catalogo, nessun dato inventato */}
         {featured ? (
           <div
-            className="rounded-3xl overflow-hidden bg-white/60 backdrop-blur-md shadow-card border border-white/70 flex flex-col lg:flex-row cursor-pointer"
+            className="group rounded-3xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_34px_rgba(15,23,42,0.22)] flex flex-col lg:flex-row cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
             data-testid="feed-item"
             data-id={featured.id}
             onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
@@ -549,6 +550,7 @@ function StaysView({
                 fallbackSrc={getDestinationImage(featured.destination, featured.id || 'featured')}
                 alt={featured.destination}
                 sizes="(min-width: 1024px) 60vw, 100vw"
+                className="transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                 priority
               />
               <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-xs font-bold text-nomaq-navy flex items-center gap-1.5 shadow-soft">
@@ -597,9 +599,9 @@ function StaysView({
 
       {/* ── Picked for you by AI ── */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <ThreeSparklesIcon className="w-5 h-5 text-nomaq-indigo" />
-          <span className="text-sm lg:text-base font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
+          <h2 className="font-display text-xl lg:text-2xl text-nomaq-navy">{t('pickedForYou')}</h2>
         </div>
         <button className="flex items-center gap-1 text-sm font-semibold text-nomaq-indigo hover:text-nomaq-violet transition-colors">
           {t('seeAllStays')} <ArrowRight className="w-4 h-4" />
@@ -676,7 +678,7 @@ function StayCard({
 }) {
   return (
     <div
-      className="nomaq-card bg-white/60 backdrop-blur-md flex gap-3 p-3 items-stretch hover:shadow-card-hover transition-shadow duration-200 cursor-pointer"
+      className="nomaq-card bg-white/70 backdrop-blur-md flex gap-3 p-3 items-stretch cursor-pointer group hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
       data-testid="feed-item"
       data-id={id}
       onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank'); }}
@@ -687,6 +689,7 @@ function StayCard({
           fallbackSrc={getDestinationImage(name, id)}
           alt={name}
           sizes="128px"
+          className="transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
         <button
           data-testid="save-button"
@@ -713,8 +716,8 @@ function StayCard({
           )}
         </div>
         <div className="flex items-center justify-between mt-2">
-          <span className="text-nomaq-navy">
-            <span className="font-extrabold">€{price}</span>{' '}
+          <span className="text-nomaq-navy tabular-nums">
+            <span className="font-extrabold text-nomaq-indigo">€{price}</span>{' '}
             <span className="text-[10px] text-slate-400">{t('perNight')}</span>
           </span>
           <span className="text-nomaq-indigo text-xs font-semibold flex items-center gap-1">
