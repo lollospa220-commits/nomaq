@@ -678,6 +678,7 @@ export default function Home({
   const [isSearching, setIsSearching] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
   const [showAllDeals, setShowAllDeals] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState<'relevance' | 'price-asc' | 'price-desc'>('relevance');
   const [activeSearch, setActiveSearch] = React.useState('');
   const [aiSummary, setAiSummary] = React.useState('');
   const [aiPackage, setAiPackage] = React.useState<{ flight: any; hotel: any; reasoning: string } | null>(null);
@@ -988,6 +989,21 @@ export default function Home({
   // from real offers (the padding this replaced was the primary source of
   // "prices don't match" complaints).
   const feedByTab = currentTab === 'vola-vola' ? flights : hotels;
+
+  // Ordinamento del feed (Consigliati = ordine originale). I prezzi null (card
+  // "Cerca…") vanno sempre in fondo. Non muta feedByTab: solo la vista.
+  const sortedFeed = React.useMemo(() => {
+    if (sortBy === 'relevance') return feedByTab;
+    const dir = sortBy === 'price-asc' ? 1 : -1;
+    return [...feedByTab].sort((a, b) => {
+      const pa = typeof a?.price === 'number' ? a.price : null;
+      const pb = typeof b?.price === 'number' ? b.price : null;
+      if (pa === null && pb === null) return 0;
+      if (pa === null) return 1;
+      if (pb === null) return -1;
+      return (pa - pb) * dir;
+    });
+  }, [feedByTab, sortBy]);
 
   // Dynamic greeting: personalized when logged in, generic otherwise
   const firstName = (
@@ -1336,18 +1352,40 @@ export default function Home({
                 </div>
               </div>
 
-              {/* Section label row — serif come gli altri titoli di sezione (FAQ, Radar) */}
-              <div className="flex items-baseline justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-violet-300" strokeWidth={1.5} />
-                  <h2 className="font-display text-xl lg:text-2xl text-white">{t('pickedForYou')}</h2>
+              {/* Section label row — titolo serif + conteggio + ordinamento */}
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Sparkles className="w-4 h-4 text-violet-300 flex-shrink-0" strokeWidth={1.5} />
+                  <h2 className="font-display text-xl lg:text-2xl text-white truncate">{t('pickedForYou')}</h2>
+                  {feedByTab.length > 0 && (
+                    <span className="text-xs font-medium text-white/50 flex-shrink-0" data-testid="feed-count">
+                      {feedByTab.length} {t('dealsWord')}
+                    </span>
+                  )}
                 </div>
-                <button
-                  onClick={() => setShowAllDeals(!showAllDeals)}
-                  className="hidden lg:flex items-center gap-1 text-sm font-medium text-violet-300 hover:text-white transition-colors"
-                >
-                  {t('seeAllDeals')} <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Ordina i risultati (Consigliati / Prezzo ↑ / Prezzo ↓) */}
+                  <div className="relative">
+                    <select
+                      aria-label={t('sortLabel')}
+                      data-testid="feed-sort"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                      className="appearance-none bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-full pl-3 pr-7 py-1.5 border border-white/20 backdrop-blur-md outline-none cursor-pointer transition-colors"
+                    >
+                      <option value="relevance">{t('sortRecommended')}</option>
+                      <option value="price-asc">{t('sortPriceLow')}</option>
+                      <option value="price-desc">{t('sortPriceHigh')}</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-white/70 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2} />
+                  </div>
+                  <button
+                    onClick={() => setShowAllDeals(!showAllDeals)}
+                    className="hidden lg:flex items-center gap-1 text-sm font-medium text-violet-300 hover:text-white transition-colors"
+                  >
+                    {t('seeAllDeals')} <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1395,7 +1433,7 @@ export default function Home({
                       <FeedCardSkeleton />
                     </div>
                   ))
-                ) : feedByTab.length === 0 ? (
+                ) : sortedFeed.length === 0 ? (
                   <div className="text-center py-16 px-5 col-span-2" data-testid="feed-empty">
                     <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Plane className="w-8 h-8 text-nomaq-indigo/40" />
@@ -1403,7 +1441,7 @@ export default function Home({
                     <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
                   </div>
                 ) : (
-                  feedByTab.map((item, idx) => (
+                  sortedFeed.map((item, idx) => (
                     <div
                       key={item.id}
                       className={`h-full ${!showAllDeals && idx >= 6 ? 'lg:hidden' : ''}`}

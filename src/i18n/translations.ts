@@ -59,6 +59,11 @@ const it = {
   noExactMatch: 'Nessuna offerta già pronta per questa meta: apri la ricerca diretta qui sotto.',
   searchNow: 'Cerca',
   destinationsLabel: 'Destinazioni',
+  sortLabel: 'Ordina',
+  sortRecommended: 'Consigliati',
+  sortPriceLow: 'Prezzo ↑',
+  sortPriceHigh: 'Prezzo ↓',
+  dealsWord: 'offerte',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -274,6 +279,11 @@ const en: Record<TranslationKey, string> = {
   noExactMatch: 'No ready-made deals for this destination: open a direct search below.',
   searchNow: 'Search',
   destinationsLabel: 'Destinations',
+  sortLabel: 'Sort',
+  sortRecommended: 'Recommended',
+  sortPriceLow: 'Price ↑',
+  sortPriceHigh: 'Price ↓',
+  dealsWord: 'deals',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',
