@@ -377,6 +377,12 @@ function StaysView({
     ? Math.round(((featured.original_price - featured.price) / featured.original_price) * 100)
     : 0;
 
+  // La mappa stilizzata segue la destinazione cercata (input o ricerca attiva);
+  // i quartieri di Napoli si mostrano solo quando la meta è effettivamente Napoli.
+  const mapPlace = dest.trim() || activeSearch.trim() || 'Napoli';
+  const isNaples = /^(napoli|naples)\b/i.test(mapPlace);
+  const mapLabel = mapPlace.charAt(0).toUpperCase() + mapPlace.slice(1);
+
   const trustItems = [
     { Icon: ShieldCheck, title: t('trust1t'), sub: t('trust1s') },
     { Icon: Zap, title: t('trust2t'), sub: t('trust2s') },
@@ -509,9 +515,13 @@ function StaysView({
             }}
           />
           <div className="absolute right-0 bottom-0 w-2/5 h-1/2 bg-sky-100/80 rounded-tl-[90px]" />
-          <span className="absolute top-[18%] left-[10%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">VOMERO</span>
-          <span className="absolute bottom-[26%] left-[16%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">CHIAIA</span>
-          <span className="absolute top-[12%] right-[14%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">PORTO</span>
+          {isNaples && (
+            <>
+              <span className="absolute top-[18%] left-[10%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">VOMERO</span>
+              <span className="absolute bottom-[26%] left-[16%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">CHIAIA</span>
+              <span className="absolute top-[12%] right-[14%] text-[11px] font-semibold tracking-[0.2em] text-slate-400">PORTO</span>
+            </>
+          )}
           {[
             { top: '22%', left: '38%' },
             { top: '30%', right: '24%' },
@@ -525,10 +535,10 @@ function StaysView({
             <span className="w-12 h-12 bg-white rounded-full shadow-card flex items-center justify-center mb-2">
               <MapPin className="w-6 h-6 text-nomaq-indigo fill-nomaq-lavender" />
             </span>
-            <span className="font-display text-2xl text-nomaq-navy">Naples</span>
+            <span className="font-display text-2xl text-nomaq-navy text-center px-3 leading-tight">{mapLabel}</span>
           </div>
           <button
-            onClick={() => window.open('https://www.google.com/maps/place/Naples,+Italy', '_blank')}
+            onClick={() => window.open(`https://www.google.com/maps/place/${encodeURIComponent(mapPlace)}`, '_blank')}
             className="absolute bottom-4 left-4 bg-white rounded-full px-4 py-2.5 shadow-card flex items-center gap-2 text-sm font-semibold text-nomaq-navy hover:scale-105 active:scale-95 transition-transform duration-200"
           >
             <Map className="w-4 h-4 text-nomaq-indigo" />

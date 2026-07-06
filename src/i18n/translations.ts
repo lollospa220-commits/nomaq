@@ -104,7 +104,7 @@ const it = {
   trust4s: "Prezzi esclusivi nell'app.",
 
   /* ── Bottom nav ── */
-  navVolaVola: 'Vola Vola',
+  navVolaVola: 'Vola',
   navFlights: 'Voli',
   navSoggiorna: 'Soggiorna',
   navDrops: 'Radar',
