@@ -224,7 +224,7 @@ function FaqSection({ isDarkBackground }: { isDarkBackground?: boolean }) {
 }
 
 /* ── Feed Card ── */
-function FeedCard({
+const FeedCard = React.memo(function FeedCard({
   item,
   isSaved,
   onToggleSave,
@@ -332,7 +332,7 @@ function FeedCard({
       </div>
     </div>
   );
-}
+});
 
 /* ── Stays (Soggiorna) — reference design ── */
 function StaysView({
@@ -1828,9 +1828,9 @@ export default function Home({
   const [allHotels, setAllHotels] = React.useState<any[]>(initialHotels || []);
   const [flights, setFlights] = React.useState<any[]>(initialFlights || []);
   const [hotels, setHotels] = React.useState<any[]>(initialHotels || []);
-  const [feedItems, setFeedItems] = React.useState<any[]>(
-    (initialFlights && initialHotels) ? [...initialFlights, ...initialHotels] : []
-  );
+  // feedItems è derivato da flights+hotels: useMemo invece di state+effect
+  // (elimina un render extra a ogni load e il warning set-state-in-effect).
+  const feedItems = React.useMemo(() => [...flights, ...hotels], [flights, hotels]);
 
   const queryObj = query || {};
 
@@ -1869,11 +1869,6 @@ export default function Home({
     else if (pathname === '/salvati') setActiveTab('salvati');
     else if (pathname === '/profilo' || pathname === '/waitlist') setActiveTab('profilo');
   }, []);
-
-  // Update aggregated feed items whenever flights or hotels load
-  React.useEffect(() => {
-    setFeedItems([...flights, ...hotels]);
-  }, [flights, hotels]);
 
   React.useEffect(() => {
     if (!isMounted || feedItems.length === 0) return;

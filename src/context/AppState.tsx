@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 export type TabId = 'vola-vola' | 'soggiorna' | 'drops' | 'salvati' | 'profilo';
 
@@ -53,7 +53,7 @@ export const AppStateProvider: React.FC<{
       .catch((err) => console.error('Error fetching saved items:', err));
   }, []);
 
-  const toggleSaveItem = async (id: string, itemType?: 'flight' | 'hotel') => {
+  const toggleSaveItem = useCallback(async (id: string, itemType?: 'flight' | 'hotel') => {
     const resolvedType = itemType || (id.startsWith('hotel') ? 'hotel' : 'flight');
 
     // Aggiorna lo stato UI locale istantaneamente per fluidità
@@ -78,17 +78,17 @@ export const AppStateProvider: React.FC<{
     } catch (err) {
       console.error('Error syncing saved item to DB:', err);
     }
-  };
+  }, [sessionId]);
+
+  // value memoizzato: i consumer del context non ri-renderizzano a ogni render
+  // del provider (rende efficace React.memo sulle card che usano toggleSaveItem).
+  const value = useMemo(
+    () => ({ activeTab, setActiveTab, savedItems, toggleSaveItem }),
+    [activeTab, savedItems, toggleSaveItem]
+  );
 
   return (
-    <AppContext.Provider
-      value={{
-        activeTab,
-        setActiveTab,
-        savedItems,
-        toggleSaveItem,
-      }}
-    >
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
