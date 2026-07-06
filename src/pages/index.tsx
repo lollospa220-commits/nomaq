@@ -759,31 +759,28 @@ function DropMagazineCard({ drop, isFeatured = false }: { drop: any; isFeatured?
 
   return (
     <div 
-      className="w-full h-56 rounded-3xl overflow-hidden relative mb-6 cursor-pointer shadow-soft hover:scale-[1.01] transition-transform duration-200"
+      className="group w-full h-56 rounded-3xl overflow-hidden relative cursor-pointer shadow-[0_10px_34px_rgba(15,23,42,0.22)] hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 ease-out"
       data-testid={isFeatured ? undefined : `drop-item-${drop.id}`}
       onClick={() => {
         window.open('https://www.google.com/flights', '_blank');
       }}
     >
       {/* Background Image */}
-      <img 
-        src={imageUrl} 
-        alt={drop.destination} 
-        className="w-full h-full object-cover absolute inset-0"
+      <img
+        src={imageUrl}
+        alt={drop.destination}
+        className="w-full h-full object-cover absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-[1.04]"
       />
       
       {/* Dark overlay gradient (higher contrast) */}
-      <div className="bg-gradient-to-t from-black/95 via-black/50 to-transparent absolute inset-0 z-0" />
+      <div className="bg-gradient-to-t from-black/80 via-black/25 to-transparent absolute inset-0 z-0" />
 
       {/* Top Left Badge */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
-        <span className="bg-emerald-500 text-white font-bold border-none rounded-lg px-2.5 py-1 text-xs shadow-sm">
+        <span className="bg-white/90 backdrop-blur-sm text-nomaq-indigo font-bold rounded-lg px-2.5 py-1 text-xs shadow-sm">
           Drop €{dropAmount}
         </span>
-        <span 
-          className="bg-orange-500 text-white font-bold border-none text-electric-orange rounded-lg px-2.5 py-1 text-xs shadow-sm"
-          style={{ color: '#ffffff' }}
-        >
+        <span className="bg-nomaq-navy/85 backdrop-blur-sm text-white font-bold rounded-lg px-2.5 py-1 text-xs shadow-sm">
           -{drop.dropPercent}%
         </span>
       </div>
@@ -801,7 +798,7 @@ function DropMagazineCard({ drop, isFeatured = false }: { drop: any; isFeatured?
         {/* Right Side: Price details */}
         <div className="text-right flex-shrink-0">
           <div className="text-slate-400 text-xs line-through leading-none mb-1">€{drop.oldPrice}</div>
-          <div className="text-2xl font-extrabold text-white leading-none">€{drop.newPrice}</div>
+          <div className="text-2xl font-extrabold text-white leading-none [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">€{drop.newPrice}</div>
         </div>
       </div>
     </div>
@@ -844,45 +841,36 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
 
       {/* Filter pills (Interactive buttons) */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        <button 
-          onClick={() => alert('Filtro "Da Napoli" cliccato')}
-          className="nomaq-pill cursor-pointer hover:bg-slate-200 active:scale-95 transition-all focus:outline-none flex items-center gap-1.5"
-        >
+        <span className="nomaq-pill cursor-default flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5 text-nomaq-indigo" />
           {t('fromNaples')}
-        </button>
-        <button 
-          onClick={() => alert('Filtro "Qualsiasi mese" cliccato')}
-          className="nomaq-pill cursor-pointer hover:bg-slate-200 active:scale-95 transition-all focus:outline-none flex items-center gap-1.5"
-        >
+        </span>
+        <span className="nomaq-pill cursor-default flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-nomaq-indigo" />
           {t('anyMonth')}
-        </button>
-        <button 
-          onClick={() => alert('Filtro "1 viaggiatore" cliccato')}
-          className="nomaq-pill cursor-pointer hover:bg-slate-200 active:scale-95 transition-all focus:outline-none flex items-center gap-1.5"
-        >
+        </span>
+        <span className="nomaq-pill cursor-default flex items-center gap-1.5">
           <User className="w-3.5 h-3.5 text-nomaq-indigo" />
           {t('oneTraveler')}
-        </button>
+        </span>
       </div>
 
       {/* Featured "Picked for you" */}
       <div className="mb-6">
-        <div className="flex items-center gap-1.5 mb-3">
+        <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-nomaq-indigo" />
-          <span className="text-sm font-semibold text-nomaq-navy">{t('pickedForYou')}</span>
+          <h2 className="font-display text-lg text-nomaq-navy">{t('pickedForYou')}</h2>
         </div>
         <DropMagazineCard drop={MOCK_FEATURED_DROP} isFeatured={true} />
       </div>
 
       {/* "Just dropped now" list */}
-      <div className="mb-3 flex items-center gap-1.5">
+      <div className="mb-3 flex items-center gap-2">
         <Clock className="w-4 h-4 text-nomaq-indigo" />
-        <span className="text-sm font-semibold text-nomaq-navy">{t('justDroppedNow')}</span>
+        <h2 className="font-display text-lg text-nomaq-navy">{t('justDroppedNow')}</h2>
       </div>
 
-      <div className="space-y-0" data-testid="drops-history-list">
+      <div className="space-y-4" data-testid="drops-history-list">
         {allDrops.length === 0 ? (
           <div className="text-center py-12" data-testid="drops-empty">
             <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -901,7 +889,7 @@ function DropsView({ simulatedDrops, isE2E, onSimulateDrop }: { simulatedDrops: 
       {/* Footer */}
       {allDrops.length > 0 && (
         <div className="flex justify-center mt-6 mb-2">
-          <p className="text-slate-400 text-xs flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> {t('dropsFooter')}</p>
+          <p className="text-slate-400 text-xs flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-nomaq-indigo/70" /> {t('dropsFooter')}</p>
         </div>
       )}
     </div>
@@ -1287,8 +1275,8 @@ function RadarBadges({ d, small = false }: { d: RadarDrop; small?: boolean }) {
   const cls = small ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
   return (
     <div className={`absolute z-10 flex gap-1.5 ${small ? 'top-2 left-2' : 'top-3 left-3'}`}>
-      <span className={`bg-emerald-500 text-white font-bold rounded-lg shadow-sm ${cls}`}>Drop €{dropAmt}</span>
-      <span className={`bg-orange-500 text-white font-bold rounded-lg shadow-sm ${cls}`}>-{pct}%</span>
+      <span className={`bg-white/90 backdrop-blur-sm text-nomaq-indigo font-bold rounded-lg shadow-sm ${cls}`}>Drop €{dropAmt}</span>
+      <span className={`bg-nomaq-navy/85 backdrop-blur-sm text-white font-bold rounded-lg shadow-sm ${cls}`}>-{pct}%</span>
     </div>
   );
 }
@@ -1307,12 +1295,12 @@ function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
   const { lang } = useLanguage();
   return (
     <div
-      className="bg-white/55 backdrop-blur-md rounded-3xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+      className="group nomaq-card bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
       data-testid={`drop-item-${d.id}`}
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative h-36 lg:h-40">
-        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="(min-width: 1024px) 33vw, 100vw" />
+        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="(min-width: 1024px) 33vw, 100vw" className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
         <RadarBadges d={d} />
       </div>
       <div className="p-4 flex items-end justify-between gap-3">
@@ -1335,12 +1323,12 @@ function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
   const { lang } = useLanguage();
   return (
     <div
-      className="bg-white/55 backdrop-blur-md rounded-2xl overflow-hidden shadow-card border border-white/70 cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex items-stretch"
+      className="group nomaq-card bg-white/70 backdrop-blur-md rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-stretch"
       data-testid={`drop-item-${d.id}`}
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
-        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="128px" />
+        <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="128px" className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
         <RadarBadges d={d} small />
       </div>
       <div className="flex-1 px-3.5 py-3 flex items-center justify-between gap-3 min-w-0">
@@ -1355,8 +1343,8 @@ function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
             <div className="text-slate-400 text-xs line-through leading-none mb-1">€{d.oldPrice}</div>
             <div className="text-lg font-extrabold text-nomaq-navy leading-none">€{d.newPrice}</div>
           </div>
-          <span className="w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center">
-            <ChevronRight className="w-4 h-4 text-nomaq-navy" />
+          <span className="w-9 h-9 rounded-full border border-nomaq-indigo/15 bg-nomaq-lavender flex items-center justify-center">
+            <ChevronRight className="w-4 h-4 text-nomaq-indigo" />
           </span>
         </div>
       </div>
@@ -1516,7 +1504,7 @@ function RadarView({ simulatedDrops, kiwiAffiliateId }: { simulatedDrops: any[];
         <div key={title} className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             {icon}
-            <span className="text-sm lg:text-base font-semibold text-nomaq-navy">{title}</span>
+            <h2 className="font-display text-lg lg:text-xl text-nomaq-navy">{title}</h2>
           </div>
           {items.length === 0 ? (
             <p className="text-slate-400 text-sm py-4">{t('noDropsMonth')}</p>
@@ -1535,7 +1523,7 @@ function RadarView({ simulatedDrops, kiwiAffiliateId }: { simulatedDrops: any[];
       {/* Footer */}
       <div className="flex justify-center mt-2">
         <p className="text-slate-400 text-xs flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4" /> {t('radarFooter')}
+          <ShieldCheck className="w-4 h-4 text-nomaq-indigo/70" /> {t('radarFooter')}
         </p>
       </div>
     </div>
