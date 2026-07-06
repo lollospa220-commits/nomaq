@@ -1820,8 +1820,10 @@ export default function Home({
   React.useEffect(() => {
     setIsMounted(true);
 
-    // Carica voli da API/Database
-    fetch('/api/flights')
+    // I dati arrivano già via initialFlights/initialHotels (props SSR): rifetch
+    // solo se le props sono vuote (upstream fallito in SSR), evitando 2 fetch +
+    // 2 render ridondanti a ogni caricamento.
+    if ((initialFlights?.length ?? 0) === 0) fetch('/api/flights')
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -1840,8 +1842,7 @@ export default function Home({
       })
       .catch((err) => console.error('Error loading flights:', err));
 
-    // Carica hotel da API/Database
-    fetch('/api/hotels')
+    if ((initialHotels?.length ?? 0) === 0) fetch('/api/hotels')
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -2482,8 +2483,8 @@ export async function getServerSideProps(context: any) {
     hotels = testFeed.filter((item) => item.type === 'hotel');
   } else {
     try {
-      flights = await fetchRealFlights();
-      hotels = await fetchRealHotels();
+      // Parallelo: il TTFB della home = max(voli, hotel) invece della somma.
+      [flights, hotels] = await Promise.all([fetchRealFlights(), fetchRealHotels()]);
     } catch (e) {
       console.error('Failed to load flights/hotels in getServerSideProps', e);
     }
@@ -2519,10 +2520,14 @@ export async function getServerSideProps(context: any) {
     formattedHotels = [];
   }
 
-  // Clone original feed items before feed modifications are applied
-  const originalFeedItems = JSON.parse(JSON.stringify([...formattedFlights, ...formattedHotels]));
-
   // Parse and apply feed modifications from E2E driver
+  // Clone del feed originale prima delle modifiche E2E. Calcolato SOLO quando un
+  // parametro di query E2E lo richiede: prima il deep-clone dell'intero feed
+  // girava a OGNI richiesta di produzione.
+  const originalFeedItems = (query.feed_mod || query.drops || query.notifications)
+    ? JSON.parse(JSON.stringify([...formattedFlights, ...formattedHotels]))
+    : [];
+
   if (query.feed_mod) {
     query.feed_mod.split(';').forEach((mod: string) => {
       const [id, field, value] = mod.split(':');
