@@ -679,6 +679,7 @@ export default function Home({
   const [isFocused, setIsFocused] = React.useState(false);
   const [showAllDeals, setShowAllDeals] = React.useState(false);
   const [sortBy, setSortBy] = React.useState<'relevance' | 'price-asc' | 'price-desc'>('relevance');
+  const [priceFilter, setPriceFilter] = React.useState<'all' | 'lt100' | 'mid' | 'high' | 'gt600'>('all');
   const [activeSearch, setActiveSearch] = React.useState('');
   const [aiSummary, setAiSummary] = React.useState('');
   const [aiPackage, setAiPackage] = React.useState<{ flight: any; hotel: any; reasoning: string } | null>(null);
@@ -990,20 +991,35 @@ export default function Home({
   // "prices don't match" complaints).
   const feedByTab = currentTab === 'vola-vola' ? flights : hotels;
 
-  // Ordinamento del feed (Consigliati = ordine originale). I prezzi null (card
-  // "Cerca…") vanno sempre in fondo. Non muta feedByTab: solo la vista.
-  const sortedFeed = React.useMemo(() => {
-    if (sortBy === 'relevance') return feedByTab;
-    const dir = sortBy === 'price-asc' ? 1 : -1;
-    return [...feedByTab].sort((a, b) => {
-      const pa = typeof a?.price === 'number' ? a.price : null;
-      const pb = typeof b?.price === 'number' ? b.price : null;
-      if (pa === null && pb === null) return 0;
-      if (pa === null) return 1;
-      if (pb === null) return -1;
-      return (pa - pb) * dir;
-    });
-  }, [feedByTab, sortBy]);
+  // Vista del feed = filtro prezzo + ordinamento. Non muta feedByTab.
+  // Filtro attivo → esclude le card senza prezzo (es. "Cerca…"). Ordinamento
+  // "Consigliati" = ordine originale; i prezzi null vanno sempre in fondo.
+  const displayedFeed = React.useMemo(() => {
+    const inBucket = (p: number) => {
+      switch (priceFilter) {
+        case 'lt100': return p < 100;
+        case 'mid': return p >= 100 && p < 300;
+        case 'high': return p >= 300 && p < 600;
+        case 'gt600': return p >= 600;
+        default: return true;
+      }
+    };
+    let list = priceFilter === 'all'
+      ? feedByTab
+      : feedByTab.filter((i: any) => typeof i?.price === 'number' && inBucket(i.price));
+    if (sortBy !== 'relevance') {
+      const dir = sortBy === 'price-asc' ? 1 : -1;
+      list = [...list].sort((a: any, b: any) => {
+        const pa = typeof a?.price === 'number' ? a.price : null;
+        const pb = typeof b?.price === 'number' ? b.price : null;
+        if (pa === null && pb === null) return 0;
+        if (pa === null) return 1;
+        if (pb === null) return -1;
+        return (pa - pb) * dir;
+      });
+    }
+    return list;
+  }, [feedByTab, sortBy, priceFilter]);
 
   // Dynamic greeting: personalized when logged in, generic otherwise
   const firstName = (
@@ -1359,11 +1375,28 @@ export default function Home({
                   <h2 className="font-display text-xl lg:text-2xl text-white truncate">{t('pickedForYou')}</h2>
                   {feedByTab.length > 0 && (
                     <span className="text-xs font-medium text-white/50 flex-shrink-0" data-testid="feed-count">
-                      {feedByTab.length} {t('dealsWord')}
+                      {displayedFeed.length} {t('dealsWord')}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                  {/* Filtro fascia di prezzo */}
+                  <div className="relative">
+                    <select
+                      aria-label={t('filterPriceLabel')}
+                      data-testid="feed-filter-price"
+                      value={priceFilter}
+                      onChange={(e) => setPriceFilter(e.target.value as typeof priceFilter)}
+                      className="appearance-none bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-full pl-3 pr-7 py-1.5 border border-white/20 backdrop-blur-md outline-none cursor-pointer transition-colors"
+                    >
+                      <option value="all">{t('filterAllPrices')}</option>
+                      <option value="lt100">&lt; €100</option>
+                      <option value="mid">€100–300</option>
+                      <option value="high">€300–600</option>
+                      <option value="gt600">&gt; €600</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-white/70 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2} />
+                  </div>
                   {/* Ordina i risultati (Consigliati / Prezzo ↑ / Prezzo ↓) */}
                   <div className="relative">
                     <select
@@ -1433,7 +1466,7 @@ export default function Home({
                       <FeedCardSkeleton />
                     </div>
                   ))
-                ) : sortedFeed.length === 0 ? (
+                ) : displayedFeed.length === 0 ? (
                   <div className="text-center py-16 px-5 col-span-2" data-testid="feed-empty">
                     <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Plane className="w-8 h-8 text-nomaq-indigo/40" />
@@ -1441,7 +1474,7 @@ export default function Home({
                     <p className="text-slate-500 font-semibold">{t('noOffers')}</p>
                   </div>
                 ) : (
-                  sortedFeed.map((item, idx) => (
+                  displayedFeed.map((item, idx) => (
                     <div
                       key={item.id}
                       className={`h-full ${!showAllDeals && idx >= 6 ? 'lg:hidden' : ''}`}

@@ -64,6 +64,8 @@ const it = {
   sortPriceLow: 'Prezzo ↑',
   sortPriceHigh: 'Prezzo ↓',
   dealsWord: 'offerte',
+  filterPriceLabel: 'Fascia di prezzo',
+  filterAllPrices: 'Tutti i prezzi',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -284,6 +286,8 @@ const en: Record<TranslationKey, string> = {
   sortPriceLow: 'Price ↑',
   sortPriceHigh: 'Price ↓',
   dealsWord: 'deals',
+  filterPriceLabel: 'Price range',
+  filterAllPrices: 'All prices',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',
