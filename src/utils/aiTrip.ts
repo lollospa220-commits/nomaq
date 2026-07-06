@@ -230,10 +230,10 @@ Rispondi in JSON con questo schema ESATTO (testi nella lingua del cliente, defau
 "agencyNote":str 1-2 frasi sul perché questo è il miglior rapporto qualità/prezzo}}
 
 MODALITÀ "destination" — un luogo/mood NON nel catalogo, senza dettagli di viaggio:
-Genera 3-4 voli + 3-4 hotel REALI per quella destinazione, dalla tua conoscenza del mondo reale. Schema JSON ESATTO (testi nella lingua del cliente, default ${replyLang}):
+Genera 6-8 voli + 6-8 hotel REALI per quella destinazione, dalla tua conoscenza del mondo reale (compagnie/hotel diversi e realistici, con prezzi vari). Schema JSON ESATTO (testi nella lingua del cliente, default ${replyLang}):
 {"mode":"destination","destination":str nome del luogo,"country":str,"summary":str 1-2 frasi,
-"flights":[3-4 {"airline":str compagnia che opera DAVVERO la rotta,"fromCode":IATA di partenza plausibile (es "MXP" o "NAP"),"toCode":IATA dell'aeroporto della destinazione,"priceEstimate":int prezzo a/r a persona realistico,"note":str breve es "diretto" o "1 scalo"}],
-"hotels":[3-4 {"name":str hotel REALE ed esistente,"area":str zona vera,"rating":float,"priceEstimate":int prezzo a notte realistico,"note":str breve}]}
+"flights":[6-8 {"airline":str compagnia che opera DAVVERO la rotta,"fromCode":IATA di partenza plausibile (es "MXP" o "NAP"),"toCode":IATA dell'aeroporto della destinazione,"priceEstimate":int prezzo a/r a persona realistico,"note":str breve es "diretto" o "1 scalo"}],
+"hotels":[6-8 {"name":str hotel REALE ed esistente,"area":str zona vera,"rating":float,"priceEstimate":int prezzo a notte realistico,"note":str breve}]}
 I prezzi sono STIME dichiarate, non prenotazioni. Rispondi SOLO col JSON.
 
 MODALITÀ "filter" — quando è solo una ricerca semplice su una destinazione GIÀ nel catalogo:
@@ -443,8 +443,8 @@ function normalizeDestination(parsed: any): AiTripResult {
   const slug = destination.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'dest';
 
-  const rawFlights = Array.isArray(parsed.flights) ? parsed.flights.slice(0, 4) : [];
-  const rawHotels = Array.isArray(parsed.hotels) ? parsed.hotels.slice(0, 4) : [];
+  const rawFlights = Array.isArray(parsed.flights) ? parsed.flights.slice(0, 8) : [];
+  const rawHotels = Array.isArray(parsed.hotels) ? parsed.hotels.slice(0, 8) : [];
 
   const flights: DestinationCard[] = rawFlights
     .map((f: any, i: number): DestinationCard | null => {
