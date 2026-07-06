@@ -548,8 +548,8 @@ async function normalizeDestination(parsed: any, lang?: string): Promise<AiTripR
         destination: isEn ? `Flight to ${destination}` : `Volo per ${destination}`,
         country,
         description: isEn
-          ? `Real market fare (Travelpayouts) MXP → ${destIata} with ${f.airline} on ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Observed price, subject to availability.`
-          : `Tariffa reale di mercato (Travelpayouts) MXP → ${destIata} con ${f.airline} il ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Prezzo osservato, soggetto a disponibilità.`,
+          ? `Real market fare (Travelpayouts) MXP → ${destIata} with ${f.airline}, one-way on ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Observed price, subject to availability.`
+          : `Tariffa reale di mercato (Travelpayouts) MXP → ${destIata} con ${f.airline}, solo andata il ${f.departureDay}${f.duration ? ` · ${f.duration}` : ''}. Prezzo osservato, soggetto a disponibilità.`,
         price: f.price,
         originalPrice: null,
         airline: f.airline,
