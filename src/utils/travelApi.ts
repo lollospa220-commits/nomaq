@@ -395,6 +395,9 @@ async function computeRealFlights() {
       try {
         const res = await fetch(DUFFEL_OFFERS_URL, {
           method: 'POST',
+          // Node fetch non ha timeout di default: senza, un Duffel lento
+          // appenderebbe il worker SSR (Travelpayouts già usa lo stesso budget).
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
             'Duffel-Version': 'v2',
@@ -529,6 +532,7 @@ async function computeRealHotels() {
       try {
         const url = `${RAPIDAPI_HOTELS_URL}?geoId=${dest.geoId}&checkIn=${checkInDate}&checkOut=${checkOutDate}&pageNumber=1&currency=EUR`;
         const res = await fetch(url, {
+          signal: AbortSignal.timeout(8000),
           headers: {
             'x-rapidapi-key': rapidApiKey,
             'x-rapidapi-host': 'tripadvisor16.p.rapidapi.com'
