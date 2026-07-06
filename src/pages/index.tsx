@@ -698,7 +698,11 @@ function StayCard({
       className="nomaq-card bg-white/70 backdrop-blur-md flex gap-3 p-3 items-stretch cursor-pointer group hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
       data-testid="feed-item"
       data-id={id}
+      role="button"
+      tabIndex={0}
+      aria-label={name}
       onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank', 'noopener,noreferrer'); }}
+      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && bookingUrl) { e.preventDefault(); window.open(bookingUrl, '_blank', 'noopener,noreferrer'); } }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 rounded-2xl overflow-hidden min-h-[104px]">
         <SmartImage
@@ -784,9 +788,13 @@ function DropMagazineCard({ drop, isFeatured = false }: { drop: any; isFeatured?
     <div 
       className="group w-full h-56 rounded-3xl overflow-hidden relative cursor-pointer shadow-[0_10px_34px_rgba(15,23,42,0.22)] hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 ease-out"
       data-testid={isFeatured ? undefined : `drop-item-${drop.id}`}
+      role="button"
+      tabIndex={0}
+      aria-label={drop.destination}
       onClick={() => {
         window.open('https://www.google.com/flights', '_blank', 'noopener,noreferrer');
       }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open('https://www.google.com/flights', '_blank', 'noopener,noreferrer'); } }}
     >
       {/* Background Image */}
       <img
@@ -1320,7 +1328,11 @@ function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
       data-testid={`drop-item-${d.id}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${d.from} → ${d.to}`}
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank', 'noopener,noreferrer')}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank', 'noopener,noreferrer'); } }}
     >
       <div className="relative h-36 lg:h-40">
         <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="(min-width: 1024px) 33vw, 100vw" className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
@@ -1348,7 +1360,11 @@ function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-stretch"
       data-testid={`drop-item-${d.id}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${d.from} → ${d.to}`}
       onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank', 'noopener,noreferrer')}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank', 'noopener,noreferrer'); } }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
         <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="128px" className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
@@ -2190,7 +2206,7 @@ export default function Home({
                         <button
                           onClick={() => handleSearch(aiQuery)}
                           disabled={isSearching}
-                          aria-label={t('searchPlaceholder')}
+                          aria-label={t('searchNow')}
                           className="w-12 h-12 flex items-center justify-center flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none"
                         >
                           {isSearching ? (
