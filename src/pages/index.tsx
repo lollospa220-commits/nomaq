@@ -334,6 +334,25 @@ const FeedCard = React.memo(function FeedCard({
   );
 });
 
+// Skeleton della FeedCard (stessa forma) mostrato durante la ricerca: usa la
+// classe .shimmer (già in CSS, prima inutilizzata) per un caricamento percepito
+// più veloce, come sui prodotti travel leader.
+function FeedCardSkeleton() {
+  return (
+    <div className="feed-card rounded-2xl overflow-hidden w-full h-full flex flex-col" aria-hidden="true">
+      <div className="w-full h-28 lg:h-44 flex-shrink-0 shimmer" />
+      <div className="flex-1 p-3.5 flex flex-col gap-2 bg-white/80">
+        <div className="h-3.5 w-3/4 rounded shimmer" />
+        <div className="h-2.5 w-full rounded shimmer" />
+        <div className="mt-auto flex items-center justify-between pt-1">
+          <div className="h-2.5 w-1/3 rounded shimmer" />
+          <div className="h-3 w-10 rounded shimmer" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Stays (Soggiorna) — reference design ── */
 function StaysView({
   hotels,
@@ -2395,7 +2414,13 @@ export default function Home({
                 className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 px-5 lg:px-6 pb-5 scrollable"
                 data-testid="feed-container"
               >
-                {feedByTab.length === 0 ? (
+                {isSearching ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div key={`sk-${i}`} className="h-full" data-testid="feed-skeleton">
+                      <FeedCardSkeleton />
+                    </div>
+                  ))
+                ) : feedByTab.length === 0 ? (
                   <div className="text-center py-16 px-5 col-span-2" data-testid="feed-empty">
                     <div className="w-16 h-16 bg-nomaq-lavender rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Plane className="w-8 h-8 text-nomaq-indigo/40" />
