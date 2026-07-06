@@ -21,10 +21,13 @@ export default function SEO({
   noindex = false,
 }: SEOProps) {
   const router = useRouter();
-  // Strip query string from the canonical: ?saved=…, ?drops=… etc. are UI
-  // state, not distinct indexable pages.
+  const locale = router.locale === 'en' ? 'en' : 'it';
+  // asPath è senza prefisso locale (Next i18n): lo stripiamo dalla query per il
+  // canonical e costruiamo le varianti per-locale.
   const path = (router.asPath || '/').split('?')[0];
-  const canonicalUrl = `${SITE_URL}${path === '/' ? '' : path}`;
+  const suffix = path === '/' ? '' : path;
+  const urlFor = (l: string) => `${SITE_URL}${l === 'it' ? '' : `/${l}`}${suffix}`;
+  const canonicalUrl = urlFor(locale);
 
   return (
     <Head>
@@ -33,10 +36,16 @@ export default function SEO({
       <link rel="canonical" href={canonicalUrl} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
+      {/* hreflang: dice a Google che it/en sono la stessa pagina in lingue diverse */}
+      <link rel="alternate" hrefLang="it" href={urlFor('it')} />
+      <link rel="alternate" hrefLang="en" href={urlFor('en')} />
+      <link rel="alternate" hrefLang="x-default" href={urlFor('it')} />
+
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
       <meta property="og:site_name" content="Nomaq" />
-      <meta property="og:locale" content="it_IT" />
+      <meta property="og:locale" content={locale === 'en' ? 'en_US' : 'it_IT'} />
+      <meta property="og:locale:alternate" content={locale === 'en' ? 'it_IT' : 'en_US'} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />

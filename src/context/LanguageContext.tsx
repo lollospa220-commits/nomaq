@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useRouter } from 'next/router';
 import { translations, Lang, TranslationKey } from '@/i18n/translations';
 
 interface LanguageContextType {
@@ -9,27 +10,17 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'nomaq_lang';
-
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Server and first client render always use 'it' to avoid hydration mismatch;
-  // the stored preference is applied right after mount.
-  const [lang, setLangState] = useState<Lang>('it');
+  const router = useRouter();
+  // La lingua deriva dal locale dell'URL (Next i18n): coerente tra SSR e client
+  // (niente hydration mismatch) e indicizzabile da Google — / = it, /en = en.
+  const lang: Lang = router?.locale === 'en' ? 'en' : 'it';
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'it' || stored === 'en') {
-      setLangState(stored);
-    }
-  }, []);
-
+  // Cambiare lingua = navigare allo stesso path nell'altro locale (l'URL è la
+  // fonte di verità). scroll:false per non saltare in cima allo switch.
   const setLang = (next: Lang) => {
-    setLangState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // storage unavailable (private mode) — language still switches for the session
-    }
+    if (!router || next === lang) return;
+    router.push(router.asPath, router.asPath, { locale: next, scroll: false });
   };
 
   const t = (key: TranslationKey) => translations[lang][key] ?? translations.it[key] ?? key;
@@ -44,7 +35,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
   if (!context) {
-    // Fail-safe default (e.g. components rendered outside the provider in tests)
+    // Fail-safe default (es. componenti resi fuori dal provider nei test)
     return {
       lang: 'it',
       setLang: () => {},

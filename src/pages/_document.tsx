@@ -1,8 +1,10 @@
-import { Html, Head, Main, NextScript } from 'next/document';
+import { Html, Head, Main, NextScript, DocumentProps } from 'next/document';
 
-export default function Document() {
+export default function Document({ __NEXT_DATA__ }: DocumentProps) {
+  // <html lang> per-locale (Next i18n): coerente SSR per a11y/SEO.
+  const lang = __NEXT_DATA__?.locale || 'it';
   return (
-    <Html lang="it" data-scroll-behavior="smooth">
+    <Html lang={lang} data-scroll-behavior="smooth">
       <Head>
         {/* Font self-hostati via next/font in _app.tsx: niente richieste a Google Fonts */}
         <meta name="mobile-web-app-capable" content="yes" />

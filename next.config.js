@@ -22,6 +22,14 @@ const nextConfig = {
   reactStrictMode: true,
   // Non esporre la versione di Next (info-disclosure).
   poweredByHeader: false,
+  // i18n routing nativo (pages router): / = italiano, /en = inglese, entrambi
+  // renderizzati server-side → indicizzabili da Google. localeDetection:false
+  // per non redirigere in base all'Accept-Language (URL espliciti e stabili).
+  i18n: {
+    locales: ['it', 'en'],
+    defaultLocale: 'it',
+    localeDetection: false,
+  },
   images: {
     // AVIF prima di WebP: ~20-30% di byte in meno sul payload dominante (il feed
     // di foto Unsplash). L'optimizer serve il formato migliore accettato dal browser.
