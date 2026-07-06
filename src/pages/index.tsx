@@ -1656,26 +1656,57 @@ const normalizeSearch = (s: string) =>
 // Titolo + description per tab: ogni tab è una route SSR distinta (initialTab
 // impostato in getServerSideProps) → l'HTML iniziale che Google indicizza porta
 // meta corretti, non identici su tutti i tab.
-const SEO_META: Record<string, { title: string; description: string }> = {
+type SeoEntry = { title: string; description: string };
+const SEO_META: Record<string, Record<'it' | 'en', SeoEntry>> = {
   'vola-vola': {
-    title: "Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI",
-    description: "Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno.",
+    it: {
+      title: "Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI",
+      description: "Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno.",
+    },
+    en: {
+      title: 'Nomaq — Flights & hotels at the right price, AI-picked',
+      description: 'Nomaq detects real-time price drops on flights and hotels and builds your perfect trip with AI. Fly more, spend less.',
+    },
   },
   soggiorna: {
-    title: 'Soggiorni e hotel al prezzo giusto — Nomaq',
-    description: "Hotel e soggiorni selezionati dall'AI al miglior rapporto qualità/prezzo. Cerca qualsiasi destinazione e prenota senza pensieri.",
+    it: {
+      title: 'Soggiorni e hotel al prezzo giusto — Nomaq',
+      description: "Hotel e soggiorni selezionati dall'AI al miglior rapporto qualità/prezzo. Cerca qualsiasi destinazione e prenota senza pensieri.",
+    },
+    en: {
+      title: 'Stays & hotels at the right price — Nomaq',
+      description: 'AI-curated hotels and stays at the best value. Search any destination and book with zero hassle.',
+    },
   },
   drops: {
-    title: 'Radar prezzi voli in tempo reale — Nomaq',
-    description: "Il Radar Nomaq monitora le rotte e segnala i cali di prezzo appena avvengono. Non perdere più un'offerta.",
+    it: {
+      title: 'Radar prezzi voli in tempo reale — Nomaq',
+      description: "Il Radar Nomaq monitora le rotte e segnala i cali di prezzo appena avvengono. Non perdere più un'offerta.",
+    },
+    en: {
+      title: 'Real-time flight price radar — Nomaq',
+      description: 'The Nomaq Radar tracks routes and flags price drops the moment they happen. Never miss a deal.',
+    },
   },
   salvati: {
-    title: 'Concierge AI di viaggio — Nomaq',
-    description: 'Il Concierge AI di Nomaq pianifica il viaggio perfetto: ristoranti, itinerari, trasporti, su misura per te.',
+    it: {
+      title: 'Concierge AI di viaggio — Nomaq',
+      description: 'Il Concierge AI di Nomaq pianifica il viaggio perfetto: ristoranti, itinerari, trasporti, su misura per te.',
+    },
+    en: {
+      title: 'AI travel Concierge — Nomaq',
+      description: "Nomaq's AI Concierge plans your perfect trip: restaurants, itineraries, transport, tailored to you.",
+    },
   },
   profilo: {
-    title: 'Il tuo profilo — Nomaq',
-    description: 'Gestisci il tuo profilo Nomaq, i viaggi salvati e le preferenze.',
+    it: {
+      title: 'Il tuo profilo — Nomaq',
+      description: 'Gestisci il tuo profilo Nomaq, i viaggi salvati e le preferenze.',
+    },
+    en: {
+      title: 'Your profile — Nomaq',
+      description: 'Manage your Nomaq profile, saved trips and preferences.',
+    },
   },
 };
 
@@ -2114,7 +2145,7 @@ export default function Home({
     });
   }
   const jsonLd = { '@context': 'https://schema.org', '@graph': jsonLdGraph };
-  const seoMeta = SEO_META[currentTab] || SEO_META['vola-vola'];
+  const seoMeta = (SEO_META[currentTab] || SEO_META['vola-vola'])[lang];
 
   return (
     <>
