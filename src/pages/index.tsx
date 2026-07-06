@@ -231,6 +231,7 @@ function FeedCard({
   isSaved: boolean;
   onToggleSave: (id: string) => void;
 }) {
+  const { t } = useLanguage();
   const discount = item.originalPrice
     ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
     : 0;
@@ -245,7 +246,7 @@ function FeedCard({
       data-id={item.id}
       role="button"
       tabIndex={0}
-      aria-label={`${item.destination} — €${item.price}`}
+      aria-label={item.price != null ? `${item.destination} — €${item.price}` : item.destination}
       onClick={() => {
         if (item.booking_url) {
           window.open(item.booking_url, '_blank');
@@ -323,7 +324,7 @@ function FeedCard({
             {discount > 0 && (
               <span className="text-slate-400 text-[11px] line-through">€{item.originalPrice}</span>
             )}
-            <span className="text-nomaq-indigo font-semibold text-sm">€{item.price}</span>
+            <span className="text-nomaq-indigo font-semibold text-sm">{item.price != null ? `€${item.price}` : t('searchNow')}</span>
           </div>
         </div>
       </div>
@@ -1619,12 +1620,36 @@ export default function Home({
     'volo', 'voli', 'weekend', 'the', 'to', 'for',
   ]);
 
-  // Fallback locale: usato quando l'endpoint AI fallisce o manca
-  // DEEPSEEK_API_KEY, così la ricerca funziona comunque. Confronta singole
-  // parole significative (non l'intera frase) per non fallire su richieste
-  // in linguaggio naturale come "Weekend a Parigi"; se nessuna voce del
-  // catalogo corrisponde, mostra comunque tutto il catalogo con un avviso
-  // invece di lasciare l'utente davanti a una pagina vuota.
+  // Fallback deep-link: usato quando manca DEEPSEEK_API_KEY / l'AI fallisce E
+  // nessuna voce del catalogo corrisponde. Invece di rimostrare i preset
+  // (irrilevanti per la meta cercata) generiamo due card azionabili "Cerca
+  // voli/hotel a {q}" con deep-link reali Kiwi.com / Booking.com. Nessun prezzo
+  // inventato: price è null → FeedCard mostra "Cerca" al posto di "€".
+  const buildFallbackCards = (destQuery: string) => {
+    const q = destQuery.trim();
+    const img = getDestinationImage(q, q);
+    return {
+      flights: [{
+        id: `fallback-flight-${q}`, type: 'flight',
+        destination: `Cerca voli per ${q}`,
+        description: `Apri la ricerca voli per ${q} su Kiwi.com e trova le date migliori.`,
+        price: null, originalPrice: null, airline: 'Kiwi.com',
+        image: img, booking_url: buildKiwiDeepLink('napoli', q), tag: 'CERCA',
+      }],
+      hotels: [{
+        id: `fallback-hotel-${q}`, type: 'hotel',
+        destination: `Cerca hotel a ${q}`,
+        description: `Apri la ricerca hotel a ${q} su Booking.com per le tue date.`,
+        price: null, originalPrice: null, hotelName: q,
+        image: img,
+        booking_url: `https://www.booking.com/searchresults.html?${new URLSearchParams({ ss: q, group_adults: '2' }).toString()}`,
+        tag: 'CERCA',
+      }],
+    };
+  };
+
+  // Fallback locale AI-less: confronta singole parole significative (non l'intera
+  // frase) contro il catalogo reale; su zero match usa le card deep-link sopra.
   const localFilter = (searchQuery: string) => {
     const tokens = searchQuery
       .toLowerCase()
@@ -1641,8 +1666,9 @@ export default function Home({
     const filteredHotels = allHotels.filter(matches);
 
     if (filteredFlights.length === 0 && filteredHotels.length === 0) {
-      setFlights(allFlights);
-      setHotels(allHotels);
+      const fb = buildFallbackCards(searchQuery);
+      setFlights(fb.flights);
+      setHotels(fb.hotels);
       setAiSummary(t('noExactMatch'));
     } else {
       setFlights(filteredFlights);
@@ -1697,6 +1723,14 @@ export default function Home({
         setAiPackage(null);
         setFlights(allFlights);
         setHotels(allHotels);
+      } else if (data.mode === 'destination' && ((data.flights?.length || 0) > 0 || (data.hotels?.length || 0) > 0)) {
+        // Destination search: AI generated real flight+hotel cards for a place
+        // not in the fixed catalog. They are already in FeedCard shape.
+        setTripPlan(null);
+        setAiPackage(null);
+        setFlights(data.flights || []);
+        setHotels(data.hotels || []);
+        setAiSummary(data.summary || '');
       } else {
         // Simple search: filter the catalog as before
         setTripPlan(null);

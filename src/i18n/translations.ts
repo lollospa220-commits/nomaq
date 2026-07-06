@@ -56,7 +56,8 @@ const it = {
   tripExtras: 'trasporti + extra',
   tellNomaq: 'Condividi con Nomaq budget, date e preferenze…',
   noOffers: 'Nessuna offerta disponibile',
-  noExactMatch: 'Nessuna corrispondenza esatta per la tua ricerca: ecco le offerte del momento.',
+  noExactMatch: 'Nessuna offerta già pronta per questa meta: apri la ricerca diretta qui sotto.',
+  searchNow: 'Cerca',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -75,6 +76,7 @@ const it = {
 
   /* ── Stays (Soggiorna) ── */
   staysHeadline: 'Trova il soggiorno perfetto per la tua prossima fuga',
+  staysEyebrow: 'Soggiorni',
   staysTagline: 'Posti bellissimi dove dormire, curati per te. Offerte smart, pianificazione senza sforzo.',
   destLabel: 'Destinazione',
   checkInLabel: 'Check-in',
@@ -268,7 +270,8 @@ const en: Record<TranslationKey, string> = {
   tripExtras: 'transport + extras',
   tellNomaq: 'Share your budget, dates and preferences with Nomaq…',
   noOffers: 'No offers available',
-  noExactMatch: "No exact match for your search: here's what's trending right now.",
+  noExactMatch: 'No ready-made deals for this destination: open a direct search below.',
+  searchNow: 'Search',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',
@@ -287,6 +290,7 @@ const en: Record<TranslationKey, string> = {
 
   /* ── Stays (Soggiorna) ── */
   staysHeadline: 'Find the perfect stay for your next escape',
+  staysEyebrow: 'Stays',
   staysTagline: 'Beautiful places to stay, curated for you. Smart deals, effortless planning.',
   destLabel: 'Destination',
   checkInLabel: 'Check-in',
