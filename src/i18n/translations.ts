@@ -66,6 +66,8 @@ const it = {
   dealsWord: 'offerte',
   filterPriceLabel: 'Fascia di prezzo',
   filterAllPrices: 'Tutti i prezzi',
+  bookNow: 'Prenota',
+  close: 'Chiudi',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -288,6 +290,8 @@ const en: Record<TranslationKey, string> = {
   dealsWord: 'deals',
   filterPriceLabel: 'Price range',
   filterAllPrices: 'All prices',
+  bookNow: 'Book now',
+  close: 'Close',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',

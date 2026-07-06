@@ -20,6 +20,7 @@ import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
 import SmartImage from '@/components/SmartImage';
 import ProfiloView from '@/components/views/ProfiloView';
 import ConciergeView from '@/components/views/ConciergeView';
+import DetailSheet from '@/components/DetailSheet';
 
 // Globo WebGL (Globe.gl/three.js): code-split e solo lato client (ssr:false),
 // caricato dopo il first paint così non pesa sul bundle iniziale.
@@ -239,10 +240,12 @@ const FeedCard = React.memo(function FeedCard({
   item,
   isSaved,
   onToggleSave,
+  onOpenDetail,
 }: {
   item: any;
   isSaved: boolean;
   onToggleSave: (id: string) => void;
+  onOpenDetail?: (item: any) => void;
 }) {
   const { t } = useLanguage();
   const discount = item.originalPrice
@@ -261,14 +264,14 @@ const FeedCard = React.memo(function FeedCard({
       tabIndex={0}
       aria-label={item.price != null ? `${item.destination} — €${item.price}` : item.destination}
       onClick={() => {
-        if (item.booking_url) {
-          window.open(item.booking_url, '_blank', 'noopener,noreferrer');
-        }
+        if (onOpenDetail) { onOpenDetail(item); return; }
+        if (item.booking_url) window.open(item.booking_url, '_blank', 'noopener,noreferrer');
       }}
       onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && item.booking_url) {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          window.open(item.booking_url, '_blank', 'noopener,noreferrer');
+          if (onOpenDetail) { onOpenDetail(item); return; }
+          if (item.booking_url) window.open(item.booking_url, '_blank', 'noopener,noreferrer');
         }
       }}
     >
@@ -680,6 +683,7 @@ export default function Home({
   const [showAllDeals, setShowAllDeals] = React.useState(false);
   const [sortBy, setSortBy] = React.useState<'relevance' | 'price-asc' | 'price-desc'>('relevance');
   const [priceFilter, setPriceFilter] = React.useState<'all' | 'lt100' | 'mid' | 'high' | 'gt600'>('all');
+  const [detailItem, setDetailItem] = React.useState<any | null>(null);
   const [activeSearch, setActiveSearch] = React.useState('');
   const [aiSummary, setAiSummary] = React.useState('');
   const [aiPackage, setAiPackage] = React.useState<{ flight: any; hotel: any; reasoning: string } | null>(null);
@@ -1443,8 +1447,8 @@ export default function Home({
                     <span className="text-sm font-semibold text-nomaq-navy">{t('aiPackageTitle')}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mb-2">
-                    <FeedCard item={aiPackage.flight} isSaved={currentSaved.includes(aiPackage.flight.id)} onToggleSave={toggleSaveItem} />
-                    <FeedCard item={aiPackage.hotel} isSaved={currentSaved.includes(aiPackage.hotel.id)} onToggleSave={toggleSaveItem} />
+                    <FeedCard item={aiPackage.flight} isSaved={currentSaved.includes(aiPackage.flight.id)} onToggleSave={toggleSaveItem} onOpenDetail={setDetailItem} />
+                    <FeedCard item={aiPackage.hotel} isSaved={currentSaved.includes(aiPackage.hotel.id)} onToggleSave={toggleSaveItem} onOpenDetail={setDetailItem} />
                   </div>
                   {aiPackage.reasoning && <p className="text-xs text-slate-500 leading-snug">{aiPackage.reasoning}</p>}
                 </div>
@@ -1483,6 +1487,7 @@ export default function Home({
                         item={item}
                         isSaved={currentSaved.includes(item.id)}
                         onToggleSave={toggleSaveItem}
+                        onOpenDetail={setDetailItem}
                       />
                     </div>
                   ))
@@ -1563,6 +1568,9 @@ export default function Home({
             notificationsCount={notifications.length}
           />
         </div>
+
+        {/* ── Detail sheet (dettaglio in-app al tap su una card) ── */}
+        <DetailSheet item={detailItem} onClose={() => setDetailItem(null)} />
       </main>
     </>
   );
