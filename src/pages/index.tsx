@@ -578,8 +578,14 @@ function StaysView({
                 <span className="text-nomaq-coral text-sm line-through mt-2">€{featured.original_price}</span>
               )}
               <div className="flex items-end gap-1.5">
-                <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€ {featured.price}</span>
-                <span className="text-xs text-slate-400 mb-0.5">{t('perNight')}</span>
+                {featured.price != null ? (
+                  <>
+                    <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€ {featured.price}</span>
+                    <span className="text-xs text-slate-400 mb-0.5">{t('perNight')}</span>
+                  </>
+                ) : (
+                  <span className="text-3xl font-extrabold text-nomaq-navy leading-none">{t('searchNow')}</span>
+                )}
               </div>
               <button
                 aria-label={t('viewStay')}
@@ -669,7 +675,7 @@ function StayCard({
   meta: string;
   rating: number;
   reviews: number | null;
-  price: number;
+  price: number | null;
   image: string;
   bookingUrl?: string;
   isSaved: boolean;
@@ -717,8 +723,14 @@ function StayCard({
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-nomaq-navy tabular-nums">
-            <span className="font-extrabold text-nomaq-indigo">€{price}</span>{' '}
-            <span className="text-[10px] text-slate-400">{t('perNight')}</span>
+            {price != null ? (
+              <>
+                <span className="font-extrabold text-nomaq-indigo">€{price}</span>{' '}
+                <span className="text-[10px] text-slate-400">{t('perNight')}</span>
+              </>
+            ) : (
+              <span className="font-extrabold text-nomaq-indigo">{t('searchNow')}</span>
+            )}
           </span>
           <span className="text-nomaq-indigo text-xs font-semibold flex items-center gap-1">
             {t('viewStay')} <ArrowRight className="w-3 h-3" />
@@ -1880,7 +1892,9 @@ export default function Home({
 
   const handleSimulateDrop = () => {
     const allFeed = currentTab === 'vola-vola' ? flights : currentTab === 'soggiorna' ? hotels : feedItems;
-    const pool = allFeed.length > 0 ? allFeed : feedItems;
+    // Escludi le card senza prezzo numerico (es. card di fallback "Cerca …"):
+    // il calcolo del drop simulato produrrebbe altrimenti NaN.
+    const pool = (allFeed.length > 0 ? allFeed : feedItems).filter((i: any) => typeof i.price === 'number');
     if (pool.length === 0) return;
     const item = pool[Math.floor(Math.random() * pool.length)];
     const dropAmount = Math.floor(Math.random() * 60) + 20;
