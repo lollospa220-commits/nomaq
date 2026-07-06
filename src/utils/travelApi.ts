@@ -340,6 +340,88 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
   return perDestination.filter(Boolean) as any[];
 }
 
+// Una tariffa reale di mercato per una singola rotta arbitraria (non solo il
+// catalogo fisso): è ciò che alimenta la ricerca live per qualsiasi
+// destinazione. Restituisce fino a `limit` offerte distinte ordinate per
+// prezzo, oppure [] se manca il token / codici non validi / nessun dato /
+// qualsiasi errore upstream — così il chiamante ricade in modo pulito sulle
+// stime AI. Cache per-rotta (stessa mappa dei feed).
+export type LiveFare = {
+  price: number;
+  airline: string;       // nome compagnia risolto
+  airlineCode: string;   // IATA compagnia (per id stabili)
+  departureDay: string;  // YYYY-MM-DD reale
+  duration: string | null;
+  origin: string;        // IATA
+  destination: string;   // IATA
+};
+
+export async function fetchLiveFares(originIata: string, destIata: string, limit = 6): Promise<LiveFare[]> {
+  const token = process.env.TRAVELPAYOUTS_TOKEN;
+  if (!token || token.startsWith('YOUR_')) return [];
+  const origin = String(originIata || '').toUpperCase();
+  const dest = String(destIata || '').toUpperCase();
+  if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(dest) || origin === dest) return [];
+
+  const data = await withCache(`live-${origin}-${dest}`, async () => {
+    try {
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const departureMonth = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+      const params = new URLSearchParams({
+        origin,
+        destination: dest,
+        departure_at: departureMonth,
+        one_way: 'true',
+        direct: 'false',
+        currency: 'eur',
+        sorting: 'price',
+        limit: String(Math.min(Math.max(Math.round(limit), 1), 30)),
+        token,
+      });
+      const res = await fetch(`${TRAVELPAYOUTS_PRICES_URL}?${params.toString()}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      if (!json?.success) return [];
+
+      const offers = (Array.isArray(json?.data) ? json.data : []).filter((o: any) =>
+        Number.isFinite(Number(o?.price)) && Number(o?.price) > 0 &&
+        typeof o?.departure_at === 'string' && /^\d{4}-\d{2}-\d{2}/.test(o.departure_at));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const seen = new Set<string>();
+      const fares: LiveFare[] = [];
+      for (const o of offers.sort((a: any, b: any) => Number(a.price) - Number(b.price))) {
+        const departureDay = o.departure_at.slice(0, 10);
+        if (departureDay <= today) continue; // niente date già passate nella cache
+        const airlineCode = typeof o?.airline === 'string' ? o.airline.toUpperCase() : '';
+        // Una card per coppia (compagnia, data): evita righe quasi identiche.
+        const key = `${airlineCode}-${departureDay}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        fares.push({
+          price: Math.round(Number(o.price)),
+          airline: IATA_AIRLINE_NAMES[airlineCode] || airlineCode || 'Compagnia n/d',
+          airlineCode,
+          departureDay,
+          duration: formatDurationMinutes(o?.duration),
+          origin,
+          destination: dest,
+        });
+        if (fares.length >= limit) break;
+      }
+      return fares;
+    } catch (err) {
+      console.warn(`Live fares fetch failed for ${origin}-${dest}:`, err);
+      return [];
+    }
+  });
+
+  return data as LiveFare[];
+}
+
 // Fetch Flights: Travelpayouts (prezzi reali) → Duffel (solo token live) → cache Supabase
 export function fetchRealFlights() {
   return withCache('flights', computeRealFlights);
