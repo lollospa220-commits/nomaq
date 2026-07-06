@@ -6,4 +6,4 @@ Disallow: /drops
 Disallow: /salvati
 Disallow: /profilo
 
-Sitemap: https://nomaq.app/sitemap.xml
+Sitemap: https://nomaq-chi.vercel.app/sitemap.xml
