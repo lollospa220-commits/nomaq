@@ -249,13 +249,13 @@ function FeedCard({
       aria-label={item.price != null ? `${item.destination} — €${item.price}` : item.destination}
       onClick={() => {
         if (item.booking_url) {
-          window.open(item.booking_url, '_blank');
+          window.open(item.booking_url, '_blank', 'noopener,noreferrer');
         }
       }}
       onKeyDown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && item.booking_url) {
           e.preventDefault();
-          window.open(item.booking_url, '_blank');
+          window.open(item.booking_url, '_blank', 'noopener,noreferrer');
         }
       }}
     >
@@ -538,7 +538,7 @@ function StaysView({
             <span className="font-display text-2xl text-nomaq-navy text-center px-3 leading-tight">{mapLabel}</span>
           </div>
           <button
-            onClick={() => window.open(`https://www.google.com/maps/place/${encodeURIComponent(mapPlace)}`, '_blank')}
+            onClick={() => window.open(`https://www.google.com/maps/place/${encodeURIComponent(mapPlace)}`, '_blank', 'noopener,noreferrer')}
             className="absolute bottom-4 left-4 bg-white rounded-full px-4 py-2.5 shadow-card flex items-center gap-2 text-sm font-semibold text-nomaq-navy hover:scale-105 active:scale-95 transition-transform duration-200"
           >
             <Map className="w-4 h-4 text-nomaq-indigo" />
@@ -552,7 +552,7 @@ function StaysView({
             className="group rounded-3xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_34px_rgba(15,23,42,0.22)] flex flex-col lg:flex-row cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
             data-testid="feed-item"
             data-id={featured.id}
-            onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
+            onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank', 'noopener,noreferrer'); }}
           >
             <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
               <SmartImage
@@ -599,7 +599,7 @@ function StaysView({
               </div>
               <button
                 aria-label={t('viewStay')}
-                onClick={(e) => { e.stopPropagation(); if (featured.booking_url) window.open(featured.booking_url, '_blank'); }}
+                onClick={(e) => { e.stopPropagation(); if (featured.booking_url) window.open(featured.booking_url, '_blank', 'noopener,noreferrer'); }}
                 className="self-end mt-3 w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
               >
                 <ArrowRight className="w-5 h-5" />
@@ -697,7 +697,7 @@ function StayCard({
       className="nomaq-card bg-white/70 backdrop-blur-md flex gap-3 p-3 items-stretch cursor-pointer group hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
       data-testid="feed-item"
       data-id={id}
-      onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank'); }}
+      onClick={() => { if (bookingUrl) window.open(bookingUrl, '_blank', 'noopener,noreferrer'); }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 rounded-2xl overflow-hidden min-h-[104px]">
         <SmartImage
@@ -784,7 +784,7 @@ function DropMagazineCard({ drop, isFeatured = false }: { drop: any; isFeatured?
       className="group w-full h-56 rounded-3xl overflow-hidden relative cursor-pointer shadow-[0_10px_34px_rgba(15,23,42,0.22)] hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 ease-out"
       data-testid={isFeatured ? undefined : `drop-item-${drop.id}`}
       onClick={() => {
-        window.open('https://www.google.com/flights', '_blank');
+        window.open('https://www.google.com/flights', '_blank', 'noopener,noreferrer');
       }}
     >
       {/* Background Image */}
@@ -1236,13 +1236,13 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
         </div>
         <div className="flex gap-2.5 flex-shrink-0">
           <button
-            onClick={() => f?.booking_url && window.open(f.booking_url, '_blank')}
+            onClick={() => f?.booking_url && window.open(f.booking_url, '_blank', 'noopener,noreferrer')}
             className="flex items-center gap-2 text-sm font-bold text-white px-5 py-3 rounded-full bg-gradient-indigo shadow-button hover:scale-105 active:scale-95 transition-transform"
           >
             <Plane className="w-4 h-4" /> {t('tripBookFlight')}
           </button>
           <button
-            onClick={() => h?.booking_url && window.open(h.booking_url, '_blank')}
+            onClick={() => h?.booking_url && window.open(h.booking_url, '_blank', 'noopener,noreferrer')}
             className="flex items-center gap-2 text-sm font-bold text-nomaq-navy px-5 py-3 rounded-full bg-white shadow-soft hover:scale-105 active:scale-95 transition-transform"
           >
             <Hotel className="w-4 h-4" /> {t('tripBookHotel')}
@@ -1319,7 +1319,7 @@ function RadarBigCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
       data-testid={`drop-item-${d.id}`}
-      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
+      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank', 'noopener,noreferrer')}
     >
       <div className="relative h-36 lg:h-40">
         <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="(min-width: 1024px) 33vw, 100vw" className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
@@ -1347,7 +1347,7 @@ function RadarCompactCard({ d, affilId }: { d: RadarDrop; affilId?: string }) {
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-stretch"
       data-testid={`drop-item-${d.id}`}
-      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank')}
+      onClick={() => window.open(buildKiwiDeepLink(d.from, d.to, affilId), '_blank', 'noopener,noreferrer')}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
         <SmartImage src={RADAR_IMG[d.img]} alt={`${d.from} → ${d.to}`} sizes="128px" className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
@@ -2045,7 +2045,7 @@ export default function Home({
         <meta name="theme-color" content="#4F46E5" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026') }}
         />
       </Head>
 
