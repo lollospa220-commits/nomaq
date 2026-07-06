@@ -45,10 +45,19 @@ export function createRateLimiter({ windowMs = 60_000, max }: RateLimiterOptions
   }
 
   function getIp(req: NextApiRequest): string {
-    // Vercel sets x-forwarded-for; fall back to socket address.
+    // x-real-ip è impostato dal proxy Vercel e NON è falsificabile dal client:
+    // usarlo come sorgente primaria. In fallback l'ULTIMO segmento di
+    // x-forwarded-for (l'hop aggiunto dal proxy fidato), non il PRIMO — che è
+    // interamente controllato dal client e quindi spoofabile per aggirare il limite.
+    const realIp = req.headers['x-real-ip'];
+    if (typeof realIp === 'string' && realIp.trim()) return realIp.trim();
+
     const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
-    if (Array.isArray(forwarded) && forwarded.length > 0) return forwarded[0].split(',')[0].trim();
+    const xff = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    if (typeof xff === 'string' && xff.trim()) {
+      const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+      if (parts.length > 0) return parts[parts.length - 1];
+    }
     return req.socket?.remoteAddress || 'unknown';
   }
 
@@ -67,8 +76,10 @@ export function createRateLimiter({ windowMs = 60_000, max }: RateLimiterOptions
         return false;
       }
 
+      // Rifiuta PRIMA di incrementare quando l'allowance è esaurito: così il
+      // contatore non cresce all'infinito sotto flood e resta = max.
+      if (entry.count >= max) return true;
       entry.count++;
-      if (entry.count > max) return true;
       return false;
     },
   };
