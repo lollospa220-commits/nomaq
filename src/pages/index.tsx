@@ -1607,6 +1607,33 @@ function ToastNotification({ notif, onDismiss }: { notif: any; onDismiss: (id: s
 /* ─────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────── */
+// Destinazioni popolari per l'autocomplete della ricerca (gap #1 vs i leader:
+// prima il campo era testo libero senza suggerimenti). city = ciò che si cerca.
+const POPULAR_DESTINATIONS: { city: string; country: string }[] = [
+  { city: 'Parigi', country: 'Francia' }, { city: 'Londra', country: 'Regno Unito' },
+  { city: 'New York', country: 'Stati Uniti' }, { city: 'Tokyo', country: 'Giappone' },
+  { city: 'Barcellona', country: 'Spagna' }, { city: 'Roma', country: 'Italia' },
+  { city: 'Amsterdam', country: 'Paesi Bassi' }, { city: 'Lisbona', country: 'Portogallo' },
+  { city: 'Berlino', country: 'Germania' }, { city: 'Praga', country: 'Rep. Ceca' },
+  { city: 'Vienna', country: 'Austria' }, { city: 'Madrid', country: 'Spagna' },
+  { city: 'Dubai', country: 'Emirati Arabi' }, { city: 'Bali', country: 'Indonesia' },
+  { city: 'Santorini', country: 'Grecia' }, { city: 'Atene', country: 'Grecia' },
+  { city: 'Istanbul', country: 'Turchia' }, { city: 'Marrakech', country: 'Marocco' },
+  { city: 'Bangkok', country: 'Thailandia' }, { city: 'Maldive', country: 'Maldive' },
+  { city: 'Reykjavik', country: 'Islanda' }, { city: 'Copenaghen', country: 'Danimarca' },
+  { city: 'Budapest', country: 'Ungheria' }, { city: 'Dublino', country: 'Irlanda' },
+  { city: 'Porto', country: 'Portogallo' }, { city: 'Siviglia', country: 'Spagna' },
+  { city: 'Napoli', country: 'Italia' }, { city: 'Milano', country: 'Italia' },
+  { city: 'Venezia', country: 'Italia' }, { city: 'Firenze', country: 'Italia' },
+  { city: 'Nizza', country: 'Francia' }, { city: 'Ibiza', country: 'Spagna' },
+  { city: 'Malta', country: 'Malta' }, { city: 'Zanzibar', country: 'Tanzania' },
+  { city: 'Sharm el-Sheikh', country: 'Egitto' }, { city: 'Cancún', country: 'Messico' },
+  { city: 'Miami', country: 'Stati Uniti' }, { city: 'Singapore', country: 'Singapore' },
+];
+
+const normalizeSearch = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
 // Titolo + description per tab: ogni tab è una route SSR distinta (initialTab
 // impostato in getServerSideProps) → l'HTML iniziale che Google indicizza porta
 // meta corretti, non identici su tutti i tab.
@@ -2024,6 +2051,17 @@ export default function Home({
     'Volo diretto last minute',
     'Migliori hotel a Tokyo',
   ];
+  // Autocomplete: destinazioni che matchano ciò che l'utente digita (accento-
+  // insensibile), priorità a chi inizia con la query. Max 6.
+  const destSuggestions = React.useMemo(() => {
+    const q = normalizeSearch(aiQuery);
+    if (q.length < 1) return [] as typeof POPULAR_DESTINATIONS;
+    return POPULAR_DESTINATIONS
+      .filter((d) => normalizeSearch(d.city).includes(q) || normalizeSearch(d.country).includes(q))
+      .sort((a, b) => Number(normalizeSearch(b.city).startsWith(q)) - Number(normalizeSearch(a.city).startsWith(q)))
+      .slice(0, 6);
+  }, [aiQuery]);
+
   const runQuick = (text: string) => { setAiQuery(text); handleSearch(text); };
   const runSurprise = () => runQuick(surpriseQueries[Math.floor(Math.random() * surpriseQueries.length)]);
 
@@ -2206,23 +2244,43 @@ export default function Home({
                       {/* Dropdown ricerche recenti */}
                     {isFocused && (
                       <div className="liquid-glass-light backdrop-blur-xl backdrop-saturate-150 absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl p-4 text-left animate-fade-in">
-                        <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onMouseDown={() => runQuick(t('recentSearch1'))}
-                            className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
-                          >
-                            <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />
-                            <span className="truncate">{t('recentSearch1')}</span>
-                          </button>
-                          <button
-                            onMouseDown={() => runQuick(t('recentSearch2'))}
-                            className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
-                          >
-                            <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />
-                            <span className="truncate">{t('recentSearch2')}</span>
-                          </button>
-                        </div>
+                        {destSuggestions.length > 0 ? (
+                          <>
+                            <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('destinationsLabel')}</h3>
+                            <div className="flex flex-col gap-1" data-testid="dest-suggestions">
+                              {destSuggestions.map((d) => (
+                                <button
+                                  key={d.city}
+                                  onMouseDown={() => runQuick(d.city)}
+                                  className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-sm transition-colors w-full text-left"
+                                >
+                                  <MapPin className="w-4 h-4 text-nomaq-indigo flex-shrink-0" strokeWidth={1.5} />
+                                  <span className="truncate"><span className="font-semibold text-nomaq-navy">{d.city}</span><span className="text-slate-400"> · {d.country}</span></span>
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <h3 className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wider">{t('continueWhere')}</h3>
+                            <div className="flex flex-col gap-2">
+                              <button
+                                onMouseDown={() => runQuick(t('recentSearch1'))}
+                                className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
+                              >
+                                <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />
+                                <span className="truncate">{t('recentSearch1')}</span>
+                              </button>
+                              <button
+                                onMouseDown={() => runQuick(t('recentSearch2'))}
+                                className="flex items-center gap-2.5 hover:bg-slate-50 rounded-lg p-2 text-xs text-slate-600 transition-colors w-full text-left"
+                              >
+                                <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />
+                                <span className="truncate">{t('recentSearch2')}</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

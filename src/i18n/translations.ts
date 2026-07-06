@@ -58,6 +58,7 @@ const it = {
   noOffers: 'Nessuna offerta disponibile',
   noExactMatch: 'Nessuna offerta già pronta per questa meta: apri la ricerca diretta qui sotto.',
   searchNow: 'Cerca',
+  destinationsLabel: 'Destinazioni',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -272,6 +273,7 @@ const en: Record<TranslationKey, string> = {
   noOffers: 'No offers available',
   noExactMatch: 'No ready-made deals for this destination: open a direct search below.',
   searchNow: 'Search',
+  destinationsLabel: 'Destinations',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',
