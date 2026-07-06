@@ -3,7 +3,7 @@ import SEO from '@/components/SEO';
 import Link from 'next/link';
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { Heart, MapPin, Calendar, Clock, ChevronRight, ChevronDown, Zap, Star, ArrowDown, TrendingDown, Search, Plane, Hotel, User, Globe, Sparkles, ArrowRight, X, Sun, Snowflake, CheckCircle2, Tag, Palmtree, Wand2, Utensils, Map, Smartphone, ShieldCheck, Landmark, Music, Sunset, Wine, ShoppingBag } from 'lucide-react';
+import { Heart, MapPin, Clock, ChevronDown, TrendingDown, Search, Plane, Hotel, Globe, Sparkles, ArrowRight, Snowflake, Tag, Palmtree, Wand2, Map, Landmark } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppState, TabId } from '@/context/AppState';
 import { TranslationKey } from '@/i18n/translations';
@@ -252,6 +252,9 @@ const FeedCard = React.memo(function FeedCard({
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
+          // Ferma Invio/Spazio dal risalire al card handler (che aprirebbe il
+          // DetailSheet): così il bottone si attiva normalmente e salva.
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}
           aria-label={isSaved ? 'Rimuovi dai preferiti' : 'Salva nei preferiti'}
           className={`absolute top-2 left-2 w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-200 ${
             isSaved ? 'bg-nomaq-lavender' : 'bg-white/85 backdrop-blur-sm'
@@ -1167,7 +1170,7 @@ export default function Home({
                   <h2 className="font-display text-xl lg:text-2xl text-white truncate">{t('pickedForYou')}</h2>
                   {feedByTab.length > 0 && (
                     <span className="text-xs font-medium text-white/50 flex-shrink-0" data-testid="feed-count">
-                      {displayedFeed.length} {t('dealsWord')}
+                      {displayedFeed.length} {displayedFeed.length === 1 ? t('dealWordOne') : t('dealsWord')}
                     </span>
                   )}
                 </div>
