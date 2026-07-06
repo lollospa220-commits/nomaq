@@ -437,6 +437,12 @@ function normalizeDestination(parsed: any): AiTripResult {
   const country = String(parsed.country || '').trim();
   if (!destination) throw new Error('Destination mode without destination');
 
+  // Slug della destinazione per id UNIVOCI: senza, ricerche diverse davano id
+  // collidenti (ai-flight-0 sia per Praga che per Parigi) → stato "salvato"
+  // errato tra ricerche e chiavi React duplicate.
+  const slug = destination.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'dest';
+
   const rawFlights = Array.isArray(parsed.flights) ? parsed.flights.slice(0, 4) : [];
   const rawHotels = Array.isArray(parsed.hotels) ? parsed.hotels.slice(0, 4) : [];
 
@@ -449,7 +455,7 @@ function normalizeDestination(parsed: any): AiTripResult {
       const toCode = String(f?.toCode || '').trim().toUpperCase().slice(0, 3);
       const note = String(f?.note || '');
       return {
-        id: `ai-flight-${i}`,
+        id: `ai-flight-${slug}-${i}`,
         type: 'flight',
         destination: `Volo per ${destination}`,
         country,
@@ -473,7 +479,7 @@ function normalizeDestination(parsed: any): AiTripResult {
       const area = String(h?.area || '');
       const note = String(h?.note || '');
       return {
-        id: `ai-hotel-${i}`,
+        id: `ai-hotel-${slug}-${i}`,
         type: 'hotel',
         destination: name,
         country,
