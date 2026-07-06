@@ -139,12 +139,13 @@ export default function ProfiloView({
 
     return (
       <div className="px-5 pb-4 space-y-5 animate-fade-in" data-testid="profile-view">
-        <div className="pt-2">
-          <h1 className="font-display text-display-lg text-nomaq-navy mb-1">{t('yourProfile')}</h1>
+        <div className="pt-2 flex items-center gap-2">
+          <User className="w-6 h-6 text-nomaq-indigo" strokeWidth={1.5} />
+          <h1 className="font-display text-display-lg text-nomaq-navy">{t('yourProfile')}</h1>
         </div>
 
         {/* Profile card */}
-        <div className="nomaq-card p-5" data-testid="profile-card">
+        <div className="nomaq-card backdrop-blur-md p-5" data-testid="profile-card">
           <div className="flex items-center gap-4">
             {profile?.avatar_url ? (
               <img
@@ -200,7 +201,7 @@ export default function ProfiloView({
       {/* Auth Card (hidden in E2E mode: tests expect the waitlist email input
           to be the first input[type=email] in the profile view) */}
       {!isE2E && (
-      <div className="nomaq-card p-5 mt-2">
+      <div className="nomaq-card backdrop-blur-md p-5 mt-2">
         <div className="text-center mb-4">
           <h2 className="font-display text-xl text-nomaq-navy mb-1 flex items-center justify-center gap-2">
             <User className="w-5 h-5 text-nomaq-indigo" />
@@ -222,7 +223,7 @@ export default function ProfiloView({
                 value={authName}
                 onChange={(e) => setAuthName(e.target.value)}
                 autoComplete="name"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+                className="w-full bg-white/70 backdrop-blur-sm border border-white/70 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
               />
             </div>
           )}
@@ -235,7 +236,7 @@ export default function ProfiloView({
               value={authEmail}
               onChange={(e) => setAuthEmail(e.target.value)}
               autoComplete="email"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+              className="w-full bg-white/70 backdrop-blur-sm border border-white/70 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
             />
           </div>
           <div>
@@ -247,7 +248,7 @@ export default function ProfiloView({
               value={authPassword}
               onChange={(e) => setAuthPassword(e.target.value)}
               autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+              className="w-full bg-white/70 backdrop-blur-sm border border-white/70 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
             />
           </div>
 
@@ -264,8 +265,7 @@ export default function ProfiloView({
             type="submit"
             data-testid="auth-submit"
             disabled={authBusy}
-            className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', boxShadow: '0 4px 16px rgba(124, 58, 237, 0.3)' }}
+            className="btn-primary w-full !rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60"
           >
             {authBusy
               ? t('authWorking')
@@ -308,7 +308,7 @@ export default function ProfiloView({
       </div>
 
       {/* Form Card */}
-      <div className="nomaq-card p-5">
+      <div className="nomaq-card backdrop-blur-md p-5">
         <form data-testid="waitlist-form" onSubmit={handleSubmit} className="space-y-3">
           {!submitted ? (
             <>
@@ -320,7 +320,7 @@ export default function ProfiloView({
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
+                  className="w-full bg-white/70 backdrop-blur-sm border border-white/70 rounded-xl px-4 py-3 text-nomaq-navy text-sm placeholder-slate-400 focus:outline-none focus:border-nomaq-indigo focus:ring-2 focus:ring-nomaq-indigo/20 transition-all"
                 />
               </div>
               {error && (
@@ -329,8 +329,7 @@ export default function ProfiloView({
               <button
                 type="submit"
                 data-testid="waitlist-submit"
-                className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', boxShadow: '0 4px 16px rgba(124, 58, 237, 0.3)' }}
+                className="btn-primary w-full !rounded-xl flex items-center justify-center gap-2 active:scale-[0.98]"
               >
                 <Sparkles className="w-4 h-4 mr-1" /> {t('joinWaitlist')} <ArrowRight className="w-4 h-4" />
               </button>

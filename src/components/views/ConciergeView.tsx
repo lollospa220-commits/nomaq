@@ -49,14 +49,12 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
   ];
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 animate-fade-in" style={{ minHeight: 'calc(100vh - 120px)' }}>
+    <div className="flex flex-col h-full bg-transparent animate-fade-in" style={{ minHeight: 'calc(100vh - 120px)' }}>
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="w-6 h-6 text-nomaq-indigo" strokeWidth={1.5} />
           <h1 className="font-display text-display-lg text-nomaq-navy">Concierge</h1>
-          <div className="w-9 h-9 rounded-full bg-nomaq-lavender flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-nomaq-indigo" />
-          </div>
         </div>
         <p className="text-slate-500 text-sm">{t('conciergeSubtitle')}</p>
       </div>
@@ -69,7 +67,7 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
               key={idx}
               onClick={() => sendMessage(action.label)}
               disabled={thinking}
-              className="flex-shrink-0 flex items-center gap-2 bg-white border border-slate-100 rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-nomaq-lavender hover:border-nomaq-indigo/20 hover:text-nomaq-indigo active:scale-95 transition-all duration-200 shadow-soft cursor-pointer whitespace-nowrap disabled:opacity-50"
+              className="nomaq-pill flex-shrink-0 whitespace-nowrap active:scale-95 disabled:opacity-50"
             >
               {action.label}
             </button>
@@ -84,7 +82,7 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
           <div className="w-8 h-8 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0 mt-1">
             <Sparkles className="w-4 h-4 text-nomaq-indigo" />
           </div>
-          <div className="max-w-[80%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 text-sm shadow-sm text-slate-700 whitespace-pre-line">
+          <div className="nomaq-card bg-white/70 backdrop-blur-md max-w-[80%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-700 whitespace-pre-line">
             {t('conciergeGreeting')}
           </div>
         </div>
@@ -93,7 +91,7 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
         {messages.map((msg, idx) =>
           msg.role === 'user' ? (
             <div key={idx} className="flex justify-end">
-              <div className="max-w-[80%] bg-nomaq-navy text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm shadow-sm whitespace-pre-line">
+              <div className="max-w-[80%] bg-nomaq-navy text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm shadow-card whitespace-pre-line">
                 {msg.content}
               </div>
             </div>
@@ -102,7 +100,7 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
               <div className="w-8 h-8 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0 mt-1">
                 <Sparkles className="w-4 h-4 text-nomaq-indigo" />
               </div>
-              <div className="max-w-[80%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 text-sm shadow-sm text-slate-700 whitespace-pre-line">
+              <div className="nomaq-card bg-white/70 backdrop-blur-md max-w-[80%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-700 whitespace-pre-line">
                 {msg.content}
               </div>
             </div>
@@ -115,7 +113,7 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
             <div className="w-8 h-8 rounded-full bg-nomaq-lavender flex items-center justify-center flex-shrink-0 mt-1">
               <Sparkles className="w-4 h-4 text-nomaq-indigo animate-pulse" />
             </div>
-            <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3.5 shadow-sm flex items-center gap-1.5">
+            <div className="nomaq-card bg-white/70 backdrop-blur-md rounded-2xl rounded-tl-sm px-4 py-3.5 flex items-center gap-1.5">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
@@ -153,8 +151,8 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
 
       {/* Chat Input Bar — su mobile resta sopra la BottomNav fissa (60px +
           safe area) che altrimenti la coprirebbe; su lg la nav è nascosta. */}
-      <div className="sticky bottom-[calc(60px+env(safe-area-inset-bottom,0px))] lg:bottom-0 px-4 pb-3 lg:pb-5 pt-3 bg-slate-50/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-full px-4 py-3 shadow-soft">
+      <div className="sticky bottom-[calc(60px+env(safe-area-inset-bottom,0px))] lg:bottom-0 px-4 pb-3 lg:pb-5 pt-3 bg-white/60 backdrop-blur-md">
+        <div className="nomaq-card bg-white/80 backdrop-blur-md flex items-center gap-3 rounded-full px-4 py-3">
           <button className="text-slate-400 hover:text-nomaq-indigo transition-colors flex-shrink-0">
             <Paperclip className="w-5 h-5" />
           </button>
