@@ -69,7 +69,7 @@ export default function GlobeGL() {
       .width(el.clientWidth)
       .height(el.clientHeight)
       .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl('/textures/earth-dark.jpg')
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
       .showAtmosphere(true)
       .atmosphereColor('#8b7ff0')
       .atmosphereAltitude(0.22)
@@ -91,8 +91,8 @@ export default function GlobeGL() {
       .ringPropagationSpeed(1.4)
       .ringRepeatPeriod(1700);
 
-    // Inquadratura: Europa/Africa in vista, alba in alto
-    globe.pointOfView({ lat: 22, lng: 8, altitude: 1.1 }, 0);
+    // Inquadratura: Europa/Africa in vista, zoom all'indietro per vedere l'intero globo girare
+    globe.pointOfView({ lat: 22, lng: 8, altitude: 2.2 }, 0);
 
     // Controlli: niente interazione utente, solo auto-rotazione lenta
     const controls = globe.controls();
