@@ -41,21 +41,7 @@ const ARCS = PAIRS.map(([a, b]) => ({
   startLat: C[a].lat, startLng: C[a].lng, endLat: C[b].lat, endLng: C[b].lng,
 }));
 
-// Texture radiale per il bagliore dell'alba (bianco → arancio → trasparente)
-function sunriseTexture(): THREE.CanvasTexture {
-  const s = 256;
-  const cvs = document.createElement('canvas');
-  cvs.width = cvs.height = s;
-  const ctx = cvs.getContext('2d')!;
-  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-  g.addColorStop(0, 'rgba(255,255,255,0.95)');
-  g.addColorStop(0.25, 'rgba(255,214,170,0.75)');
-  g.addColorStop(0.55, 'rgba(255,138,101,0.35)');
-  g.addColorStop(1, 'rgba(255,120,90,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, s, s);
-  return new THREE.CanvasTexture(cvs);
-}
+
 
 export default function GlobeGL() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -112,21 +98,7 @@ export default function GlobeGL() {
     dir.position.set(0.35, 1, 0.45);
     globe.lights([amb, dir]);
 
-    // Sprite bagliore alba, fisso in alto (indipendente dalla rotazione)
-    const scene = globe.scene();
-    const sunTex = sunriseTexture();
-    const sunMat = new THREE.SpriteMaterial({
-      map: sunTex,
-      blending: THREE.AdditiveBlending,
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
-      opacity: 0.9,
-    });
-    const sun = new THREE.Sprite(sunMat);
-    sun.scale.set(190, 190, 1);
-    sun.position.set(0, 120, -12);
-    scene.add(sun);
+
 
     // Resize
     const ro = new ResizeObserver(() => {
@@ -139,9 +111,7 @@ export default function GlobeGL() {
       ro.disconnect();
       controls.autoRotate = false;
       if (typeof globe.pauseAnimation === 'function') globe.pauseAnimation();
-      scene.remove(sun);
-      sunMat.dispose();
-      sunTex.dispose();
+
       try { globe.renderer().dispose(); } catch { /* noop */ }
       while (el.firstChild) el.removeChild(el.firstChild);
     };
