@@ -18,4 +18,13 @@ export interface FeedItem {
   date?: string;
   tag?: string;
   estimate?: boolean;
+  /** Calo di prezzo REALE osservato tra due fetch consecutivi dello stesso
+   *  ciclo cache (vs. il prezzo precedente della stessa destinazione). 0 o
+   *  assente = nessun drop rilevato questo ciclo — mai un numero inventato. */
+  dropAmount?: number | null;
+  /** Prezzo osservato nel fetch precedente per la stessa destinazione. */
+  priorPrice?: number | null;
+  /** Timestamp (ms) del momento in cui questo prezzo è stato fetchato dal
+   *  provider a monte — alimenta il badge "aggiornato X min fa". */
+  observedAt?: number | null;
 }

@@ -160,9 +160,21 @@ const isIata = (c?: string) => /^[A-Z]{3}$/.test(c || '');
    itinerary, so we open a Kiwi.com route search (today+45 window) and a
    Booking.com search-by-name. Same affiliate patterns as the catalog cards. */
 function destinationFlightUrl(fromCode: string, toCode: string): string {
-  const dep = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [y, m, d] = dep.split('-');
-  const params = new URLSearchParams({ from: isIata(fromCode) ? fromCode : 'MXP', departure: `${d}-${m}-${y}`, lang: 'it' });
+  const depDateObj = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
+  const dep = depDateObj.toISOString().slice(0, 10);
+  const [depY, depM, depD] = dep.split('-');
+  
+  const retDateObj = new Date(depDateObj);
+  retDateObj.setDate(retDateObj.getDate() + 4); // default 4-night stay for a/r stimate
+  const ret = retDateObj.toISOString().slice(0, 10);
+  const [retY, retM, retD] = ret.split('-');
+
+  const params = new URLSearchParams({ 
+    from: isIata(fromCode) ? fromCode : 'MXP', 
+    departure: `${depD}-${depM}-${depY}`, 
+    return: `${retD}-${retM}-${retY}`,
+    lang: 'it' 
+  });
   if (isIata(toCode)) params.set('to', toCode);
   const affil = process.env.KIWI_AFFILIATE_ID;
   if (affil) params.set('affilid', affil);

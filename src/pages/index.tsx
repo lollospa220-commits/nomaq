@@ -985,7 +985,7 @@ export default function Home({
                 <DropsView simulatedDrops={simulatedDrops} isE2E={isE2E} onSimulateDrop={handleSimulateDrop} />
               </div>
             ) : (
-              <RadarView simulatedDrops={simulatedDrops} kiwiAffiliateId={kiwiAffiliateId} />
+              <RadarView flights={allFlights} simulatedDrops={simulatedDrops} />
             )
           )}
 

@@ -13,6 +13,9 @@ const num = (v: unknown): number | null => {
 
 function base(raw: any) {
   const original = raw.original_price ?? raw.originalPrice;
+  const dropAmount = raw.drop_amount ?? raw.dropAmount;
+  const priorPrice = raw.prior_price ?? raw.priorPrice;
+  const observedAt = raw.observed_at ?? raw.observedAt;
   return {
     ...raw,
     price: num(raw.price),
@@ -20,6 +23,11 @@ function base(raw: any) {
     rating: raw.rating != null && raw.rating !== '' ? num(raw.rating) : null,
     stars: raw.stars != null && raw.stars !== '' ? num(raw.stars) : null,
     date: raw.date_info || raw.date || '',
+    // Drop reale osservato dal backend (vedi computeRealFlights). Assente per
+    // le righe servite dalla sola cache Supabase (nessun fetch avvenuto ora).
+    dropAmount: dropAmount != null ? num(dropAmount) : null,
+    priorPrice: priorPrice != null ? num(priorPrice) : null,
+    observedAt: observedAt != null ? num(observedAt) : null,
   };
 }
 

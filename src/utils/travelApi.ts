@@ -70,32 +70,68 @@ function resolveDestCode(item: any): string | null {
   return hit ? hit[1] : null;
 }
 
+// Helper to resolve origin airport code from item details
+function resolveOriginCode(item: any): string {
+  if (item.from_code) return item.from_code;
+  if (item.origin_code) return item.origin_code;
+  if (item.fromCode) return item.fromCode;
+  const desc = String(item.description || '').toLowerCase();
+  const dest = String(item.destination || '').toLowerCase();
+  if (desc.includes('napoli') || dest.includes('napoli')) return 'NAP';
+  if (desc.includes('roma') || dest.includes('roma')) return 'ROM';
+  if (desc.includes('milano') || dest.includes('milano')) return 'MIL';
+  if (desc.includes('venezia') || dest.includes('venezia')) return 'VCE';
+  return 'MXP'; // default fallback
+}
+
 // Helper to get affiliate link
 function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
   const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
 
   if (type === 'flight') {
     // Kiwi.com per tutti i voli — nessun network russo (Aviasales/Jetradar).
-    // KIWI_AFFILIATE_ID è l'`affilid` del programma Kiwi.com su Travelpayouts
-    // (Programs > Kiwi.com > Links > "IT: Main page" > Copy link, poi leggi
-    // `affilid` nell'URL di destinazione): se assente il link resta un
-    // normale link di ricerca Kiwi.com, solo senza commissione tracciata.
     const destCode = resolveDestCode(item);
+    const originCode = resolveOriginCode(item);
+    
     // Le righe Travelpayouts codificano la data reale di partenza nell'id
     // (flight-tp-XXX-YYYY-MM-DD): usala, così il link apre la stessa data
     // mostrata sulla card anche quando la riga arriva dalla cache Supabase.
-    // Per le altre righe resta la finestra today+60.
     const tpMatch = typeof item.id === 'string'
       ? item.id.match(/^flight-tp-[A-Z]{3}-(\d{4}-\d{2}-\d{2})$/)
       : null;
     const fallbackDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
-    // Righe cache con data ormai passata (es. TP token rimosso da settimane):
-    // meglio la finestra standard che un deep link su una data non prenotabile.
     const departureDate = tpMatch && tpMatch[1] > today ? tpMatch[1] : fallbackDate;
-    const [y, m, d] = departureDate.split('-');
-    const params = new URLSearchParams({ from: 'MXP', departure: `${d}-${m}-${y}`, lang: 'it' });
+    
+    // Rileva se è una riga live (solo andata da Travelpayouts) o un deal statico/pacchetto (andata e ritorno)
+    const isLive = typeof item.id === 'string' && (item.id.startsWith('flight-tp-') || item.id.startsWith('live-flight-'));
+    
+    let returnDate = '';
+    if (!isLive) {
+      // Per i deal statici del catalogo (es. Weekend a Barcellona), calcola la data di ritorno
+      const text = `${item.description || ''} ${item.date_info || ''} ${item.nights || ''}`;
+      const nightsMatch = text.match(/(\d+)\s*nott/i);
+      let nights = 7; // default per lungo raggio
+      if (nightsMatch) {
+        nights = parseInt(nightsMatch[1], 10);
+      } else if (text.toLowerCase().includes('weekend')) {
+        nights = 2;
+      }
+      
+      const depDateObj = new Date(departureDate);
+      depDateObj.setDate(depDateObj.getDate() + nights);
+      returnDate = depDateObj.toISOString().split('T')[0];
+    }
+
+    const [depY, depM, depD] = departureDate.split('-');
+    const params = new URLSearchParams({ from: originCode, departure: `${depD}-${depM}-${depY}`, lang: 'it' });
     if (destCode) params.set('to', destCode);
+    
+    if (returnDate) {
+      const [retY, retM, retD] = returnDate.split('-');
+      params.set('return', `${retD}-${retM}-${retY}`);
+    }
+
     const kiwiAffilId = process.env.KIWI_AFFILIATE_ID;
     if (kiwiAffilId) params.set('affilid', kiwiAffilId);
     return `https://www.kiwi.com/deep?${params.toString()}`;
@@ -519,6 +555,39 @@ export function fetchRealFlights() {
 async function computeRealFlights() {
   await seedDefaultRows();
 
+  // Prezzo dell'ultima osservazione per destinazione, letto PRIMA di qualsiasi
+  // upsert di questo ciclo: confrontarlo col prezzo appena fetchato rende
+  // "Drop €X / -X%" un fatto osservato (prezzo reale precedente vs reale
+  // attuale), non un numero inventato come il vecchio original_price*1.35.
+  // drop_amount/prior_price/observed_at vivono SOLO nell'oggetto in-memory
+  // restituito al chiamante: mai scritti su Supabase (schema flights intatto,
+  // nessuna colonna nuova). Se la lettura fallisce, nessun drop viene
+  // mostrato questo ciclo (fail safe verso "niente drop", mai verso un drop finto).
+  let priorPriceByDest = new Map<string, number>();
+  try {
+    const { data: priorRows } = await supabase.from('flights').select('destination,price');
+    (priorRows || []).forEach((r: any) => {
+      const p = Number(r?.price);
+      if (r?.destination && Number.isFinite(p)) priorPriceByDest.set(r.destination, p);
+    });
+  } catch (err) {
+    console.warn('Could not read prior flight prices for drop-tracking:', err);
+  }
+
+  const withDropInfo = (rows: any[]) => {
+    const observedAt = Date.now();
+    return rows.map((r) => {
+      const prior = priorPriceByDest.get(r.destination);
+      const hasDrop = typeof prior === 'number' && prior > r.price;
+      return {
+        ...r,
+        prior_price: typeof prior === 'number' ? prior : null,
+        drop_amount: hasDrop ? Math.round(prior! - r.price) : 0,
+        observed_at: observedAt,
+      };
+    });
+  };
+
   // 1) Travelpayouts prima di Duffel: sono prezzi di mercato reali.
   const tpToken = process.env.TRAVELPAYOUTS_TOKEN;
   if (tpToken && !tpToken.startsWith('YOUR_')) {
@@ -532,7 +601,7 @@ async function computeRealFlights() {
           const { error } = await supabase.from('flights').upsert(row);
           if (error) console.warn(`Upsert of TP flight ${row.id} failed:`, error.message);
         }
-        return ensureVariedImages(tpFlights).map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
+        return ensureVariedImages(withDropInfo(tpFlights)).map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
       }
     } catch (err) {
       console.error('Error fetching from Travelpayouts API:', err);
@@ -644,7 +713,7 @@ async function computeRealFlights() {
         const { error } = await supabase.from('flights').upsert(row);
         if (error) console.warn(`Upsert of Duffel flight ${row.id} failed:`, error.message);
       }
-      return ensureVariedImages(allFetchedFlights).map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
+      return ensureVariedImages(withDropInfo(allFetchedFlights)).map((item: any) => ({ ...item, booking_url: getAffiliateLink(item, 'flight') }));
     }
 
     const { data } = await supabase.from('flights').select('*');
