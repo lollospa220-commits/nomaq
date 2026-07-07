@@ -1,6 +1,25 @@
+# dependencies
 node_modules/
+
+# next.js
 .next/
-.env.local
+next-env.d.ts
+
+# production / deploy
 .vercel
-.claude/
+
+# env
+.env.local
+
+# typescript
 *.tsbuildinfo
+
+# tooling / editor
+.claude/
+
+# local tooling output (graph analysis, etc.)
+graphify-out/
+
+# os junk
+.DS_Store
+Thumbs.db
