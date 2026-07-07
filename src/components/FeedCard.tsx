@@ -24,9 +24,26 @@ const FeedCard = React.memo(function FeedCard({
   const rawTag = item.tag || '';
   const cleanTag = rawTag.replace(/^[^\w\s]+\s*/, '').trim();
 
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
   return (
     <div
-      className="feed-card backdrop-blur-md animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group"
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="feed-card backdrop-blur-md animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group relative"
       data-testid="feed-item"
       data-id={item.id}
       role="button"
@@ -44,6 +61,20 @@ const FeedCard = React.memo(function FeedCard({
         }
       }}
     >
+      {/* Spotlight Effect (Mouse Tracking Glow) */}
+      <div
+        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-10 mix-blend-overlay"
+        style={{
+          background: `radial-gradient(800px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(255, 255, 255, 0.4), transparent 40%)`,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-10"
+        style={{
+          background: `radial-gradient(400px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(124, 58, 237, 0.15), transparent 40%)`,
+        }}
+      />
+
       {/* Image (Top half) — zoom lento su hover, cifra tipica dei siti premium */}
       <div className="relative w-full h-28 lg:h-44 flex-shrink-0 overflow-hidden">
         <SmartImage
@@ -51,7 +82,7 @@ const FeedCard = React.memo(function FeedCard({
           fallbackSrc={getDestinationImage(item.destination, item.id || 'item')}
           alt={item.destination}
           sizes="(min-width: 1024px) 300px, 45vw"
-          className="transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          className="feed-cover-img transition-transform duration-700 ease-out group-hover:scale-[1.05]"
         />
         {/* Save button */}
         <button
@@ -79,7 +110,7 @@ const FeedCard = React.memo(function FeedCard({
         {/* Tag in overlay sull'immagine: il titolo sotto resta a piena larghezza
             (a 375px badge+titolo sulla stessa riga spezzavano "Weekend a…") */}
         {cleanTag && (
-          <span className="nomaq-badge absolute top-2 right-2 bg-white/90 backdrop-blur-sm">{cleanTag}</span>
+          <span className="nomaq-badge absolute top-2 right-2 bg-white/70 backdrop-blur-md shadow-sm border border-white/40">{cleanTag}</span>
         )}
       </div>
 
@@ -112,7 +143,7 @@ const FeedCard = React.memo(function FeedCard({
             {discount > 0 && (
               <span className="text-slate-400 text-[11px] line-through">€{item.originalPrice}</span>
             )}
-            <span className="text-nomaq-indigo font-semibold text-sm">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#F87171] bg-[length:200%_auto] animate-shimmerText font-bold text-sm drop-shadow-sm transition-all duration-300 group-hover:drop-shadow-md">
               {item.price != null ? (
                 <>
                   <span className="text-slate-400 font-normal text-[11px] mr-0.5">{t('fromPrice')}</span>€{item.price}

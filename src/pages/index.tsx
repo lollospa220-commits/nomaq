@@ -533,7 +533,7 @@ export default function Home({
   const currentSaved = savedItems;
   // Home (vola-vola, non in modalità piano) mostra il globo scuro dietro:
   // lo sheet è trasparente e i testi "nudi" (titolo FAQ, footer) diventano chiari.
-  const isDarkBackground = currentTab === 'vola-vola' && !tripPlan;
+  const isDarkBackground = true;
 
   const handleSimulateDrop = () => {
     const allFeed = currentTab === 'vola-vola' ? deals : currentTab === 'soggiorna' ? hotels : feedItems;
@@ -738,6 +738,15 @@ export default function Home({
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
 
         <div className={`mx-auto ${queryObj.desktop === 'true' ? 'max-w-4xl' : 'max-w-md lg:max-w-6xl'}`}>
+          {/* Sfondo fisso globale (Globo + dark gradient). Rendendolo fuori dalle
+              condizioni, il mondo gira ed è visibile in trasparenza da tutte le view. */}
+          <div
+            className="fixed inset-0 -z-[60]"
+            aria-hidden="true"
+            style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
+          />
+          <GlobeGL />
+
           {/* Hidden active view for tests */}
           <div data-testid="active-view" className="hidden">{currentTab}</div>
 
@@ -784,19 +793,6 @@ export default function Home({
           {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
           {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
             <div className="px-5 lg:px-6 mb-5">
-              {/* Backdrop scuro statico (SSR) dietro al globo: la hero a testo
-                  chiaro resta leggibile subito, prima che il globo WebGL
-                  (dynamic, ssr:false) carichi — e anche se WebGL non è
-                  disponibile. Sotto il globo (-z-60) e sopra il gradiente
-                  chiaro del body. */}
-              <div
-                className="fixed inset-0 -z-[60]"
-                aria-hidden="true"
-                style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
-              />
-              {/* Full-screen fixed globe background rendered only when Hero is active */}
-              <GlobeGL />
-
               {/* Hero: ora trasparente, fa vedere il GlobeGL fisso sul retro. */}
               <div className="relative mb-8 lg:mb-14 px-5 py-12 lg:px-10 lg:py-20">
                 {/* Velo per staccare il testo dal globo e dare profondità */}
@@ -809,7 +805,7 @@ export default function Home({
                     {greeting}
                   </p>
                   {/* Titolo */}
-                  <h1 className="font-display text-display-md lg:text-display-lg text-white leading-tight mb-3 [text-shadow:0_2px_24px_rgba(10,8,30,0.6)]">
+                  <h1 className="font-display text-display-md lg:text-display-lg text-white leading-tight mb-3 [text-shadow:0_4px_32px_rgba(10,8,30,0.8)]">
                     {t('headline')}<span className="italic text-violet-400">?</span>
                   </h1>
                   {/* Tagline */}
@@ -818,8 +814,8 @@ export default function Home({
                   </p>
 
                   {/* AI Search bar */}
-                  <div className="relative w-full max-w-2xl">
-                    <div className="bg-white/95 backdrop-blur-md border border-white/70 shadow-[0_10px_34px_rgba(15,23,42,0.20)] relative rounded-full flex items-center h-16 pl-6 pr-2 text-left">
+                  <div className={`relative w-full max-w-2xl rounded-full search-bar-glow ${isFocused ? 'active' : ''}`}>
+                    <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_12px_40px_rgba(15,23,42,0.25)] relative rounded-full flex items-center h-16 pl-6 pr-2 text-left">
                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
                           <input
                             type="text"
@@ -1084,7 +1080,13 @@ export default function Home({
 
           {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
               Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
-          <div className={`relative z-10 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16 ${isDarkBackground ? 'bg-transparent' : 'bg-gradient-to-b from-white/40 to-white/90 backdrop-blur-2xl backdrop-saturate-150'}`}>
+          <div className={`relative z-10 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16 ${isDarkBackground ? 'bg-transparent' : 'bg-gradient-to-b from-white/40 to-white/80 backdrop-blur-[60px] backdrop-saturate-[200]'}`}>
+            {!isDarkBackground && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-t-[32px] z-[-1]">
+                <div className="orb orb-1"></div>
+                <div className="orb orb-2"></div>
+              </div>
+            )}
 
           {/* ── AI search summary + suggested package + destination results ──
               Area DEDICATA alla barra di ricerca: separata da "Selezionati per
@@ -1142,7 +1144,7 @@ export default function Home({
               >
                 {isSearching ? (
                   Array.from({ length: 6 }).map((_, i) => (
-                    <div key={`sk-${i}`} className="h-full" data-testid="feed-skeleton">
+                    <div key={`sk-${i}`} className="h-full slide-up" style={{ animationDelay: `${i * 100}ms` }} data-testid="feed-skeleton">
                       <FeedCardSkeleton />
                     </div>
                   ))
@@ -1157,7 +1159,8 @@ export default function Home({
                   displayedFeed.map((item, idx) => (
                     <div
                       key={item.id}
-                      className={`h-full ${!showAllDeals && idx >= 6 ? 'lg:hidden' : ''}`}
+                      className={`h-full slide-up ${!showAllDeals && idx >= 6 ? 'lg:hidden' : ''}`}
+                      style={{ animationDelay: `${(idx % 6) * 100}ms` }}
                     >
                       <FeedCard
                         item={item}
