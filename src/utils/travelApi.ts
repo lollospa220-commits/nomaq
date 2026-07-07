@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { getDestinationImage, ensureVariedImages } from './destinationImages';
+import { resolveOriginIataLocal, originLabelForIata } from './airports';
 
 const DUFFEL_OFFERS_URL = 'https://api.duffel.com/air/offer_requests';
 const TRAVELPAYOUTS_PRICES_URL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
@@ -39,6 +40,7 @@ const FLIGHT_DESTINATIONS = [
   { code: 'LIS', name: 'Lisbona', country: 'Portogallo', color: '#e08030', tag: 'HOT DEAL' },
   { code: 'NRT', name: 'Tokyo', country: 'Giappone', color: '#e05b7b', tag: 'TOP PICK' },
   { code: 'JFK', name: 'New York', country: 'Stati Uniti', color: '#3a6fbf', tag: 'BEST PRICE' },
+  { code: 'CDG', name: 'Parigi', country: 'Francia', color: '#7c5cbf', tag: 'CITY BREAK' },
 ];
 
 // IATA → nome compagnia per le tariffe Travelpayouts (che espongono solo il codice).
@@ -381,8 +383,12 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
 export async function resolveCityToIATA(cityName: string): Promise<string | null> {
   if (!cityName || cityName.trim().length < 2) return null;
   const q = cityName.trim();
-  // Se l'utente digita già un codice IATA esatto, potremmo usarlo direttamente, 
-  // ma l'autocomplete garantisce che esista.
+  // 1) Città comuni: risoluzione locale istantanea (stessi codici usati
+  // dall'autocomplete del client), così l'origine nel deep link Kiwi coincide
+  // esattamente con quella scelta e non dipende da una chiamata di rete.
+  const local = resolveOriginIataLocal(q);
+  if (local) return local;
+  // 2) Altrimenti autocomplete Travelpayouts (testo libero → primo IATA valido).
   try {
     const url = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(q)}&locale=it&types[]=city,airport`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -399,82 +405,57 @@ export async function resolveCityToIATA(cityName: string): Promise<string | null
   }
 }
 
+// "Selezionati per te" LIVE: per l'origine e le date ESATTE scelte dall'utente,
+// una card per destinazione del catalogo con il prezzo reale di mercato
+// (Travelpayouts, lo stesso motore che alimenta il feed reale) e un booking_url
+// Kiwi costruito dagli STESSI origine/dest/andata/ritorno → ciò che l'utente
+// vede sulla card è ciò che ritrova su Kiwi (rotta, date; prezzo nello stesso
+// ordine di grandezza). Nessun prezzo inventato: se per quella rotta+data non
+// c'è tariffa in cache, la card resta senza prezzo (la UI mostra "Cerca") ma il
+// link Kiwi porta comunque la rotta e le date corrette.
 export async function fetchCustomFlights(originIata: string, departureDate: string, returnDate: string): Promise<any[]> {
-  const token = process.env.DUFFEL_ACCESS_TOKEN;
-  if (!token || token.startsWith('YOUR_')) {
-    console.warn('DUFFEL_ACCESS_TOKEN missing, cannot fetch custom live flights.');
-    return [];
-  }
-  
+  const origin = String(originIata || '').toUpperCase();
+  if (!/^[A-Z]{3}$/.test(origin) || !/^\d{4}-\d{2}-\d{2}$/.test(departureDate)) return [];
+  const ret = /^\d{4}-\d{2}-\d{2}$/.test(returnDate) ? returnDate : '';
+  const originCity = originLabelForIata(origin);
+
+  const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+  const returnStr = ret ? new Date(ret).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }) : '';
+
   const perDestination = await Promise.all(FLIGHT_DESTINATIONS.map(async (dest) => {
+    if (dest.code === origin) return null; // niente rotta città → stessa città
     try {
-      const slices = [
-        {
-          origin: originIata,
-          destination: dest.code,
-          departure_date: departureDate
-        }
-      ];
-      if (returnDate) {
-        slices.push({
-          origin: dest.code,
-          destination: originIata,
-          departure_date: returnDate
-        });
-      }
-
-      const res = await fetch(DUFFEL_OFFERS_URL, {
-        method: 'POST',
-        signal: AbortSignal.timeout(10000), // timeout leggermente più lungo per richieste live complesse
-        headers: {
-          'Content-Type': 'application/json',
-          'Duffel-Version': 'v2',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          data: {
-            slices,
-            passengers: [{ type: 'adult' }],
-            cabin_class: 'economy'
-          }
-        })
-      });
-
-      if (!res.ok) return null;
-      const json = await res.json();
-      const offers = (json.data?.offers || []).filter((o: any) => Number.isFinite(Number(o?.total_amount)));
-      if (offers.length === 0) return null;
-
-      const offer = offers.reduce((min: any, o: any) => (Number(o.total_amount) < Number(min.total_amount) ? o : min), offers[0]);
-      
-      const price = Math.round(Number(offer.total_amount));
-      const airlineName = offer.owner?.name || 'Airline';
-      const durationRaw = offer.slices?.[0]?.duration;
-      const duration = typeof durationRaw === 'string' ? durationRaw.replace('PT', '').toLowerCase() : null;
-
-      const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
-      const returnDateStr = returnDate ? new Date(returnDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }) : '';
+      // Tariffa reale più economica per la rotta e le date esatte.
+      const fares = await fetchLiveFares(origin, dest.code, 1, departureDate, ret || undefined);
+      const fare = fares[0];
+      const price = fare ? fare.price : null;
+      const airlineName = fare ? fare.airline : 'Kiwi.com';
 
       const row: any = {
         id: `flight-custom-${dest.code}-${departureDate}`,
+        type: 'flight',
         destination: dest.name,
         country: dest.country,
         price,
-        original_price: price, // colonna NOT NULL
-        description: duration 
-            ? `Volo reale ${returnDate ? 'A/R ' : ''}da ${originIata} a ${dest.code} via Duffel. Compagnia: ${airlineName}. Andata: ${duration}.` 
-            : `Volo reale ${returnDate ? 'A/R ' : ''}da ${originIata} a ${dest.code} via Duffel. Compagnia: ${airlineName}.`,
+        // colonna/campo NOT NULL a valle: = price ⇒ sconto 0 ⇒ nessun barrato finto.
+        original_price: price,
+        description: fare
+          ? `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : `${dateStr} (solo andata)`} · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`
+          : `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri Kiwi per le migliori tariffe su queste date.`,
         image: getDestinationImage(dest.name, `${dest.code}-${departureDate}`),
         airline: airlineName,
-        date_info: returnDate ? `${dateStr} - ${returnDateStr}` : `${dateStr} (Solo andata)`,
+        date_info: ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`,
         tag: dest.tag,
         color: dest.color,
-        origin_code: originIata,
+        origin_code: origin,
         dest_code: dest.code,
         departure_date: departureDate,
-        return_date: returnDate || '',
+        return_date: ret,
       };
-      if (duration) row.duration = duration;
+      if (fare?.duration) row.duration = fare.duration;
+      // Link Kiwi costruito dagli STESSI campi della card (origine/dest/date):
+      // rotta e date su Kiwi coincidono sempre con quanto mostrato.
+      row.booking_url = getAffiliateLink(row, 'flight');
       return row;
     } catch (err) {
       console.warn(`Failed fetching custom flights for ${dest.code}:`, err);
@@ -482,7 +463,14 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
     }
   }));
 
-  return perDestination.filter(Boolean) as any[];
+  // Prima le card con prezzo reale (ordinate per prezzo), poi le eventuali
+  // "Cerca" senza tariffa in cache.
+  return (perDestination.filter(Boolean) as any[]).sort((a, b) => {
+    if (a.price == null && b.price == null) return 0;
+    if (a.price == null) return 1;
+    if (b.price == null) return -1;
+    return a.price - b.price;
+  });
 }
 
 // Una tariffa reale di mercato per una singola rotta arbitraria (non solo il

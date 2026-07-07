@@ -13,6 +13,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Mancano i parametri richiesti: origin, departure, returnDate.' });
   }
 
+  // Le date devono essere ISO (YYYY-MM-DD) e coerenti: l'andata non oltre il
+  // ritorno. Blocca subito input invalidi senza sprecare una chiamata upstream.
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoDate.test(departure) || !isoDate.test(returnDate)) {
+    return res.status(400).json({ error: 'Date non valide (formato atteso YYYY-MM-DD).' });
+  }
+  if (returnDate < departure) {
+    return res.status(400).json({ error: 'La data di ritorno deve essere successiva o uguale a quella di andata.' });
+  }
+
   try {
     const originIata = await resolveCityToIATA(origin);
     if (!originIata) {

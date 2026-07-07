@@ -14,6 +14,7 @@ import { supabase } from '@/utils/supabaseClient';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
 import { buildKiwiDeepLink } from '@/utils/kiwiLink';
+import { suggestOrigins, resolveOriginIataLocal, Airport } from '@/utils/airports';
 import { SITE_URL } from '@/utils/siteUrl';
 import { formatFlight, formatHotel } from '@/utils/normalizeItem';
 import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
@@ -26,6 +27,7 @@ import DesktopNav from '@/components/DesktopNav';
 import FaqSection from '@/components/FaqSection';
 import FeedCard, { FeedCardSkeleton } from '@/components/FeedCard';
 import ToastNotification from '@/components/ToastNotification';
+import DateRangePicker from '@/components/DateRangePicker';
 
 // Globo WebGL (Globe.gl/three.js): code-split e solo lato client (ssr:false),
 // caricato dopo il first paint così non pesa sul bundle iniziale.
@@ -249,8 +251,11 @@ export default function Home({
       setAiSummary('');
       setAiPackage(null);
       setTripPlan(null);
-      setFlights(allFlights);
-      setHotels(allHotels);
+      setSearchFlights([]);
+      setSearchHotels([]);
+      // La barra di ricerca NON tocca "Selezionati per te" (deals). In E2E il
+      // feed filtrabile va comunque ripristinato.
+      if (isE2E) { setFlights(allFlights); setHotels(allHotels); }
       setActiveSearch('');
       setIsSearching(false);
       return;
@@ -280,26 +285,29 @@ export default function Home({
       const data = await res.json();
       if (seq !== searchSeqRef.current) return; // a newer search took over
 
+      // NB: nessun ramo tocca `deals` ("Selezionati per te"): la barra di
+      // ricerca è completamente separata e scrive solo su tripPlan / area
+      // risultati ricerca (searchFlights/searchHotels) / riepilogo AI.
       if (data.mode === 'trip' && data.plan) {
-        // Full AI-generated trip: swap the feed for the plan view
+        // Itinerario AI a 360°: overlay che sostituisce la home.
         setTripPlan({ ...data.plan, __seq: seq });
         setAiSummary('');
         setAiPackage(null);
-        setFlights(allFlights);
-        setHotels(allHotels);
+        setSearchFlights([]);
+        setSearchHotels([]);
       } else if (data.mode === 'destination' && ((data.flights?.length || 0) > 0 || (data.hotels?.length || 0) > 0)) {
-        // Destination search: AI generated real flight+hotel cards for a place
-        // not in the fixed catalog. They are already in FeedCard shape.
+        // Ricerca destinazione: card reali per un luogo cercato, mostrate in
+        // un'area DEDICATA sopra "Selezionati per te" (già in forma FeedCard).
         setTripPlan(null);
         setAiPackage(null);
-        setFlights(data.flights || []);
-        setHotels(data.hotels || []);
+        setSearchFlights(data.flights || []);
+        setSearchHotels(data.hotels || []);
         setAiSummary(data.summary || '');
       } else {
-        // Simple search: filter the catalog as before
+        // Ricerca semplice: riepilogo AI + eventuale pacchetto suggerito.
         setTripPlan(null);
-        setFlights(allFlights.filter((f) => (data.flightIds || []).includes(f.id)));
-        setHotels(allHotels.filter((h) => (data.hotelIds || []).includes(h.id)));
+        setSearchFlights([]);
+        setSearchHotels([]);
         setAiSummary(data.summary || '');
 
         if (data.package) {
@@ -313,9 +321,19 @@ export default function Home({
     } catch (e) {
       if (seq !== searchSeqRef.current) return;
       setTripPlan(null);
-      setAiSummary('');
       setAiPackage(null);
-      localFilter(trimmed);
+      if (isE2E) {
+        // In E2E il fallback filtra il feed (comportamento atteso dai test).
+        setAiSummary('');
+        localFilter(trimmed);
+      } else {
+        // Reale: mai toccare "Selezionati per te". Card deep-link Kiwi/Booking
+        // per il luogo cercato nell'area risultati dedicata.
+        const fb = buildFallbackCards(trimmed);
+        setSearchFlights(fb.flights);
+        setSearchHotels(fb.hotels);
+        setAiSummary(t('noExactMatch'));
+      }
     }
 
     if (seq !== searchSeqRef.current) return;
@@ -335,24 +353,53 @@ export default function Home({
   const [flights, setFlights] = React.useState<any[]>(initialFlights || []);
   const [hotels, setHotels] = React.useState<any[]>(initialHotels || []);
 
-  const [customOrigin, setCustomOrigin] = React.useState('');
+  // "Selezionati per te" (griglia home reale). Stato DEDICATO e indipendente
+  // dalla barra di ricerca: lo aggiornano SOLO i selettori Origine + Date qui
+  // sotto, mai handleSearch. Init = feed SSR; poi sostituito dalle tariffe reali
+  // per l'origine/date scelte (ogni card porta già il booking_url Kiwi coerente).
+  const [deals, setDeals] = React.useState<any[]>(initialFlights || []);
+
+  // Risultati della BARRA DI RICERCA in modalità "destinazione" (card reali per
+  // un luogo cercato). Vivono in un'area separata: non toccano mai `deals`.
+  const [searchFlights, setSearchFlights] = React.useState<any[]>([]);
+  const [searchHotels, setSearchHotels] = React.useState<any[]>([]);
+
+  // Selettori Origine + Date della sezione "Selezionati per te".
+  const [customOrigin, setCustomOrigin] = React.useState('Napoli');
+  const [customOriginIata, setCustomOriginIata] = React.useState('NAP');
+  const [showOriginSug, setShowOriginSug] = React.useState(false);
   const [customDeparture, setCustomDeparture] = React.useState('');
   const [customReturn, setCustomReturn] = React.useState('');
+  const [todayIso, setTodayIso] = React.useState('');
   const [isRefreshingDeals, setIsRefreshingDeals] = React.useState(false);
-  const [customDeals, setCustomDeals] = React.useState<any[] | null>(null);
 
-  const refreshDeals = async () => {
-    if (!customDeparture || !customReturn) return;
+  const originSuggestions = React.useMemo(() => suggestOrigins(customOrigin, 6), [customOrigin]);
+
+  const onOriginChange = (v: string) => {
+    setCustomOrigin(v);
+    setShowOriginSug(true);
+    const iata = resolveOriginIataLocal(v);
+    if (iata) setCustomOriginIata(iata);
+  };
+
+  const selectOrigin = (a: Airport) => {
+    setCustomOrigin(a.city);
+    setCustomOriginIata(a.iata);
+    setShowOriginSug(false);
+    if (customDeparture && customReturn) loadDeals(a.iata, customDeparture, customReturn);
+  };
+
+  // Carica le tariffe reali per (origine, andata, ritorno) e SOSTITUISCE la
+  // griglia "Selezionati per te". Le card arrivano già con booking_url Kiwi
+  // coerente (stessa rotta/date). Normalizzate con formatFlight per la UI.
+  const loadDeals = async (originIata: string, dep: string, ret: string) => {
+    if (!originIata || !dep || !ret) return;
     setIsRefreshingDeals(true);
     try {
-      const res = await fetch(`/api/custom-flights?origin=${customOrigin}&departure=${customDeparture}&returnDate=${customReturn}`);
+      const res = await fetch(`/api/custom-flights?origin=${encodeURIComponent(originIata)}&departure=${dep}&returnDate=${ret}`);
       if (res.ok) {
         const data = await res.json();
-        setCustomDeals(data);
-        if (data.length > 0) {
-          // Aggiungiamo i deal personalizzati in cima all'elenco mostrato
-          setFlights(prev => [...data, ...prev.filter(p => !data.find(d => d.destination === p.destination))]);
-        }
+        if (Array.isArray(data) && data.length > 0) setDeals(data.map(formatFlight));
       }
     } catch (err) {
       console.error('Failed to fetch custom deals', err);
@@ -360,9 +407,22 @@ export default function Home({
       setIsRefreshingDeals(false);
     }
   };
-  // feedItems è derivato da flights+hotels: useMemo invece di state+effect
-  // (elimina un render extra a ogni load e il warning set-state-in-effect).
-  const feedItems = React.useMemo(() => [...flights, ...hotels], [flights, hotels]);
+
+  // Invia il TESTO digitato (l'handler API risolve città/codice → IATA), così
+  // funziona anche per città fuori dalla lista curata dell'autocomplete.
+  const refreshDeals = () => loadDeals(customOrigin.trim() || customOriginIata, customDeparture, customReturn);
+  // feedItems è derivato da deals+flights+hotels (dedup per id): copre i lookup
+  // di salvataggio/Concierge anche per le card live di "Selezionati per te".
+  const feedItems = React.useMemo(() => {
+    // NB: `Map` qui è l'icona lucide-react (import in cima), non il costruttore:
+    // dedup con Set + array per non collidere con quell'import.
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const it of [...deals, ...flights, ...hotels]) {
+      if (it && it.id && !seen.has(it.id)) { seen.add(it.id); out.push(it); }
+    }
+    return out;
+  }, [deals, flights, hotels]);
 
   const queryObj = query || {};
 
@@ -400,6 +460,25 @@ export default function Home({
     else if (pathname === '/drops') setActiveTab('drops');
     else if (pathname === '/salvati') setActiveTab('salvati');
     else if (pathname === '/profilo' || pathname === '/waitlist') setActiveTab('profilo');
+  }, []);
+
+  // Default Origine/Date + auto-caricamento dei deal reali (solo prod, una volta).
+  // Imposta il prossimo weekend (ven → dom) e carica le tariffe reali da Napoli,
+  // così "Selezionati per te" mostra da subito card coerenti con Kiwi
+  // (rotta/date/prezzo). Le date si calcolano nel client (niente mismatch SSR).
+  React.useEffect(() => {
+    if (isE2E) return;
+    const today = new Date();
+    setTodayIso(today.toISOString().slice(0, 10));
+    let daysToFri = (5 - today.getDay() + 7) % 7;
+    if (daysToFri === 0) daysToFri = 7; // sempre un venerdì futuro
+    const fri = new Date(today); fri.setDate(today.getDate() + daysToFri);
+    const sun = new Date(fri); sun.setDate(fri.getDate() + 2);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const dep = iso(fri), ret = iso(sun);
+    setCustomDeparture(dep);
+    setCustomReturn(ret);
+    loadDeals('NAP', dep, ret);
   }, []);
 
   React.useEffect(() => {
@@ -457,7 +536,7 @@ export default function Home({
   const isDarkBackground = currentTab === 'vola-vola' && !tripPlan;
 
   const handleSimulateDrop = () => {
-    const allFeed = currentTab === 'vola-vola' ? flights : currentTab === 'soggiorna' ? hotels : feedItems;
+    const allFeed = currentTab === 'vola-vola' ? deals : currentTab === 'soggiorna' ? hotels : feedItems;
     // Escludi le card senza prezzo numerico (es. card di fallback "Cerca …"):
     // il calcolo del drop simulato produrrebbe altrimenti NaN.
     const pool = (allFeed.length > 0 ? allFeed : feedItems).filter((i: any) => typeof i.price === 'number');
@@ -498,7 +577,12 @@ export default function Home({
   // mixed into the live feed: they carry invented prices indistinguishable
   // from real offers (the padding this replaced was the primary source of
   // "prices don't match" complaints).
-  const feedByTab = currentTab === 'vola-vola' ? flights : hotels;
+  // "Selezionati per te" (vola-vola) legge dallo stato dedicato `deals`
+  // (indipendente dalla ricerca). Fallback al feed SSR/refetch se i deal live
+  // non sono ancora pronti/vuoti. In E2E resta sul feed filtrabile `flights`.
+  const feedByTab = currentTab === 'vola-vola'
+    ? (isE2E ? flights : (deals.length > 0 ? deals : flights))
+    : hotels;
 
   // Vista del feed = filtro prezzo + ordinamento. Non muta feedByTab.
   // Filtro attivo → esclude le card senza prezzo (es. "Cerca…"). Ordinamento
@@ -689,6 +773,8 @@ export default function Home({
                 setTripPlan(null);
                 setAiQuery('');
                 setActiveSearch('');
+                setSearchFlights([]);
+                setSearchHotels([]);
                 setFlights(allFlights);
                 setHotels(allHotels);
               }}
@@ -889,36 +975,54 @@ export default function Home({
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                  {/* Nuovi selettori Origine e Date */}
+                  {/* Selettori Origine + Date di "Selezionati per te".
+                      Indipendenti dalla barra di ricerca AI in alto: guidano
+                      SOLO questa griglia e determinano rotta/date del link Kiwi. */}
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="Da dove parti?"
                       value={customOrigin}
-                      onChange={(e) => setCustomOrigin(e.target.value)}
-                      className="bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-full px-4 py-1.5 border border-white/20 backdrop-blur-md outline-none transition-colors w-32 md:w-40 placeholder-white/50"
+                      onChange={(e) => onOriginChange(e.target.value)}
+                      onFocus={() => setShowOriginSug(true)}
+                      onBlur={() => setTimeout(() => setShowOriginSug(false), 150)}
+                      aria-label="Aeroporto di partenza"
+                      data-testid="origin-input"
+                      className="bg-white/10 hover:bg-white/20 focus:bg-white/20 text-white text-xs font-medium rounded-full px-4 py-1.5 border border-white/20 backdrop-blur-md outline-none transition-colors w-32 md:w-44 placeholder-white/50"
                     />
+                    {showOriginSug && originSuggestions.length > 0 && (
+                      <div
+                        className="absolute left-0 top-full mt-1.5 z-50 w-60 max-h-64 overflow-y-auto rounded-2xl bg-white shadow-xl border border-slate-100 p-1.5"
+                        data-testid="origin-suggestions"
+                      >
+                        {originSuggestions.map((a) => (
+                          <button
+                            key={a.iata}
+                            onMouseDown={(e) => { e.preventDefault(); selectOrigin(a); }}
+                            className="flex items-center gap-2 w-full text-left rounded-lg px-2.5 py-2 hover:bg-slate-50 transition-colors"
+                          >
+                            <Plane className="w-3.5 h-3.5 text-nomaq-indigo flex-shrink-0" strokeWidth={1.5} />
+                            <span className="text-sm text-nomaq-navy font-medium truncate">{a.city}</span>
+                            <span className="text-[11px] text-slate-400 ml-auto flex-shrink-0">{a.iata} · {a.country}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 bg-white/10 rounded-full border border-white/20 backdrop-blur-md px-3 py-1">
-                    <input
-                      type="date"
-                      value={customDeparture}
-                      onChange={(e) => setCustomDeparture(e.target.value)}
-                      className="bg-transparent text-white text-xs font-medium outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
-                      title="Data Andata"
-                    />
-                    <span className="text-white/50 text-xs">-</span>
-                    <input
-                      type="date"
-                      value={customReturn}
-                      onChange={(e) => setCustomReturn(e.target.value)}
-                      className="bg-transparent text-white text-xs font-medium outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
-                      title="Data Ritorno"
-                    />
-                  </div>
+                  <DateRangePicker
+                    departure={customDeparture}
+                    returnDate={customReturn}
+                    minDate={todayIso}
+                    onChange={(dep, ret) => {
+                      setCustomDeparture(dep);
+                      setCustomReturn(ret);
+                      loadDeals(customOrigin.trim() || customOriginIata, dep, ret);
+                    }}
+                  />
                   <button
                     onClick={refreshDeals}
-                    disabled={!customDeparture || !customReturn || isRefreshingDeals}
+                    disabled={!customOrigin.trim() || !customDeparture || !customReturn || isRefreshingDeals}
+                    data-testid="refresh-deals"
                     className="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded-full px-4 py-1.5 transition-colors flex items-center gap-2"
                   >
                     {isRefreshingDeals ? (
@@ -978,13 +1082,34 @@ export default function Home({
               Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
           <div className={`relative z-10 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16 ${isDarkBackground ? 'bg-transparent' : 'bg-gradient-to-b from-white/40 to-white/90 backdrop-blur-2xl backdrop-saturate-150'}`}>
 
-          {/* ── AI search summary + suggested package ── */}
-          {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage) && (
+          {/* ── AI search summary + suggested package + destination results ──
+              Area DEDICATA alla barra di ricerca: separata da "Selezionati per
+              te" (griglia deals), non la altera mai. ── */}
+          {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage || searchFlights.length > 0 || searchHotels.length > 0) && (
             <div className="px-5 lg:px-6 mb-4" data-testid="ai-search-result">
               {aiSummary && (
                 <div className="nomaq-card bg-nomaq-lavender/90 backdrop-blur-md border-nomaq-indigo/15 p-4 flex items-start gap-3 mb-3">
                   <ThreeSparklesIcon className="w-4 h-4 text-nomaq-indigo flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-nomaq-navy leading-snug">{aiSummary}</p>
+                </div>
+              )}
+              {(searchFlights.length > 0 || searchHotels.length > 0) && (
+                <div className="mb-3" data-testid="search-results">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Search className="w-4 h-4 text-nomaq-violet" strokeWidth={1.5} />
+                    <span className="text-sm font-semibold text-nomaq-navy">Risultati per “{activeSearch}”</span>
+                  </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...searchFlights, ...searchHotels].map((item) => (
+                      <FeedCard
+                        key={item.id}
+                        item={item}
+                        isSaved={currentSaved.includes(item.id)}
+                        onToggleSave={toggleSaveItem}
+                        onOpenDetail={setDetailItem}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
               {aiPackage && (

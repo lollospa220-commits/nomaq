@@ -18,7 +18,9 @@ function base(raw: any) {
   const observedAt = raw.observed_at ?? raw.observedAt;
   return {
     ...raw,
-    price: num(raw.price),
+    // price assente (null/undefined/'') resta null → la card mostra "Cerca",
+    // MAI "€0" (num(null) darebbe 0, perché Number(null) === 0 ed è finito).
+    price: raw.price != null && raw.price !== '' ? num(raw.price) : null,
     originalPrice: original != null && original !== '' ? num(original) : null,
     rating: raw.rating != null && raw.rating !== '' ? num(raw.rating) : null,
     stars: raw.stars != null && raw.stars !== '' ? num(raw.stars) : null,
