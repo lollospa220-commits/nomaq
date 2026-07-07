@@ -121,9 +121,8 @@ function compact(items: any[]) {
 /* ── Affiliate booking links, built server-side from the plan data ── */
 
 function flightBookingUrl(opt: TripOption, meta: TripPlan['meta']): string {
-  // Voli del pianificatore AI su Kiwi.com. NB: la sezione "Selezionati per te"
-  // usa invece Aviasales (per far coincidere prezzo e pagina) — routing dei voli
-  // attualmente diviso tra le due superfici, decisione partner ancora aperta.
+  // Voli su Kiwi.com su tutte le superfici (scelta partner: evitare network di
+  // origine russa come Aviasales/Jetradar — decisione compliance 2026-07).
   // isIata è definito a livello di modulo (riusato dai destination card helpers).
   const toDDMMYYYY = (iso?: string) => {
     if (!iso) return '';

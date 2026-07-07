@@ -110,7 +110,7 @@ export default function Privacy() {
         </li>
         <li>RapidAPI / TripAdvisor — ricerca di strutture ricettive (USA);</li>
         <li>
-          Travelpayouts, Aviasales, Kiwi.com, Booking.com — gestione dei link di affiliazione e
+          Travelpayouts, Kiwi.com, Booking.com — gestione dei link di affiliazione e
           tracciamento dei click a fini di attribuzione della commissione, quando l'utente viene
           reindirizzato al sito del partner.
         </li>

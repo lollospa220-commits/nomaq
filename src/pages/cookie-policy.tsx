@@ -81,7 +81,7 @@ export default function CookiePolicy() {
       <LegalH2>4.3 Cookie di terze parti</LegalH2>
       <LegalP>
         Cliccando su un'offerta, l'utente viene reindirizzato a siti di partner terzi (es.
-        Aviasales, Kiwi.com, Booking.com), che possono installare propri cookie secondo le
+        Kiwi.com, Booking.com), che possono installare propri cookie secondo le
         rispettive cookie policy, indipendenti da Nomaq. Tali cookie sono impostati solo dopo il
         reindirizzamento e sulle pagine dei partner. Si consiglia di consultare le informative sulla
         privacy e sui cookie di tali siti.

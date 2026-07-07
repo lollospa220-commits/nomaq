@@ -19,7 +19,7 @@ export default function Termini() {
       <LegalH2>2.2 Ruolo di intermediario e partner terzi</LegalH2>
       <LegalP>
         Quando l'utente seleziona un'offerta, Nomaq lo reindirizza a piattaforme terze partner (a
-        titolo esemplificativo: Aviasales e Kiwi.com per i voli, Booking.com per le strutture)
+        titolo esemplificativo: Kiwi.com per i voli, Booking.com per le strutture)
         presso le quali avviene l'eventuale acquisto o prenotazione. Il contratto di viaggio si
         conclude esclusivamente tra l'utente e il fornitore terzo, alle condizioni generali,
         tariffe e politiche di cancellazione da questo stabilite. Nomaq non è parte di tale
@@ -30,7 +30,7 @@ export default function Termini() {
       <LegalH2>2.3 Link di affiliazione e monetizzazione</LegalH2>
       <LegalP>
         Alcuni link presenti sul Sito sono link di affiliazione, generati tramite il network
-        Travelpayouts per Aviasales, Kiwi.com e Booking.com: se l'utente conclude una prenotazione
+        Travelpayouts per Kiwi.com e Booking.com: se l'utente conclude una prenotazione
         dopo aver cliccato su tali link, Nomaq può percepire una commissione dal partner, senza
         alcun costo aggiuntivo per l'utente.
       </LegalP>
@@ -38,7 +38,7 @@ export default function Termini() {
       <LegalH2>2.3-bis Come selezioniamo e ordiniamo i risultati</LegalH2>
       <LegalP>
         La comparazione di Nomaq è limitata alle offerte dei partner con cui collabora (attualmente
-        Aviasales e Kiwi.com per i voli, Booking.com per le strutture) e non copre l'intero mercato.
+        Kiwi.com per i voli, Booking.com per le strutture) e non copre l'intero mercato.
         I risultati sono ordinati principalmente per prezzo; la relazione di affiliazione non altera
         tale ordinamento. Alcune sezioni (es. "Selezionati per te") sono selezioni curate in base
         all'origine e alle date scelte dall'utente. I prezzi mostrati sono indicativi, provengono
