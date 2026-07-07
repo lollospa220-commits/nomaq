@@ -752,7 +752,7 @@ export default function Home({
           {/* ── Stays view (soggiorna) — reference design ── */}
           {currentTab === 'soggiorna' && !isE2E && (
             <StaysView
-              hotels={feedByTab}
+              hotels={activeSearch && searchHotels.length > 0 ? searchHotels : feedByTab}
               activeSearch={activeSearch}
               isSearching={isSearching}
               onSearch={(q) => {
