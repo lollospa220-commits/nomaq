@@ -405,6 +405,32 @@ export async function resolveCityToIATA(cityName: string): Promise<string | null
   }
 }
 
+type FarePrecision = 'exact' | 'oneway' | 'month';
+
+// Rilassamento a scaletta per alzare l'hit-rate di tariffe REALI senza inventare
+// prezzi: (1) A/R sulle date esatte, (2) solo andata sulla stessa data, (3) la
+// più bassa reale del mese di partenza. La cache Travelpayouts per un A/R a date
+// esatte è rarissima → con la sola (1) quasi tutte le card restavano "Cerca".
+// `precision` dice quanto la tariffa aderisce alle date scelte, così la card
+// resta onesta sul dato mostrato. Ritorna null se nessun livello ha dati reali.
+async function fetchBestCustomFare(
+  origin: string,
+  dest: string,
+  departureDate: string,
+  returnDate: string,
+): Promise<{ fare: LiveFare; precision: FarePrecision } | null> {
+  const exact = await fetchLiveFares(origin, dest, 1, departureDate, returnDate || undefined);
+  if (exact[0]) return { fare: exact[0], precision: 'exact' };
+  if (returnDate) {
+    const oneWay = await fetchLiveFares(origin, dest, 1, departureDate, undefined);
+    if (oneWay[0]) return { fare: oneWay[0], precision: 'oneway' };
+  }
+  const month = departureDate.slice(0, 7); // YYYY-MM: cheapest reale del periodo
+  const monthly = await fetchLiveFares(origin, dest, 1, month, undefined);
+  if (monthly[0]) return { fare: monthly[0], precision: 'month' };
+  return null;
+}
+
 // "Selezionati per te" LIVE: per l'origine e le date ESATTE scelte dall'utente,
 // una card per destinazione del catalogo con il prezzo reale di mercato
 // (Travelpayouts, lo stesso motore che alimenta il feed reale) e un booking_url
@@ -425,11 +451,35 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
   const perDestination = await Promise.all(FLIGHT_DESTINATIONS.map(async (dest) => {
     if (dest.code === origin) return null; // niente rotta città → stessa città
     try {
-      // Tariffa reale più economica per la rotta e le date esatte.
-      const fares = await fetchLiveFares(origin, dest.code, 1, departureDate, ret || undefined);
-      const fare = fares[0];
+      // Tariffa reale con rilassamento onesto (A/R esatte → solo andata stessa
+      // data → più bassa reale del mese): mai un prezzo per-data inventato.
+      const best = await fetchBestCustomFare(origin, dest.code, departureDate, ret);
+      const fare = best?.fare ?? null;
+      const precision = best?.precision ?? null;
       const price = fare ? fare.price : null;
       const airlineName = fare ? fare.airline : 'Kiwi.com';
+      const monthLabel = new Date(departureDate).toLocaleDateString('it-IT', { month: 'long' });
+
+      // Copy onesta sul livello di aderenza alle date scelte. Il link Kiwi porta
+      // SEMPRE le date selezionate dall'utente (la sua vera intenzione), a
+      // prescindere dal livello di ripiego da cui arriva il prezzo mostrato.
+      let description: string;
+      let dateInfo: string;
+      if (!fare) {
+        description = `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri Kiwi per le migliori tariffe su queste date.`;
+        dateInfo = ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`;
+      } else if (precision === 'month') {
+        description = `${originCity} → ${dest.name} · da ${price}€ con ${airlineName} — tariffa più bassa reale di ${monthLabel}. Scegli le tue date su Kiwi.`;
+        dateInfo = monthLabel;
+      } else if (precision === 'oneway') {
+        description = `${originCity} → ${dest.name} · da ${price}€ solo andata (${dateStr}) con ${airlineName}. A/R: verifica le tue date su Kiwi.`;
+        dateInfo = `${dateStr} · solo andata`;
+      } else {
+        description = ret
+          ? `${originCity} → ${dest.name} · A/R ${dateStr} – ${returnStr} · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`
+          : `${originCity} → ${dest.name} · ${dateStr} (solo andata) · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`;
+        dateInfo = ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`;
+      }
 
       const row: any = {
         id: `flight-custom-${dest.code}-${departureDate}`,
@@ -439,12 +489,10 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
         price,
         // colonna/campo NOT NULL a valle: = price ⇒ sconto 0 ⇒ nessun barrato finto.
         original_price: price,
-        description: fare
-          ? `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : `${dateStr} (solo andata)`} · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`
-          : `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri Kiwi per le migliori tariffe su queste date.`,
+        description,
         image: getDestinationImage(dest.name, `${dest.code}-${departureDate}`),
         airline: airlineName,
-        date_info: ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`,
+        date_info: dateInfo,
         tag: dest.tag,
         color: dest.color,
         origin_code: origin,
@@ -453,8 +501,8 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
         return_date: ret,
       };
       if (fare?.duration) row.duration = fare.duration;
-      // Link Kiwi costruito dagli STESSI campi della card (origine/dest/date):
-      // rotta e date su Kiwi coincidono sempre con quanto mostrato.
+      // Link Kiwi con le date SELEZIONATE dall'utente (non il livello di ripiego
+      // del prezzo): la ricerca su Kiwi è sempre il viaggio davvero richiesto.
       row.booking_url = getAffiliateLink(row, 'flight');
       return row;
     } catch (err) {
