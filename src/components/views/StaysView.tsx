@@ -263,6 +263,7 @@ function StaysView({
               <div className="flex items-end gap-1.5">
                 {featured.price != null ? (
                   <>
+                    <span className="text-sm text-slate-400 font-medium self-center">{t('fromPrice')}</span>
                     <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€ {featured.price}</span>
                     <span className="text-xs text-slate-400 mb-0.5">{t('perNight')}</span>
                   </>
@@ -412,6 +413,7 @@ function StayCard({
           <span className="text-nomaq-navy tabular-nums">
             {price != null ? (
               <>
+                <span className="text-[10px] text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>
                 <span className="font-extrabold text-nomaq-indigo">€{price}</span>{' '}
                 <span className="text-[10px] text-slate-400">{t('perNight')}</span>
               </>

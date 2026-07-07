@@ -61,6 +61,7 @@ function openBooking(item: FeedItem) {
 }
 
 function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | null }) {
+  const { t } = useLanguage();
   return (
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -93,7 +94,7 @@ function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | nul
           {!!item.dropAmount && item.originalPrice && (
             <div className="text-slate-400 text-xs line-through leading-none mb-1">€{item.originalPrice}</div>
           )}
-          <div className="text-2xl font-extrabold text-nomaq-navy leading-none">€{item.price}</div>
+          <div className="text-2xl font-extrabold text-nomaq-navy leading-none"><span className="text-xs text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>€{item.price}</div>
         </div>
       </div>
     </div>
@@ -101,6 +102,7 @@ function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | nul
 }
 
 function RadarCompactCard({ item, nowTick }: { item: FeedItem; nowTick: number | null }) {
+  const { t } = useLanguage();
   return (
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-stretch"
@@ -134,7 +136,7 @@ function RadarCompactCard({ item, nowTick }: { item: FeedItem; nowTick: number |
             {!!item.dropAmount && item.originalPrice && (
               <div className="text-slate-400 text-xs line-through leading-none mb-1">€{item.originalPrice}</div>
             )}
-            <div className="text-lg font-extrabold text-nomaq-navy leading-none">€{item.price}</div>
+            <div className="text-lg font-extrabold text-nomaq-navy leading-none"><span className="text-[10px] text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>€{item.price}</div>
           </div>
           <span className="w-9 h-9 rounded-full border border-nomaq-indigo/15 bg-nomaq-lavender flex items-center justify-center">
             <ChevronRight className="w-4 h-4 text-nomaq-indigo" />

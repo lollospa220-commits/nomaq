@@ -69,6 +69,8 @@ const it = {
   filterAllPrices: 'Tutti i prezzi',
   bookNow: 'Prenota',
   close: 'Chiudi',
+  fromPrice: 'da',
+  priceDisclaimer: 'Prezzo indicativo di mercato: il totale finale è confermato sul sito del partner al momento della prenotazione.',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -294,6 +296,8 @@ const en: Record<TranslationKey, string> = {
   filterAllPrices: 'All prices',
   bookNow: 'Book now',
   close: 'Close',
+  fromPrice: 'from',
+  priceDisclaimer: "Indicative market price: the final total is confirmed on the partner's site at the time of booking.",
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',

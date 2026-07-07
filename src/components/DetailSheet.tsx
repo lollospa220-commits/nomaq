@@ -91,6 +91,7 @@ export default function DetailSheet({ item, onClose }: { item: any | null; onClo
               {discount > 0 && <span className="text-slate-400 text-sm line-through">€{item.originalPrice}</span>}
               {item.price != null ? (
                 <>
+                  <span className="text-sm text-slate-400 font-medium self-center">{t('fromPrice')}</span>
                   <span className="text-3xl font-extrabold text-nomaq-navy leading-none">€{item.price}</span>
                   {isHotel && <span className="text-xs text-slate-400">{t('perNight')}</span>}
                 </>
@@ -106,6 +107,11 @@ export default function DetailSheet({ item, onClose }: { item: any | null; onClo
               {t('bookNow')} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Trasparenza prezzo: la tariffa mostrata è indicativa (deep-link
+              affiliato); il totale reale lo conferma il partner. Evita il
+              mismatch "prezzo card ≠ prezzo sul sito". */}
+          <p className="text-[11px] text-slate-400 leading-snug">{t('priceDisclaimer')}</p>
         </div>
       </div>
     </div>

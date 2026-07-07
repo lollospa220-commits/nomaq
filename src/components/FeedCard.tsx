@@ -31,7 +31,7 @@ const FeedCard = React.memo(function FeedCard({
       data-id={item.id}
       role="button"
       tabIndex={0}
-      aria-label={item.price != null ? `${item.destination} — €${item.price}` : item.destination}
+      aria-label={item.price != null ? `${item.destination} — ${t('fromPrice')} €${item.price}` : item.destination}
       onClick={() => {
         if (onOpenDetail) { onOpenDetail(item); return; }
         if (item.booking_url) window.open(item.booking_url, '_blank', 'noopener,noreferrer');
@@ -112,7 +112,13 @@ const FeedCard = React.memo(function FeedCard({
             {discount > 0 && (
               <span className="text-slate-400 text-[11px] line-through">€{item.originalPrice}</span>
             )}
-            <span className="text-nomaq-indigo font-semibold text-sm">{item.price != null ? `€${item.price}` : t('searchNow')}</span>
+            <span className="text-nomaq-indigo font-semibold text-sm">
+              {item.price != null ? (
+                <>
+                  <span className="text-slate-400 font-normal text-[11px] mr-0.5">{t('fromPrice')}</span>€{item.price}
+                </>
+              ) : t('searchNow')}
+            </span>
           </div>
         </div>
       </div>
