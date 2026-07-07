@@ -965,8 +965,10 @@ export default function Home({
                 </div>
               </div>
 
-              {/* Section label row — titolo serif + conteggio + ordinamento */}
-              <div className="flex items-center justify-between gap-3 mb-2">
+              {/* Section label row — titolo serif + conteggio + ordinamento.
+                  Su mobile impila (titolo sopra, controlli sotto a piena
+                  larghezza che vanno a capo) per non traboccare. */}
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-3 mb-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <Sparkles className="w-4 h-4 text-violet-300 flex-shrink-0" strokeWidth={1.5} />
                   <h2 className="font-display text-xl lg:text-2xl text-white truncate">{t('pickedForYou')}</h2>
@@ -976,7 +978,7 @@ export default function Home({
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto lg:flex-shrink-0 lg:justify-end">
                   {/* Selettori Origine + Date di "Selezionati per te".
                       Indipendenti dalla barra di ricerca AI in alto: guidano
                       SOLO questa griglia e determinano rotta/date del link Kiwi. */}
