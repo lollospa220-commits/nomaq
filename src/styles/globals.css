@@ -468,7 +468,6 @@
   .orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(100px);
     opacity: 0.8;
     z-index: -1;
     pointer-events: none;
@@ -478,8 +477,8 @@
     0%, 100% { transform: translateY(0) scale(1); }
     50% { transform: translateY(-30px) scale(1.1); }
   }
-  .orb-1 { background: rgba(124, 58, 237, 0.6); width: 500px; height: 500px; top: -100px; left: -100px; }
-  .orb-2 { background: rgba(79, 70, 229, 0.6); width: 600px; height: 600px; bottom: -200px; right: -150px; animation-delay: -4s; }
+  .orb-1 { background: radial-gradient(circle, rgba(124, 58, 237, 0.6) 0%, rgba(124, 58, 237, 0) 70%); width: 500px; height: 500px; top: -100px; left: -100px; }
+  .orb-2 { background: radial-gradient(circle, rgba(79, 70, 229, 0.6) 0%, rgba(79, 70, 229, 0) 70%); width: 600px; height: 600px; bottom: -200px; right: -150px; animation-delay: -4s; }
 
   /* ── Magic Search Bar Glow ── */
   .search-bar-glow {
