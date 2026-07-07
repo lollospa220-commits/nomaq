@@ -408,6 +408,40 @@ export async function resolveCityToIATA(cityName: string): Promise<string | null
   }
 }
 
+// Marker Travelpayouts per i link Aviasales monetizzati. Riusa il marker già
+// presente nel deeplink Kiwi configurato (suffisso numerico, es. ...-745400) →
+// nessuna nuova config; sovrascrivibile con TRAVELPAYOUTS_MARKER.
+function travelpayoutsMarker(): string {
+  const explicit = process.env.TRAVELPAYOUTS_MARKER;
+  if (explicit && explicit.trim()) return explicit.trim();
+  const fromKiwi = (process.env.KIWI_AFFILIATE_ID || '').match(/(\d{4,})\s*$/);
+  if (fromKiwi) return fromKiwi[1];
+  return (process.env.AFFILIATE_MARKER || '').trim();
+}
+
+// Link Aviasales — STESSO motore che genera i prezzi Travelpayouts. Con il campo
+// `link` di una tariffa riapre ESATTAMENTE quella ricerca → prezzo mostrato e
+// pagina di prenotazione coincidono. `codeOrLink` è il path `/search/...` della
+// tariffa oppure un codice ricerca (es. NAP1508BCN22081) costruito da noi.
+function aviasalesFlightUrl(codeOrLink: string): string {
+  const base = codeOrLink.startsWith('/')
+    ? `https://www.aviasales.com${codeOrLink}`
+    : `https://www.aviasales.com/search/${codeOrLink}`;
+  const marker = travelpayoutsMarker();
+  const sep = base.includes('?') ? '&' : '?';
+  const params = new URLSearchParams({ currency: 'eur' });
+  if (marker) params.set('marker', marker);
+  return `${base}${sep}${params.toString()}`;
+}
+
+// Codice ricerca Aviasales rotta+date per le card senza tariffa specifica
+// ("Cerca"): ORIGINE + DDMM + DEST + [DDMM ritorno] + passeggeri.
+function aviasalesSearchCode(origin: string, dest: string, departureDate: string, returnDate: string, pax = 1): string {
+  const ddmm = (iso: string) => { const [, m, d] = iso.split('-'); return `${d}${m}`; };
+  const rt = /^\d{4}-\d{2}-\d{2}$/.test(returnDate) ? ddmm(returnDate) : '';
+  return `${origin}${ddmm(departureDate)}${dest}${rt}${pax}`;
+}
+
 type FarePrecision = 'exact' | 'month';
 
 // Rilassamento onesto che PRESERVA il tipo di viaggio scelto per alzare l'hit-rate
@@ -513,7 +547,14 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
         return_date: fare && !isRT ? '' : ret,
       };
       if (fare?.duration) row.duration = fare.duration;
-      row.booking_url = getAffiliateLink(row, 'flight');
+      // Booking su Aviasales (STESSO motore del prezzo). Con la tariffa reale
+      // usiamo il suo `link` → riapre quella ricerca esatta e il prezzo coincide;
+      // per le card "Cerca" un codice ricerca sulle date scelte. Il tipo (A/R o
+      // solo andata) è già coerente col prezzo mostrato, quindi lo è anche il link.
+      const searchRet = fare ? (isRT ? ret : '') : ret;
+      row.booking_url = fare?.link
+        ? aviasalesFlightUrl(fare.link)
+        : aviasalesFlightUrl(aviasalesSearchCode(origin, dest.code, departureDate, searchRet));
       return row;
     } catch (err) {
       console.warn(`Failed fetching custom flights for ${dest.code}:`, err);
@@ -546,6 +587,7 @@ export type LiveFare = {
   duration: string | null;
   origin: string;        // IATA
   destination: string;   // IATA
+  link?: string;         // path /search/... Aviasales che riapre ESATTA questa tariffa
 };
 
 export async function fetchLiveFares(originIata: string, destIata: string, limit = 6, departureDate?: string, returnDate?: string): Promise<LiveFare[]> {
@@ -607,6 +649,9 @@ export async function fetchLiveFares(originIata: string, destIata: string, limit
           duration: formatDurationMinutes(o?.duration),
           origin,
           destination: dest,
+          // Deep link Aviasales della tariffa esatta (stesso motore del prezzo):
+          // usato per far coincidere prezzo mostrato e pagina di prenotazione.
+          link: typeof o?.link === 'string' ? o.link : undefined,
         });
         if (fares.length >= limit) break;
       }
