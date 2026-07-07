@@ -44,8 +44,8 @@ export default function Privacy() {
         <li>
           Testo delle richieste inserite nella barra di ricerca o nel pianificatore/Concierge di
           viaggio AI — per generare risultati e itinerari tramite il servizio di intelligenza
-          artificiale DeepSeek. Il testo viene trasferito verso la Cina (v. §3.4): si raccomanda di
-          NON inserire dati personali identificativi o categorie particolari di dati.
+          artificiale Mistral (con sede nell'Unione Europea). Si raccomanda comunque di non inserire
+          dati personali non necessari nel testo delle richieste.
         </li>
       </LegalUl>
       <LegalP>b) Dati raccolti automaticamente</LegalP>
@@ -74,10 +74,10 @@ export default function Privacy() {
           eventuali comunicazioni facoltative;
         </li>
         <li>
-          Consenso esplicito dell'interessato (artt. 6.1.a, 9.2.a e 49.1.a GDPR): per l'invio del
-          testo digitato al servizio di intelligenza artificiale DeepSeek, che comporta un
-          trasferimento verso la Cina (v. §3.4); ove tale testo contenga categorie particolari di
-          dati (art. 9 GDPR), il trattamento si fonda esclusivamente su tale consenso esplicito;
+          Esecuzione del servizio e legittimo interesse (artt. 6.1.b e 6.1.f GDPR): per
+          l'elaborazione del testo digitato dall'utente tramite il servizio di intelligenza
+          artificiale Mistral (con sede nell'Unione Europea), al fine di fornire i risultati e gli
+          itinerari richiesti;
         </li>
         <li>
           Legittimo interesse del Titolare (art. 6.1.f GDPR): per la sicurezza del Sito, la
@@ -100,9 +100,9 @@ export default function Privacy() {
           dalla richiesta ed eliminato entro 24 ore; USA);
         </li>
         <li>
-          DeepSeek — elaborazione delle richieste in linguaggio naturale per la ricerca e la
-          pianificazione di viaggio via AI: viene trasmesso il testo digitato dall'utente
-          (Repubblica Popolare Cinese);
+          Mistral AI SAS — elaborazione delle richieste in linguaggio naturale per la ricerca e la
+          pianificazione di viaggio via AI: viene trasmesso il testo digitato dall'utente (Francia,
+          Unione Europea);
         </li>
         <li>
           Duffel Ltd — reperimento di dati e offerte di volo lato server; NON è una piattaforma di
@@ -121,16 +121,11 @@ export default function Privacy() {
         (es. Vercel, Supabase, RapidAPI/TripAdvisor) il trasferimento avviene sulla base
         dell'adesione all'EU-US Data Privacy Framework, ove applicabile, e/o delle Clausole
         Contrattuali Standard della Commissione Europea; per Duffel (Regno Unito) si applica la
-        decisione di adeguatezza della Commissione. Il servizio di intelligenza artificiale DeepSeek
-        ha invece sede nella Repubblica Popolare Cinese, Paese per il quale la Commissione Europea
-        NON ha adottato una decisione di adeguatezza: il testo digitato dall'utente e inviato all'AI
-        viene trasferito in Cina esclusivamente previo consenso esplicito e informato dell'utente ai
-        sensi dell'art. 49, par. 1, lett. a) del GDPR. L'utente è informato che i dati così
-        trasferiti potrebbero essere soggetti all'accesso da parte delle autorità del Paese di
-        destinazione e che tale trasferimento comporta rischi che le garanzie adottate mirano a
-        mitigare ma non a eliminare del tutto. Si raccomanda pertanto di NON inserire dati personali
-        identificativi o categorie particolari di dati (art. 9 GDPR) nel testo delle richieste. È
-        possibile ottenere copia delle garanzie adottate contattando il Titolare.
+        decisione di adeguatezza della Commissione. Il servizio di intelligenza artificiale Mistral
+        ha sede in Francia (Unione Europea) e non comporta pertanto alcun trasferimento al di fuori
+        dello Spazio Economico Europeo. Si raccomanda comunque di non inserire dati personali non
+        necessari nel testo inviato all'AI. È possibile ottenere copia delle garanzie adottate
+        contattando il Titolare.
       </LegalP>
 
       <LegalH2>3.5 Periodo di conservazione</LegalH2>

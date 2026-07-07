@@ -71,7 +71,7 @@ const it = {
   close: 'Chiudi',
   fromPrice: 'da',
   priceDisclaimer: 'Prezzo indicativo di mercato: il totale finale è confermato sul sito del partner al momento della prenotazione.',
-  aiPrivacyNotice: 'Il testo è elaborato da un fornitore AI extra-UE (DeepSeek, Cina): non inserire dati personali.',
+  aiPrivacyNotice: 'Il testo è elaborato da un fornitore AI (Mistral, UE): evita di inserire dati personali non necessari.',
 
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
@@ -299,7 +299,7 @@ const en: Record<TranslationKey, string> = {
   close: 'Close',
   fromPrice: 'from',
   priceDisclaimer: "Indicative market price: the final total is confirmed on the partner's site at the time of booking.",
-  aiPrivacyNotice: "Your text is processed by a non-EU AI provider (DeepSeek, China): don't enter personal data.",
+  aiPrivacyNotice: 'Your text is processed by an AI provider (Mistral, EU): avoid entering unnecessary personal data.',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',

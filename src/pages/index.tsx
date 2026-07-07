@@ -186,7 +186,7 @@ export default function Home({
     'volo', 'voli', 'weekend', 'the', 'to', 'for',
   ]);
 
-  // Fallback deep-link: usato quando manca DEEPSEEK_API_KEY / l'AI fallisce E
+  // Fallback deep-link: usato quando manca MISTRAL_API_KEY / l'AI fallisce E
   // nessuna voce del catalogo corrisponde. Invece di rimostrare i preset
   // (irrilevanti per la meta cercata) generiamo due card azionabili "Cerca
   // voli/hotel a {q}" con deep-link reali Kiwi.com / Booking.com. Nessun prezzo

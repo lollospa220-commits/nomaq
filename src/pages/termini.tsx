@@ -49,8 +49,9 @@ export default function Termini() {
 
       <LegalH2>2.4 Funzionalità basate su intelligenza artificiale</LegalH2>
       <LegalP>
-        Il Sito utilizza un servizio di intelligenza artificiale di terze parti (DeepSeek) per
-        interpretare richieste in linguaggio naturale e suggerire itinerari, voli e strutture. Le
+        Il Sito utilizza un servizio di intelligenza artificiale di terze parti (Mistral, con sede
+        nell'Unione Europea) per interpretare richieste in linguaggio naturale e suggerire
+        itinerari, voli e strutture. Le
         risposte generate dall'AI possono contenere imprecisioni o errori e non costituiscono
         consulenza di viaggio professionale, né garanzia di disponibilità o prezzo. Si raccomanda
         di verificare sempre i dettagli finali (prezzo, orari, documenti di viaggio richiesti) sul
