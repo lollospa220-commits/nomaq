@@ -334,6 +334,32 @@ export default function Home({
   const [allHotels, setAllHotels] = React.useState<any[]>(initialHotels || []);
   const [flights, setFlights] = React.useState<any[]>(initialFlights || []);
   const [hotels, setHotels] = React.useState<any[]>(initialHotels || []);
+
+  const [customOrigin, setCustomOrigin] = React.useState('');
+  const [customDeparture, setCustomDeparture] = React.useState('');
+  const [customReturn, setCustomReturn] = React.useState('');
+  const [isRefreshingDeals, setIsRefreshingDeals] = React.useState(false);
+  const [customDeals, setCustomDeals] = React.useState<any[] | null>(null);
+
+  const refreshDeals = async () => {
+    if (!customDeparture || !customReturn) return;
+    setIsRefreshingDeals(true);
+    try {
+      const res = await fetch(`/api/custom-flights?origin=${customOrigin}&departure=${customDeparture}&returnDate=${customReturn}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomDeals(data);
+        if (data.length > 0) {
+          // Aggiungiamo i deal personalizzati in cima all'elenco mostrato
+          setFlights(prev => [...data, ...prev.filter(p => !data.find(d => d.destination === p.destination))]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch custom deals', err);
+    } finally {
+      setIsRefreshingDeals(false);
+    }
+  };
   // feedItems è derivato da flights+hotels: useMemo invece di state+effect
   // (elimina un render extra a ogni load e il warning set-state-in-effect).
   const feedItems = React.useMemo(() => [...flights, ...hotels], [flights, hotels]);
@@ -863,8 +889,50 @@ export default function Home({
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                  {/* Filtro fascia di prezzo */}
+                  {/* Nuovi selettori Origine e Date */}
                   <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Da dove parti?"
+                      value={customOrigin}
+                      onChange={(e) => setCustomOrigin(e.target.value)}
+                      className="bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-full px-4 py-1.5 border border-white/20 backdrop-blur-md outline-none transition-colors w-32 md:w-40 placeholder-white/50"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 bg-white/10 rounded-full border border-white/20 backdrop-blur-md px-3 py-1">
+                    <input
+                      type="date"
+                      value={customDeparture}
+                      onChange={(e) => setCustomDeparture(e.target.value)}
+                      className="bg-transparent text-white text-xs font-medium outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
+                      title="Data Andata"
+                    />
+                    <span className="text-white/50 text-xs">-</span>
+                    <input
+                      type="date"
+                      value={customReturn}
+                      onChange={(e) => setCustomReturn(e.target.value)}
+                      className="bg-transparent text-white text-xs font-medium outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
+                      title="Data Ritorno"
+                    />
+                  </div>
+                  <button
+                    onClick={refreshDeals}
+                    disabled={!customDeparture || !customReturn || isRefreshingDeals}
+                    className="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded-full px-4 py-1.5 transition-colors flex items-center gap-2"
+                  >
+                    {isRefreshingDeals ? (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                        Cerco...
+                      </>
+                    ) : (
+                      'Aggiorna'
+                    )}
+                  </button>
+
+                  {/* Filtro fascia di prezzo */}
+                  <div className="relative ml-2">
                     <select
                       aria-label={t('filterPriceLabel')}
                       data-testid="feed-filter-price"

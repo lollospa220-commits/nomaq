@@ -89,25 +89,25 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
   const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
 
   if (type === 'flight') {
-    // Kiwi.com per tutti i voli — nessun network russo (Aviasales/Jetradar).
-    const destCode = resolveDestCode(item);
-    const originCode = resolveOriginCode(item);
+    // Se la riga passa esplicitamente codici e date, usali. Altrimenti ricava.
+    const destCode = item.dest_code || resolveDestCode(item);
+    const originCode = item.origin_code || resolveOriginCode(item);
     
     // Le righe Travelpayouts codificano la data reale di partenza nell'id
     // (flight-tp-XXX-YYYY-MM-DD): usala, così il link apre la stessa data
     // mostrata sulla card anche quando la riga arriva dalla cache Supabase.
     const tpMatch = typeof item.id === 'string'
-      ? item.id.match(/^flight-tp-[A-Z]{3}-(\d{4}-\d{2}-\d{2})$/)
+      ? item.id.match(/^(?:flight-tp|flight-custom)-[A-Z]{3}-(\d{4}-\d{2}-\d{2})$/)
       : null;
     const fallbackDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
-    const departureDate = tpMatch && tpMatch[1] > today ? tpMatch[1] : fallbackDate;
+    const departureDate = item.departure_date || (tpMatch && tpMatch[1] > today ? tpMatch[1] : fallbackDate);
     
     // Rileva se è una riga live (solo andata da Travelpayouts) o un deal statico/pacchetto (andata e ritorno)
     const isLive = typeof item.id === 'string' && (item.id.startsWith('flight-tp-') || item.id.startsWith('live-flight-'));
     
-    let returnDate = '';
-    if (!isLive) {
+    let returnDate = item.return_date || '';
+    if (!isLive && !returnDate) {
       // Per i deal statici del catalogo (es. Weekend a Barcellona), calcola la data di ritorno
       const text = `${item.description || ''} ${item.date_info || ''} ${item.nights || ''}`;
       const nightsMatch = text.match(/(\d+)\s*nott/i);
@@ -377,6 +377,114 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
   return perDestination.filter(Boolean) as any[];
 }
 
+// Risolve una stringa di testo libero in un codice IATA tramite l'API di Travelpayouts
+export async function resolveCityToIATA(cityName: string): Promise<string | null> {
+  if (!cityName || cityName.trim().length < 2) return null;
+  const q = cityName.trim();
+  // Se l'utente digita già un codice IATA esatto, potremmo usarlo direttamente, 
+  // ma l'autocomplete garantisce che esista.
+  try {
+    const url = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(q)}&locale=it&types[]=city,airport`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (Array.isArray(json) && json.length > 0) {
+      // Prende il primo risultato valido (città o aeroporto)
+      return json[0].code?.toUpperCase() || null;
+    }
+    return null;
+  } catch (err) {
+    console.warn(`Failed to resolve city to IATA for "${q}":`, err);
+    return null;
+  }
+}
+
+export async function fetchCustomFlights(originIata: string, departureDate: string, returnDate: string): Promise<any[]> {
+  const token = process.env.DUFFEL_ACCESS_TOKEN;
+  if (!token || token.startsWith('YOUR_')) {
+    console.warn('DUFFEL_ACCESS_TOKEN missing, cannot fetch custom live flights.');
+    return [];
+  }
+  
+  const perDestination = await Promise.all(FLIGHT_DESTINATIONS.map(async (dest) => {
+    try {
+      const slices = [
+        {
+          origin: originIata,
+          destination: dest.code,
+          departure_date: departureDate
+        }
+      ];
+      if (returnDate) {
+        slices.push({
+          origin: dest.code,
+          destination: originIata,
+          departure_date: returnDate
+        });
+      }
+
+      const res = await fetch(DUFFEL_OFFERS_URL, {
+        method: 'POST',
+        signal: AbortSignal.timeout(10000), // timeout leggermente più lungo per richieste live complesse
+        headers: {
+          'Content-Type': 'application/json',
+          'Duffel-Version': 'v2',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          data: {
+            slices,
+            passengers: [{ type: 'adult' }],
+            cabin_class: 'economy'
+          }
+        })
+      });
+
+      if (!res.ok) return null;
+      const json = await res.json();
+      const offers = (json.data?.offers || []).filter((o: any) => Number.isFinite(Number(o?.total_amount)));
+      if (offers.length === 0) return null;
+
+      const offer = offers.reduce((min: any, o: any) => (Number(o.total_amount) < Number(min.total_amount) ? o : min), offers[0]);
+      
+      const price = Math.round(Number(offer.total_amount));
+      const airlineName = offer.owner?.name || 'Airline';
+      const durationRaw = offer.slices?.[0]?.duration;
+      const duration = typeof durationRaw === 'string' ? durationRaw.replace('PT', '').toLowerCase() : null;
+
+      const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+      const returnDateStr = returnDate ? new Date(returnDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }) : '';
+
+      const row: any = {
+        id: `flight-custom-${dest.code}-${departureDate}`,
+        destination: dest.name,
+        country: dest.country,
+        price,
+        original_price: price, // colonna NOT NULL
+        description: duration 
+            ? `Volo reale ${returnDate ? 'A/R ' : ''}da ${originIata} a ${dest.code} via Duffel. Compagnia: ${airlineName}. Andata: ${duration}.` 
+            : `Volo reale ${returnDate ? 'A/R ' : ''}da ${originIata} a ${dest.code} via Duffel. Compagnia: ${airlineName}.`,
+        image: getDestinationImage(dest.name, `${dest.code}-${departureDate}`),
+        airline: airlineName,
+        date_info: returnDate ? `${dateStr} - ${returnDateStr}` : `${dateStr} (Solo andata)`,
+        tag: dest.tag,
+        color: dest.color,
+        origin_code: originIata,
+        dest_code: dest.code,
+        departure_date: departureDate,
+        return_date: returnDate || '',
+      };
+      if (duration) row.duration = duration;
+      return row;
+    } catch (err) {
+      console.warn(`Failed fetching custom flights for ${dest.code}:`, err);
+      return null;
+    }
+  }));
+
+  return perDestination.filter(Boolean) as any[];
+}
+
 // Una tariffa reale di mercato per una singola rotta arbitraria (non solo il
 // catalogo fisso): è ciò che alimenta la ricerca live per qualsiasi
 // destinazione. Restituisce fino a `limit` offerte distinte ordinate per
@@ -388,34 +496,39 @@ export type LiveFare = {
   airline: string;       // nome compagnia risolto
   airlineCode: string;   // IATA compagnia (per id stabili)
   departureDay: string;  // YYYY-MM-DD reale
+  returnDay?: string;    // YYYY-MM-DD reale se a/r
   duration: string | null;
   origin: string;        // IATA
   destination: string;   // IATA
 };
 
-export async function fetchLiveFares(originIata: string, destIata: string, limit = 6): Promise<LiveFare[]> {
+export async function fetchLiveFares(originIata: string, destIata: string, limit = 6, departureDate?: string, returnDate?: string): Promise<LiveFare[]> {
   const token = process.env.TRAVELPAYOUTS_TOKEN;
   if (!token || token.startsWith('YOUR_')) return [];
   const origin = String(originIata || '').toUpperCase();
   const dest = String(destIata || '').toUpperCase();
   if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(dest) || origin === dest) return [];
 
-  const data = await withCache(`live-${origin}-${dest}`, async () => {
+  const data = await withCache(`live-${origin}-${dest}-${departureDate || 'any'}-${returnDate || 'any'}`, async () => {
     try {
       const now = new Date();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const departureMonth = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+      const depParam = departureDate || `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
       const params = new URLSearchParams({
         origin,
         destination: dest,
-        departure_at: departureMonth,
-        one_way: 'true',
+        departure_at: depParam,
+        one_way: returnDate ? 'false' : 'true',
         direct: 'false',
         currency: 'eur',
         sorting: 'price',
         limit: String(Math.min(Math.max(Math.round(limit), 1), 30)),
         token,
       });
+      if (returnDate) {
+        params.set('return_at', returnDate);
+      }
+
       const res = await fetch(`${TRAVELPAYOUTS_PRICES_URL}?${params.toString()}`, {
         signal: AbortSignal.timeout(8000),
       });
@@ -432,10 +545,11 @@ export async function fetchLiveFares(originIata: string, destIata: string, limit
       const fares: LiveFare[] = [];
       for (const o of offers.sort((a: any, b: any) => Number(a.price) - Number(b.price))) {
         const departureDay = o.departure_at.slice(0, 10);
-        if (departureDay <= today) continue; // niente date già passate nella cache
+        if (!departureDate && departureDay <= today) continue; // niente date già passate nella cache se non è richiesta una data specifica
+        const returnDay = typeof o?.return_at === 'string' && /^\d{4}-\d{2}-\d{2}/.test(o.return_at) ? o.return_at.slice(0, 10) : undefined;
         const airlineCode = typeof o?.airline === 'string' ? o.airline.toUpperCase() : '';
         // Una card per coppia (compagnia, data): evita righe quasi identiche.
-        const key = `${airlineCode}-${departureDay}`;
+        const key = `${airlineCode}-${departureDay}-${returnDay || ''}`;
         if (seen.has(key)) continue;
         seen.add(key);
         fares.push({
@@ -443,6 +557,7 @@ export async function fetchLiveFares(originIata: string, destIata: string, limit
           airline: IATA_AIRLINE_NAMES[airlineCode] || airlineCode || 'Compagnia n/d',
           airlineCode,
           departureDay,
+          returnDay,
           duration: formatDurationMinutes(o?.duration),
           origin,
           destination: dest,
