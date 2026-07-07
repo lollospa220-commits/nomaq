@@ -88,7 +88,7 @@ function resolveOriginCode(item: any): string {
 
 // Helper to get affiliate link
 function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
-  const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
+  const marker = process.env.AFFILIATE_MARKER; // fail-closed: niente placeholder
 
   if (type === 'flight') {
     // Se la riga passa esplicitamente codici e date, usali. Altrimenti ricava.
@@ -146,7 +146,9 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
     const name = item.hotel_name || item.destination || 'Hotel';
     const checkin = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const checkout = new Date(Date.now() + 67 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(name)}&aid=${marker}&checkin=${checkin}&checkout=${checkout}&group_adults=2`;
+    const q = new URLSearchParams({ ss: name, checkin, checkout, group_adults: '2' });
+    if (marker) q.set('aid', marker);
+    return `https://www.booking.com/searchresults.html?${q.toString()}`;
   }
 }
 
@@ -162,7 +164,7 @@ const DEFAULT_FLIGHTS = [
     original_price: 89,
     description: 'Da Napoli · 2 notti · da 89€',
     image: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80',
-    airline: 'EasyJet',
+    airline: '',
     duration: '2h 10m',
     date_info: 'Qualsiasi weekend',
     rating: 4.8,
@@ -177,7 +179,7 @@ const DEFAULT_FLIGHTS = [
     original_price: 129,
     description: 'Partenza venerdì · hotel + volo · da 129€',
     image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
-    airline: 'Ryanair',
+    airline: '',
     duration: '1h 15m',
     date_info: 'Partenza venerdì',
     rating: 4.9,
@@ -192,7 +194,7 @@ const DEFAULT_FLIGHTS = [
     original_price: 389,
     description: 'Spiagge di sabbia bianca, templi antichi e tramonti mozzafiato. Il paradiso esiste.',
     image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
-    airline: 'Qatar Airways',
+    airline: '',
     duration: '14h 30m',
     date_info: 'Date flessibili',
     rating: 4.9,
@@ -207,7 +209,7 @@ const DEFAULT_FLIGHTS = [
     original_price: 541,
     description: 'Metropoli futuristica incontra tradizione millenaria. Ramen, sakura e neon ovunque.',
     image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80',
-    airline: 'ANA Airlines',
+    airline: '',
     duration: '12h 45m',
     date_info: 'Date flessibili',
     rating: 4.8,
@@ -222,7 +224,7 @@ const DEFAULT_FLIGHTS = [
     original_price: 312,
     description: "The city that never sleeps. Brooklyn Bridge, Central Park e una pizza che vale il viaggio.",
     image: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80',
-    airline: 'Delta Airlines',
+    airline: '',
     duration: '10h 20m',
     date_info: 'Date flessibili',
     rating: 4.7,
@@ -364,7 +366,7 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
         dest_code: dest.code,
         price,
         original_price: price, // colonna NOT NULL: = price ⇒ sconto 0 ⇒ barrato nascosto
-        description: `Tariffa reale di mercato (cache Travelpayouts) MXP → ${dest.code} con ${airlineName}. Prezzo osservato di recente, soggetto a disponibilità.`,
+        description: `Tariffa indicativa di mercato MXP → ${dest.code} con ${airlineName}. Prezzo osservato di recente, soggetto a disponibilità; il prezzo finale è sul sito del partner.`,
         image: getDestinationImage(dest.name, `${dest.code}-${departureDay}`),
         airline: airlineName,
         date_info: `${dateStr} (Solo andata)`,
@@ -500,7 +502,7 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
       const fare = best?.fare ?? null;
       const precision = best?.precision ?? null;
       const price = fare ? fare.price : null;
-      const airlineName = fare ? fare.airline : 'Kiwi.com';
+      const airlineName = fare ? fare.airline : 'Compagnia n/d';
       // La tariffa trovata è davvero A/R? Travelpayouts espone return_at SOLO
       // sulle offerte andata+ritorno. Copy E link Kiwi derivano da qui: un
       // prezzo di sola andata non finisce mai sotto un link A/R (che su Kiwi
@@ -511,10 +513,10 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
       let description: string;
       let dateInfo: string;
       if (!fare) {
-        description = `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri Kiwi per le migliori tariffe su queste date.`;
+        description = `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri il partner per le migliori tariffe su queste date.`;
         dateInfo = ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`;
       } else if (precision === 'month') {
-        description = `${originCity} → ${dest.name} · da ${price}€ ${isRT ? 'A/R' : 'solo andata'} con ${airlineName} — tariffa più bassa reale di ${monthLabel}. Scegli le tue date su Kiwi.`;
+        description = `${originCity} → ${dest.name} · da ${price}€ ${isRT ? 'A/R' : 'solo andata'} con ${airlineName} — tariffa più bassa reale di ${monthLabel}. Scegli le tue date sul sito del partner.`;
         dateInfo = `${monthLabel} · ${isRT ? 'A/R' : 'solo andata'}`;
       } else if (isRT) {
         description = `${originCity} → ${dest.name} · A/R ${dateStr} – ${returnStr} · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`;

@@ -176,6 +176,7 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
             <Send className="w-4 h-4 text-white" />
           </button>
         </div>
+        <p className="text-[10px] text-slate-400 text-center mt-1.5 px-2">{t('aiPrivacyNotice')}</p>
       </div>
     </div>
   );

@@ -121,7 +121,9 @@ function compact(items: any[]) {
 /* ── Affiliate booking links, built server-side from the plan data ── */
 
 function flightBookingUrl(opt: TripOption, meta: TripPlan['meta']): string {
-  // Kiwi.com per tutti i voli — nessun network russo (Aviasales/Jetradar).
+  // Voli del pianificatore AI su Kiwi.com. NB: la sezione "Selezionati per te"
+  // usa invece Aviasales (per far coincidere prezzo e pagina) — routing dei voli
+  // attualmente diviso tra le due superfici, decisione partner ancora aperta.
   // isIata è definito a livello di modulo (riusato dai destination card helpers).
   const toDDMMYYYY = (iso?: string) => {
     if (!iso) return '';
@@ -143,12 +145,12 @@ function flightBookingUrl(opt: TripOption, meta: TripPlan['meta']): string {
 }
 
 function hotelBookingUrl(h: HotelOption, meta: TripPlan['meta']): string {
-  const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
+  const marker = process.env.AFFILIATE_MARKER;
   const params = new URLSearchParams({
     ss: `${h.name} ${meta.destination}`,
-    aid: marker,
     group_adults: String(meta.travelers || 1),
   });
+  if (marker) params.set('aid', marker); // fail-closed: niente marker placeholder
   if (meta.startDate) params.set('checkin', meta.startDate);
   if (meta.endDate) params.set('checkout', meta.endDate);
   return `https://www.booking.com/searchresults.html?${params.toString()}`;
@@ -182,10 +184,11 @@ function destinationFlightUrl(fromCode: string, toCode: string): string {
 }
 
 function destinationHotelUrl(hotelName: string, destination: string): string {
-  const marker = process.env.AFFILIATE_MARKER || 'demo_marker_12345';
+  const marker = process.env.AFFILIATE_MARKER;
   const checkin = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const checkout = new Date(Date.now() + 48 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const params = new URLSearchParams({ ss: `${hotelName} ${destination}`.trim(), aid: marker, checkin, checkout, group_adults: '2' });
+  const params = new URLSearchParams({ ss: `${hotelName} ${destination}`.trim(), checkin, checkout, group_adults: '2' });
+  if (marker) params.set('aid', marker); // fail-closed: niente marker placeholder
   return `https://www.booking.com/searchresults.html?${params.toString()}`;
 }
 

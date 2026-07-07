@@ -18,9 +18,10 @@ export default function NoteLegali() {
         .
       </LegalP>
       <LegalP>
-        Ragione sociale, sede legale, Partita IVA, Codice Fiscale e numero REA verranno inseriti in
-        questa sezione non appena disponibili, a seguito della costituzione della società che
-        gestirà il servizio.
+        In attesa della costituzione della società che gestirà il servizio, il Sito è riferibile
+        alla persona fisica responsabile del progetto, contattabile all'indirizzo email sopra
+        indicato. Ragione sociale, sede legale, Partita IVA, Codice Fiscale e numero REA verranno
+        inseriti in questa sezione non appena disponibili.
       </LegalP>
 
       <LegalH2>1.2 Hosting</LegalH2>

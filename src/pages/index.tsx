@@ -89,11 +89,11 @@ const SEO_META: Record<string, Record<'it' | 'en', SeoEntry>> = {
   'vola-vola': {
     it: {
       title: "Nomaq — Voli e hotel al prezzo giusto, scelti dall'AI",
-      description: "Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale e compone il viaggio perfetto con l'AI. Vola di più, spendi meno.",
+      description: "Nomaq confronta tariffe indicative di voli e hotel dai partner selezionati e compone il viaggio con l'AI. Il prezzo finale è sul sito del partner.",
     },
     en: {
       title: 'Nomaq — Flights & hotels at the right price, AI-picked',
-      description: 'Nomaq detects real-time price drops on flights and hotels and builds your perfect trip with AI. Fly more, spend less.',
+      description: "Nomaq compares indicative flight and hotel fares from selected partners and builds your trip with AI. The final price is on the partner's site.",
     },
   },
   soggiorna: {
@@ -108,12 +108,12 @@ const SEO_META: Record<string, Record<'it' | 'en', SeoEntry>> = {
   },
   drops: {
     it: {
-      title: 'Radar prezzi voli in tempo reale — Nomaq',
-      description: "Il Radar Nomaq monitora le rotte e segnala i cali di prezzo appena avvengono. Non perdere più un'offerta.",
+      title: 'Radar prezzi voli — Nomaq',
+      description: "Il Radar di Nomaq confronta le tariffe dei partner ed evidenzia i cali di prezzo che rileva. Prezzi indicativi; il prezzo finale è sul sito del partner.",
     },
     en: {
-      title: 'Real-time flight price radar — Nomaq',
-      description: 'The Nomaq Radar tracks routes and flags price drops the moment they happen. Never miss a deal.',
+      title: 'Flight price radar — Nomaq',
+      description: "The Nomaq Radar compares partner fares and highlights the price drops it detects. Indicative prices; the final price is on the partner's site.",
     },
   },
   salvati: {
@@ -862,6 +862,8 @@ export default function Home({
                         </button>
                       </div>
 
+                      <p className="text-[11px] text-slate-400 text-center mt-2 px-2">{t('aiPrivacyNotice')}</p>
+
                       {/* Dropdown ricerche recenti */}
                     {isFocused && (
                       <div className="liquid-glass-light backdrop-blur-xl backdrop-saturate-150 absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl p-4 text-left animate-fade-in">
@@ -1383,8 +1385,9 @@ export async function getServerSideProps(context: any) {
     });
   }
 
-  // Load waitlist count from Supabase
-  let waitlistCount = 2847;
+  // Load waitlist count from Supabase — SOLO il conteggio reale, nessuna base
+  // fittizia (mostrare "reali + 2847" era falso social proof, art. 21 Cod. Consumo).
+  let waitlistCount = 0;
   try {
     const { count } = await supabase
       .from('waitlist')

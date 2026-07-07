@@ -1,40 +1,31 @@
 import Head from 'next/head';
 import SEO from '@/components/SEO';
 import React from 'react';
-import { Share2, ArrowRight, Check, Star, TrendingDown, Bell, MapPin, ChevronDown } from 'lucide-react';
+import { Share2, ArrowRight, Check, TrendingDown, Bell, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
-const SOCIAL_PROOF = [
-  { avatar: '👩‍💼', name: 'Sara M.', city: 'Milano', saved: '€312', trip: 'Bali' },
-  { avatar: '👨‍🎤', name: 'Luca T.', city: 'Roma', saved: '€189', trip: 'Tokyo' },
-  { avatar: '👩‍🍳', name: 'Elena R.', city: 'Napoli', saved: '€97', trip: 'Lisbona' },
-];
-
+// Cosa offre davvero Nomaq — nessuna promessa di funzioni non ancora attive
+// (niente monitoraggio 24/7 per-utente né alert via email di price drop: la
+// waitlist raccoglie solo l'email per avvisare all'apertura del servizio).
 const FEATURES = [
   {
     icon: TrendingDown,
-    title: 'Radar in Tempo Reale',
-    desc: 'Monitoriamo 2.000+ rotte 24/7. Quando il prezzo crolla, ti avvisiamo prima di chiunque altro.',
+    title: 'Cali di prezzo',
+    desc: 'Il Radar confronta le tariffe dei nostri partner ed evidenzia quelle più basse e i cali che rileva.',
     color: '#4F46E5',
   },
   {
-    icon: Bell,
-    title: 'Alert Personalizzati',
-    desc: 'Scegli le destinazioni del cuore. Ti mandiamo solo drop che interessano davvero a te.',
-    color: '#7C3AED',
-  },
-  {
     icon: MapPin,
-    title: '500+ Destinazioni',
-    desc: 'Da Bali a New York, Maldive o Parigi. Il mondo intero, a portata di notifica.',
+    title: 'Voli e soggiorni',
+    desc: 'Voli e strutture dai partner selezionati, con prezzi indicativi da confrontare. Il prezzo finale è sul sito del partner.',
     color: '#3B82F6',
   },
-];
-
-const STATS = [
-  { value: '€247', label: 'risparmio medio a persona' },
-  { value: '2.847', label: 'in lista d\'attesa' },
-  { value: '94%', label: 'degli utenti trova un drop in 7 giorni' },
+  {
+    icon: Bell,
+    title: 'Ti avvisiamo all’apertura',
+    desc: 'Lascia la tua email: ti scriviamo appena Nomaq è disponibile. Gratis, zero spam, cancellati quando vuoi.',
+    color: '#7C3AED',
+  },
 ];
 
 export default function WaitlistPage() {
@@ -42,7 +33,7 @@ export default function WaitlistPage() {
   const [submitted, setSubmitted] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
-  const [count, setCount] = React.useState(0); // Start at 0, no fake inflation
+  const [count, setCount] = React.useState(0); // Solo il conteggio reale dal DB, nessuna inflazione
 
   React.useEffect(() => {
     // Recupera il numero reale di iscritti salvati nel database
@@ -54,7 +45,7 @@ export default function WaitlistPage() {
         }
       })
       .catch(() => {
-        // Fallimento silenzioso se DB non connesso, resta a 0 o mostra -
+        // Fallimento silenzioso se DB non connesso, resta a 0
       });
   }, []);
 
@@ -88,10 +79,10 @@ export default function WaitlistPage() {
   };
 
   const handleShare = () => {
-    const shareText = 'Ho trovato un\'app che mi avvisa quando i prezzi dei voli crollano 🔥 Unisciti alla lista d\'attesa!';
+    const shareText = 'Sto aspettando Nomaq: confronta tariffe di voli e hotel e pianifica il viaggio con l’AI. Entra in lista d’attesa!';
     const shareUrl = 'https://nomaq.app';
     if (navigator.share) {
-      navigator.share({ title: 'Nomaq — Vola al Prezzo Giusto', text: shareText, url: shareUrl });
+      navigator.share({ title: 'Nomaq — Voli e hotel al prezzo giusto', text: shareText, url: shareUrl });
     } else {
       navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
       setCopied(true);
@@ -101,9 +92,9 @@ export default function WaitlistPage() {
 
   return (
     <>
-      <SEO 
-        title="Nomaq — Entra in lista d'attesa. Vola al prezzo giusto."
-        description="Nomaq rileva i crolli di prezzo su voli e hotel in tempo reale. Sii il primo a saperlo."
+      <SEO
+        title="Nomaq — Entra in lista d'attesa"
+        description="Nomaq confronta tariffe indicative di voli e hotel dai partner selezionati e aiuta a pianificare il viaggio con l'AI. Lascia la tua email e ti avvisiamo all'apertura."
       />
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -139,24 +130,26 @@ export default function WaitlistPage() {
               />
             </div>
 
-            {/* Live counter badge */}
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold text-nomaq-indigo"
-              style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.15)' }}
-            >
-              <span className="w-2 h-2 bg-nomaq-indigo rounded-full animate-pulse" />
-              {count.toLocaleString()} persone già in lista
-            </div>
+            {/* Live counter badge — solo conteggio reale; niente badge se 0 */}
+            {count > 0 && (
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold text-nomaq-indigo"
+                style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.15)' }}
+              >
+                <span className="w-2 h-2 bg-nomaq-indigo rounded-full animate-pulse" />
+                {count.toLocaleString()} {count === 1 ? 'persona già in lista' : 'persone già in lista'}
+              </div>
+            )}
 
             {/* Headline */}
             <h1 className="font-display text-4xl text-nomaq-navy leading-tight mb-4">
-              Vola di più.<br />
+              Voli e hotel,<br />
               <span className="text-gradient-violet">
-                Spendi meno.
+                al prezzo giusto.
               </span>
             </h1>
             <p className="text-slate-500 text-base leading-relaxed mb-8">
-              Nomaq monitorizza 2.000+ rotte in tempo reale e ti avvisa nel momento esatto in cui il prezzo crolla. Il tuo prossimo viaggio costerà molto meno.
+              Nomaq confronta le tariffe di voli e hotel dai partner selezionati e ti aiuta a pianificare il viaggio con l&rsquo;AI. Lascia la tua email: ti avvisiamo appena apriamo.
             </p>
 
             {/* Main CTA Form */}
@@ -197,7 +190,7 @@ export default function WaitlistPage() {
                     data-testid="waitlist-submit"
                     className="w-full py-4 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 bg-gradient-indigo shadow-button"
                   >
-                    Attiva il mio Radar <ArrowRight className="w-4 h-4" />
+                    Entra in lista d&rsquo;attesa <ArrowRight className="w-4 h-4" />
                   </button>
                   <p className="text-center text-xs text-slate-400 mt-3">
                     Gratis. Zero spam. Cancellati quando vuoi.
@@ -210,7 +203,7 @@ export default function WaitlistPage() {
                   </div>
                   <h3 className="font-display text-xl text-nomaq-navy mb-2">Sei dentro! 🎉</h3>
                   <p className="text-slate-500 text-sm mb-4">
-                    Ti avvisiamo su <span className="font-semibold text-nomaq-navy">{email}</span> appena il prezzo crolla.
+                    Ti scriveremo a <span className="font-semibold text-nomaq-navy">{email}</span> appena Nomaq è disponibile.
                   </p>
 
                   {/* Share CTA */}
@@ -222,10 +215,10 @@ export default function WaitlistPage() {
                     style={{ border: '2px solid #4F46E5', color: '#4F46E5', background: 'transparent' }}
                   >
                     <Share2 className="w-4 h-4" />
-                    {copied ? '✓ Link copiato!' : 'Flexa il tuo Drop 🔥'}
+                    {copied ? '✓ Link copiato!' : 'Condividi Nomaq'}
                   </button>
                   <p className="text-center text-xs text-slate-400 mt-3">
-                    Più persone inviti, prima sali in lista
+                    Aiutaci a spargere la voce
                   </p>
                 </div>
               )}
@@ -233,52 +226,10 @@ export default function WaitlistPage() {
           </div>
         </section>
 
-        {/* ── SOCIAL PROOF ── */}
-        <section className="px-5 py-6 max-w-md mx-auto">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 text-center">
-            Già in lista
-          </p>
-          <div className="space-y-3">
-            {SOCIAL_PROOF.map((person, idx) => (
-              <div
-                key={idx}
-                className="nomaq-card flex items-center gap-3 p-4 rounded-2xl"
-              >
-                <div className="text-2xl">{person.avatar}</div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-nomaq-navy">{person.name}</div>
-                  <div className="text-xs text-slate-500">{person.city}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-nomaq-indigo font-bold text-sm">{person.saved} risparmiati</div>
-                  <div className="text-xs text-slate-400">{person.trip}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── STATS ── */}
-        <section className="px-5 py-6 max-w-md mx-auto">
-          <div className="grid grid-cols-3 gap-3">
-            {STATS.map((stat, idx) => (
-              <div
-                key={idx}
-                className="nomaq-card rounded-2xl p-4 text-center"
-              >
-                <div className="font-display text-2xl mb-1 text-gradient-violet">
-                  {stat.value}
-                </div>
-                <div className="text-[10px] text-slate-500 font-medium leading-tight">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* ── FEATURES ── */}
         <section className="px-5 py-6 max-w-md mx-auto">
           <h2 className="font-display text-2xl text-nomaq-navy mb-5 text-center">
-            Come funziona il <span className="text-gradient-violet">Radar</span>
+            Cosa fa <span className="text-gradient-violet">Nomaq</span>
           </h2>
           <div className="space-y-4">
             {FEATURES.map(({ icon: Icon, title, desc, color }, idx) => (
@@ -304,14 +255,14 @@ export default function WaitlistPage() {
         {/* ── BOTTOM CTA ── */}
         <section className="px-5 py-8 pb-16 max-w-md mx-auto text-center">
           <div className="rounded-3xl p-6 bg-gradient-indigo shadow-button">
-            <div className="text-white/80 text-sm font-medium mb-1">Non aspettare il prezzo giusto.</div>
-            <div className="text-white font-display text-xl mb-4">Lascia che te lo diciamo noi.</div>
+            <div className="text-white/80 text-sm font-medium mb-1">Nomaq sta arrivando.</div>
+            <div className="text-white font-display text-xl mb-4">Sii tra i primi a provarlo.</div>
             <Link
               href="#waitlist-email"
               className="inline-flex items-center gap-2 bg-white text-nomaq-indigo font-bold text-sm px-6 py-3.5 rounded-2xl transition-all"
               style={{ boxShadow: '0 4px 16px rgba(15,23,42,0.15)' }}
             >
-              Inizia gratis <ArrowRight className="w-4 h-4" />
+              Entra gratis <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 

@@ -23,7 +23,7 @@ export default function ProfiloView({
   const [submitted, setSubmitted] = React.useState(initialSubmitted || false);
   const [error, setError] = React.useState<string | null>(initialError || null);
   const [copied, setCopied] = React.useState(false);
-  const [count, setCount] = React.useState(initialCount || 2847);
+  const [count, setCount] = React.useState(initialCount ?? 0);
 
   // Auth form state
   const [authMode, setAuthMode] = React.useState<'signin' | 'signup'>('signin');
@@ -39,7 +39,7 @@ export default function ProfiloView({
       .then((res) => res.json())
       .then((data) => {
         if (data.count !== undefined) {
-          setCount(2847 + data.count);
+          setCount(data.count);
         }
       })
       .catch(() => { });
