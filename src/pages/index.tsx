@@ -738,14 +738,21 @@ export default function Home({
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
 
         <div className={`mx-auto ${queryObj.desktop === 'true' ? 'max-w-4xl' : 'max-w-md lg:max-w-6xl'}`}>
-          {/* Sfondo fisso globale (Globo + dark gradient). Rendendolo fuori dalle
-              condizioni, il mondo gira ed è visibile in trasparenza da tutte le view. */}
-          <div
-            className="fixed inset-0 -z-[60]"
-            aria-hidden="true"
-            style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
-          />
-          <GlobeGL />
+          {/* Sfondo scuro + Globo SOLO sulla home hero (vola-vola senza piano).
+              Le altre view (Radar/Soggiorna/Concierge/Profilo) e il piano viaggio
+              sono disegnate per il tema chiaro (card bianche, titoli text-nomaq-navy
+              scuri): con lo sfondo scuro globale i titoli diventavano illeggibili
+              (dark-on-dark). Coerente con isDarkBackground già usato da nav/logo. */}
+          {currentTab === 'vola-vola' && !tripPlan && (
+            <>
+              <div
+                className="fixed inset-0 -z-[60]"
+                aria-hidden="true"
+                style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
+              />
+              <GlobeGL />
+            </>
+          )}
 
           {/* Hidden active view for tests */}
           <div data-testid="active-view" className="hidden">{currentTab}</div>
