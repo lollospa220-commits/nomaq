@@ -271,6 +271,10 @@ function StaysView({
                   <span className="text-3xl font-extrabold text-nomaq-navy leading-none">{t('searchNow')}</span>
                 )}
               </div>
+              {/* Trasparenza per-card: il prezzo è indicativo, conferma sul partner */}
+              {featured.price != null && (
+                <p className="text-[11px] text-slate-400">{t('indicativeShort')}</p>
+              )}
               <button
                 aria-label={t('viewStay')}
                 onClick={(e) => { e.stopPropagation(); if (featured.booking_url) window.open(featured.booking_url, '_blank', 'noopener,noreferrer'); }}
@@ -416,6 +420,8 @@ function StayCard({
                 <span className="text-[10px] text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>
                 <span className="font-extrabold text-nomaq-indigo">€{price}</span>{' '}
                 <span className="text-[10px] text-slate-400">{t('perNight')}</span>
+                {/* Trasparenza per-card: prezzo indicativo, conferma sul partner */}
+                <span className="block text-[9px] text-slate-400 font-medium">{t('indicativeShort')}</span>
               </>
             ) : (
               <span className="font-extrabold text-nomaq-indigo">{t('searchNow')}</span>

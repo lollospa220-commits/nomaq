@@ -71,6 +71,7 @@ const it = {
   close: 'Chiudi',
   fromPrice: 'da',
   priceDisclaimer: 'Prezzo indicativo di mercato: il totale finale è confermato sul sito del partner al momento della prenotazione.',
+  indicativeShort: 'Prezzo indicativo',
   aiPrivacyNotice: 'Il testo è elaborato da un fornitore AI (Mistral, UE): evita di inserire dati personali non necessari.',
 
   /* ── FAQ ── */
@@ -299,6 +300,7 @@ const en: Record<TranslationKey, string> = {
   close: 'Close',
   fromPrice: 'from',
   priceDisclaimer: "Indicative market price: the final total is confirmed on the partner's site at the time of booking.",
+  indicativeShort: 'Indicative price',
   aiPrivacyNotice: 'Your text is processed by an AI provider (Mistral, EU): avoid entering unnecessary personal data.',
 
   /* ── FAQ ── */

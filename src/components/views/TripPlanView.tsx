@@ -123,6 +123,8 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
               <div className="text-[11px] text-slate-400 font-semibold mt-1">
                 {t('totalWord')} · {meta.travelers} {t('tripPassengers')}
               </div>
+              {/* Trasparenza per-card: prezzo indicativo, conferma sul partner */}
+              <div className="text-[10px] text-slate-400 mt-0.5">{t('indicativeShort')}</div>
             </div>
           </div>
           {/* Alternatives */}
@@ -179,9 +181,11 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
           <div className="p-5 flex flex-col gap-1.5 flex-1">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="font-display text-xl text-nomaq-navy leading-tight">{h?.name}</h3>
-              <div className="text-lg font-extrabold text-nomaq-navy whitespace-nowrap">
+              <div className="text-lg font-extrabold text-nomaq-navy whitespace-nowrap text-right">
                 €{h?.pricePerNight}
                 <span className="text-[10px] text-slate-400 font-semibold"> {t('perNight')}</span>
+                {/* Trasparenza per-card: prezzo indicativo, conferma sul partner */}
+                <span className="block text-[10px] text-slate-400 font-medium">{t('indicativeShort')}</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
@@ -314,6 +318,7 @@ function TripPlanView({ plan, onClose }: { plan: any; onClose: () => void }) {
         <div className="text-sm text-slate-300 font-medium text-center lg:text-left">
           {t('tripTotalFor')} {travLabel} <b className="text-white text-lg mx-1" data-testid="trip-total-amount">€{total}</b>
           · {t('tripFlightLabel').split(' ')[0].toLowerCase()} + {meta.nights} {t('nightsWord')} + {t('tripExtras')}
+          {' '}· <span className="text-slate-400">{t('indicativeShort').toLowerCase()}</span>
           {meta.budget ? (
             <span className={`ml-2 inline-flex text-[11px] font-bold px-2.5 py-1 rounded-full ${total <= meta.budget ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
               Budget €{meta.budget} {total <= meta.budget ? '✓' : `· +€${Math.round(total - meta.budget)}`}

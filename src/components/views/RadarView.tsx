@@ -95,6 +95,9 @@ function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | nul
             <div className="text-slate-400 text-xs line-through leading-none mb-1">€{item.originalPrice}</div>
           )}
           <div className="text-2xl font-extrabold text-nomaq-navy leading-none"><span className="text-xs text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>€{item.price}</div>
+          {/* Trasparenza per-card: come nel DetailSheet, il prezzo è indicativo
+              e il totale reale lo conferma il partner. */}
+          <div className="text-[10px] text-slate-400 font-medium mt-1">{t('indicativeShort')}</div>
         </div>
       </div>
     </div>
@@ -137,6 +140,7 @@ function RadarCompactCard({ item, nowTick }: { item: FeedItem; nowTick: number |
               <div className="text-slate-400 text-xs line-through leading-none mb-1">€{item.originalPrice}</div>
             )}
             <div className="text-lg font-extrabold text-nomaq-navy leading-none"><span className="text-[10px] text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>€{item.price}</div>
+            <div className="text-[9px] text-slate-400 font-medium mt-1">{t('indicativeShort')}</div>
           </div>
           <span className="w-9 h-9 rounded-full border border-nomaq-indigo/15 bg-nomaq-lavender flex items-center justify-center">
             <ChevronRight className="w-4 h-4 text-nomaq-indigo" />
