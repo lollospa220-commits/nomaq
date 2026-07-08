@@ -140,6 +140,12 @@ function flightBookingUrl(opt: TripOption, meta: TripPlan['meta']): string {
   if (depart) params.set('departure', depart);
   const ret = toDDMMYYYY(meta.endDate);
   if (ret) params.set('return', ret);
+  // Passeggeri: il piano mostra "€totale · N passeggeri" e il priceTotal è per
+  // TUTTI i viaggiatori → il deep link Kiwi deve aprire lo stesso numero di
+  // adulti, altrimenti su Kiwi il totale (default 1 adulto) non torna. Param
+  // Kiwi verificato: `adults` (max adults+children+infants = 9).
+  const adults = Math.min(9, Math.max(1, Math.round(Number(meta.travelers) || 1)));
+  params.set('adults', String(adults));
   const kiwiAffilId = process.env.KIWI_AFFILIATE_ID;
   if (kiwiAffilId) params.set('affilid', kiwiAffilId);
   return `https://www.kiwi.com/deep?${params.toString()}`;

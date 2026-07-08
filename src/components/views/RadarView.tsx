@@ -56,11 +56,22 @@ function RadarRoute({ to, className = '' }: { to: string; className?: string }) 
   );
 }
 
-function openBooking(item: FeedItem) {
-  if (item.booking_url) window.open(item.booking_url, '_blank', 'noopener,noreferrer');
+// Apre il deep link Kiwi portando il numero di viaggiatori scelto (param `adults`,
+// verificato lato Kiwi), così la ricerca aperta combacia con lo stepper della UI.
+function openBooking(item: FeedItem, travelers = 1) {
+  if (!item.booking_url) return;
+  let url = item.booking_url;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kiwi.com')) {
+      u.searchParams.set('adults', String(Math.min(9, Math.max(1, Math.round(travelers)))));
+      url = u.toString();
+    }
+  } catch { /* URL non parsabile (es. '#'): apri l'originale */ }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | null }) {
+function RadarBigCard({ item, nowTick, travelers }: { item: FeedItem; nowTick: number | null; travelers: number }) {
   const { t } = useLanguage();
   return (
     <div
@@ -69,8 +80,8 @@ function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | nul
       role="button"
       tabIndex={0}
       aria-label={`${REAL_ORIGIN_LABEL} → ${item.destination}`}
-      onClick={() => openBooking(item)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBooking(item); } }}
+      onClick={() => openBooking(item, travelers)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBooking(item, travelers); } }}
     >
       <div className="relative h-36 lg:h-40">
         <SmartImage
@@ -104,7 +115,7 @@ function RadarBigCard({ item, nowTick }: { item: FeedItem; nowTick: number | nul
   );
 }
 
-function RadarCompactCard({ item, nowTick }: { item: FeedItem; nowTick: number | null }) {
+function RadarCompactCard({ item, nowTick, travelers }: { item: FeedItem; nowTick: number | null; travelers: number }) {
   const { t } = useLanguage();
   return (
     <div
@@ -113,8 +124,8 @@ function RadarCompactCard({ item, nowTick }: { item: FeedItem; nowTick: number |
       role="button"
       tabIndex={0}
       aria-label={`${REAL_ORIGIN_LABEL} → ${item.destination}`}
-      onClick={() => openBooking(item)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBooking(item); } }}
+      onClick={() => openBooking(item, travelers)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBooking(item, travelers); } }}
     >
       <div className="relative w-28 lg:w-32 flex-shrink-0 min-h-[92px]">
         <SmartImage
@@ -153,9 +164,8 @@ function RadarCompactCard({ item, nowTick }: { item: FeedItem; nowTick: number |
 
 function RadarView({ flights, simulatedDrops }: { flights: FeedItem[]; simulatedDrops: any[] }) {
   const { t } = useLanguage();
-  const [city, setCity] = React.useState('Napoli');
   const [travelers, setTravelers] = React.useState(1);
-  const [openDd, setOpenDd] = React.useState<'city' | 'trav' | null>(null);
+  const [openDd, setOpenDd] = React.useState<'trav' | null>(null);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   // "Aggiornato X min fa" parte da null e si popola dopo il mount: evita un
@@ -175,8 +185,6 @@ function RadarView({ flights, simulatedDrops }: { flights: FeedItem[]; simulated
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
-
-  const CITIES = ['Napoli', 'Roma', 'Milano'];
 
   // Drop simulati da E2E (?drops=id:prezzo): mappati sulla stessa forma
   // FeedItem delle righe reali, così condividono le card e i testid.
@@ -221,32 +229,15 @@ function RadarView({ flights, simulatedDrops }: { flights: FeedItem[]; simulated
         <p className="text-slate-500 text-sm lg:text-base">{t('dropsSubtitle')}</p>
       </div>
 
-      {/* Filters. Nota: la ricerca reale parte sempre da MXP (vedi
-          REAL_ORIGIN_LABEL) — città e viaggiatori restano preferenze UI non
-          ancora collegate a una ricerca per-origine/passeggeri reale. */}
+      {/* Filtri. L'origine reale delle tariffe drop è sempre Milano/MXP (vedi
+          REAL_ORIGIN_LABEL): mostriamo un'origine STATICA e onesta invece di un
+          menù città che non filtrava nulla (le card dicono comunque "Milano →").
+          I viaggiatori invece ora finiscono davvero nel link Kiwi (param adults). */}
       <div className="flex flex-col lg:flex-row gap-3 mb-8">
-        {/* Departure city */}
-        <div className="relative">
-          <button className={ddBtn} onClick={() => setOpenDd(openDd === 'city' ? null : 'city')} aria-expanded={openDd === 'city'}>
-            <span className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-nomaq-indigo" />
-              {t('fromPrefix')} {city}
-            </span>
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${openDd === 'city' ? 'rotate-180' : ''}`} />
-          </button>
-          {openDd === 'city' && (
-            <div className={`${ddPanel} w-full lg:w-[220px] p-2`}>
-              {CITIES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => { setCity(c); setOpenDd(null); }}
-                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${c === city ? 'bg-nomaq-lavender text-nomaq-indigo' : 'text-nomaq-navy hover:bg-slate-50'}`}
-                >
-                  {t('fromPrefix')} {c}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Origine reale (statica): le tariffe drop partono da Milano/MXP */}
+        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-nomaq-navy shadow-soft w-full lg:w-auto lg:min-w-[200px]">
+          <MapPin className="w-4 h-4 text-nomaq-indigo" />
+          {t('fromPrefix')} {REAL_ORIGIN_LABEL}
         </div>
 
         {/* Travelers */}
@@ -299,8 +290,8 @@ function RadarView({ flights, simulatedDrops }: { flights: FeedItem[]; simulated
             <div className="grid gap-5 lg:grid-cols-3">
               {items.map((item) =>
                 compact
-                  ? <RadarCompactCard key={item.id} item={item} nowTick={nowTick} />
-                  : <RadarBigCard key={item.id} item={item} nowTick={nowTick} />
+                  ? <RadarCompactCard key={item.id} item={item} nowTick={nowTick} travelers={travelers} />
+                  : <RadarBigCard key={item.id} item={item} nowTick={nowTick} travelers={travelers} />
               )}
             </div>
           )}

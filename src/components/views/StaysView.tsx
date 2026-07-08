@@ -39,6 +39,25 @@ function StaysView({
     setCheckOut(fmt(outD));
   }, []);
 
+  // Il booking_url servito dal server porta già il marker affiliato (aid) ma con
+  // una finestra date/ospiti FISSA decisa in SSR (today+60/+67, 2 adulti). Qui
+  // sovrascriviamo checkin/checkout/ospiti con ciò che l'utente ha scelto nel
+  // widget di ricerca, così la pagina Booking che si apre combacia con la
+  // ricerca (date + persone). Il marker e gli altri parametri restano intatti.
+  const withStay = React.useCallback((base?: string): string | undefined => {
+    if (!base) return base;
+    try {
+      const u = new URL(base);
+      if (!u.hostname.includes('booking.com')) return base;
+      if (checkIn) u.searchParams.set('checkin', checkIn);
+      if (checkOut) u.searchParams.set('checkout', checkOut);
+      u.searchParams.set('group_adults', String(Math.max(1, guests)));
+      return u.toString();
+    } catch {
+      return base;
+    }
+  }, [checkIn, checkOut, guests]);
+
   const fieldBase = 'flex items-center gap-2 px-3 py-2.5 min-w-0';
   const labelCls = 'text-[10px] font-semibold text-slate-400 uppercase tracking-wide block';
   const valueCls = 'w-full bg-transparent text-sm font-semibold text-nomaq-navy outline-none';
@@ -225,7 +244,7 @@ function StaysView({
             className="group rounded-3xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_34px_rgba(15,23,42,0.22)] flex flex-col lg:flex-row cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
             data-testid="feed-item"
             data-id={featured.id}
-            onClick={() => { if (featured.booking_url) window.open(featured.booking_url, '_blank', 'noopener,noreferrer'); }}
+            onClick={() => { const url = withStay(featured.booking_url); if (url) window.open(url, '_blank', 'noopener,noreferrer'); }}
           >
             <div className="relative flex-1 min-h-[220px] lg:min-h-[320px]">
               <SmartImage
@@ -277,7 +296,7 @@ function StaysView({
               )}
               <button
                 aria-label={t('viewStay')}
-                onClick={(e) => { e.stopPropagation(); if (featured.booking_url) window.open(featured.booking_url, '_blank', 'noopener,noreferrer'); }}
+                onClick={(e) => { e.stopPropagation(); const url = withStay(featured.booking_url); if (url) window.open(url, '_blank', 'noopener,noreferrer'); }}
                 className="self-end mt-3 w-12 h-12 rounded-full bg-gradient-indigo text-white flex items-center justify-center shadow-button hover:scale-105 active:scale-95 transition-transform duration-200"
               >
                 <ArrowRight className="w-5 h-5" />
@@ -318,7 +337,7 @@ function StaysView({
               reviews={null}
               price={item.price}
               image={item.image || getDestinationImage(item.destination, item.id || 'stay')}
-              bookingUrl={item.booking_url}
+              bookingUrl={withStay(item.booking_url)}
               isSaved={savedIds.includes(item.id)}
               onToggleSave={onToggleSave}
               t={t}
