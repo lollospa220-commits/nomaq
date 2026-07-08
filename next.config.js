@@ -48,7 +48,12 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // ':path*' + locale:false, NON '/(.*)': con i18n attivo Next prefissa
+        // i source col locale e '/(.*)' non matcha le radici '/' e '/en' →
+        // proprio la home restava SENZA CSP e security header in produzione
+        // (verificato su prod: '/' e '/en' senza header, sottopagine ok).
+        source: '/:path*',
+        locale: false,
         headers: [
           // X-XSS-Protection rimosso: deprecato e potenzialmente dannoso; la CSP
           // è la protezione moderna contro l'XSS.
