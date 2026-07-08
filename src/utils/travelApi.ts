@@ -41,6 +41,13 @@ const FLIGHT_DESTINATIONS = [
   { code: 'NRT', name: 'Tokyo', country: 'Giappone', color: '#e05b7b', tag: 'TOP PICK' },
   { code: 'JFK', name: 'New York', country: 'Stati Uniti', color: '#3a6fbf', tag: 'BEST PRICE' },
   { code: 'CDG', name: 'Parigi', country: 'Francia', color: '#7c5cbf', tag: 'CITY BREAK' },
+  // Ampliamento catalogo (tutte con pool immagini dedicato in
+  // destinationImages.ts; se la cache tariffe è vuota la meta degrada con
+  // grazia: assente dal feed home, "Cerca" in Selezionati per te).
+  { code: 'AMS', name: 'Amsterdam', country: 'Paesi Bassi', color: '#7c5cbf', tag: 'CITY BREAK' },
+  { code: 'DXB', name: 'Dubai', country: 'Emirati Arabi', color: '#e08030', tag: 'TOP PICK' },
+  { code: 'JTR', name: 'Santorini', country: 'Grecia', color: '#3a6fbf', tag: 'SUMMER' },
+  { code: 'MLE', name: 'Maldive', country: 'Maldive', color: '#e05b7b', tag: 'RELAX' },
 ];
 
 // IATA → nome compagnia per le tariffe Travelpayouts (che espongono solo il codice).
@@ -51,6 +58,8 @@ const IATA_AIRLINE_NAMES: Record<string, string> = {
   AZ: 'ITA Airways', TP: 'TAP Air Portugal', LX: 'Swiss', A3: 'Aegean', FI: 'Icelandair',
   EK: 'Emirates', QR: 'Qatar Airways', TK: 'Turkish Airlines',
   NH: 'ANA', JL: 'Japan Airlines', DL: 'Delta', AA: 'American Airlines', UA: 'United',
+  // Rotte del catalogo ampliato (Dubai, Santorini, Maldive)
+  FZ: 'flydubai', EY: 'Etihad Airways', NO: 'Neos', OA: 'Olympic Air',
 };
 
 function resolveDestCode(item: any): string | null {
@@ -65,6 +74,9 @@ function resolveDestCode(item: any): string | null {
     ['londra', 'LGW'], ['london', 'LGW'], ['lgw', 'LGW'],
     ['tokyo', 'NRT'], ['nrt', 'NRT'],
     ['sicilia', 'PMO'], ['parigi', 'CDG'], ['paris', 'CDG'],
+    ['amsterdam', 'AMS'], ['ams', 'AMS'],
+    ['santorini', 'JTR'], ['jtr', 'JTR'],
+    ['maldive', 'MLE'], ['maldives', 'MLE'], ['mle', 'MLE'],
   ];
   const hit = map.find(([k]) => key.includes(k));
   // Nessun match → null: il chiamante costruisce una ricerca generica da MXP
