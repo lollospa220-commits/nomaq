@@ -55,7 +55,10 @@ export default function GlobeGL() {
       .width(el.clientWidth)
       .height(el.clientHeight)
       .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+      // Texture self-hostata (vedi public/textures/README.md): la CSP di prod
+      // (img-src) non consente unpkg.com — da CDN la texture veniva bloccata
+      // in produzione. In locale si evita anche la dipendenza da rete esterna.
+      .globeImageUrl('/textures/earth-night.jpg')
       .showAtmosphere(true)
       .atmosphereColor('#8b7ff0')
       .atmosphereAltitude(0.22)
