@@ -1,4 +1,7 @@
-import { supabase } from './supabaseClient';
+// Solo server (chiamato da API routes + getServerSideProps): usa il client
+// service_role (bypassa la RLS) così le scritture su flights/hotels non
+// dipendono dai permessi del ruolo anon pubblico. Fallback anon se la key manca.
+import { supabaseAdmin as supabase } from './supabaseAdmin';
 import { getDestinationImage, ensureVariedImages } from './destinationImages';
 import { resolveOriginIataLocal, originLabelForIata } from './airports';
 

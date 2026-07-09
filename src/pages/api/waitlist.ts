@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/utils/supabaseClient';
+// API route (server): usa il client service_role (bypassa la RLS) così il
+// conteggio e l'inserimento waitlist non richiedono permessi al ruolo anon
+// (che quindi NON potrà più fare SELECT sulle email → niente enumerazione/dump).
+import { supabaseAdmin as supabase } from '@/utils/supabaseAdmin';
 import { createRateLimiter } from '@/utils/rateLimit';
 
 const getLimiter = createRateLimiter({ max: 30 });

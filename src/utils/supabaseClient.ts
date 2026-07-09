@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project-id.supabase.co';
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project-id.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
 // Mock Database interface for running locally without DB configuration
@@ -160,11 +160,11 @@ const mockSupabase = {
   }
 };
 
-const isConfigured = 
-  supabaseUrl && 
-  supabaseUrl.startsWith('https://') && 
-  supabaseAnonKey && 
-  !supabaseUrl.includes('placeholder') && 
+export const isConfigured =
+  supabaseUrl &&
+  supabaseUrl.startsWith('https://') &&
+  supabaseAnonKey &&
+  !supabaseUrl.includes('placeholder') &&
   !supabaseUrl.includes('dummy') &&
   !supabaseUrl.includes('YOUR_');
 

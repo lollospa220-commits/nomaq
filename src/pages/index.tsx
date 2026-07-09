@@ -10,7 +10,9 @@ import { TranslationKey } from '@/i18n/translations';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import BottomNav from '@/components/BottomNav';
-import { supabase } from '@/utils/supabaseClient';
+// Usato SOLO in getServerSideProps (conteggio waitlist): client service_role
+// server-side così il conteggio non dipende dai permessi del ruolo anon.
+import { supabaseAdmin as supabase } from '@/utils/supabaseAdmin';
 import { fetchRealFlights, fetchRealHotels } from '@/utils/travelApi';
 import { getDestinationImage } from '@/utils/destinationImages';
 import { buildKiwiDeepLink } from '@/utils/kiwiLink';
