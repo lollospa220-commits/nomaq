@@ -81,6 +81,15 @@ const POPULAR_DESTINATIONS: { city: string; country: string }[] = [
 const normalizeSearch = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
+// Parole troppo generiche per contare come match: da sole farebbero
+// "corrispondere" quasi ogni voce del catalogo senza dire nulla di utile.
+// A livello di modulo: costante pura, nessun motivo di ricrearla a ogni render.
+const SEARCH_STOPWORDS = new Set([
+  'a', 'ai', 'al', 'alla', 'con', 'da', 'dei', 'del', 'di', 'e', 'i', 'il',
+  'in', 'la', 'le', 'lo', 'per', 'sotto', 'un', 'una', 'vacanza', 'vacanze',
+  'volo', 'voli', 'weekend', 'the', 'to', 'for',
+]);
+
 // Titolo + description per tab: ogni tab è una route SSR distinta (initialTab
 // impostato in getServerSideProps) → l'HTML iniziale che Google indicizza porta
 // meta corretti, non identici su tutti i tab.
@@ -181,14 +190,6 @@ export default function Home({
     setActiveTab(id);
     router.push(id === 'vola-vola' ? '/' : `/${id}`, undefined, { shallow: true });
   };
-
-  // Parole troppo generiche per contare come match: da sole farebbero
-  // "corrispondere" quasi ogni voce del catalogo senza dire nulla di utile.
-  const SEARCH_STOPWORDS = new Set([
-    'a', 'ai', 'al', 'alla', 'con', 'da', 'dei', 'del', 'di', 'e', 'i', 'il',
-    'in', 'la', 'le', 'lo', 'per', 'sotto', 'un', 'una', 'vacanza', 'vacanze',
-    'volo', 'voli', 'weekend', 'the', 'to', 'for',
-  ]);
 
   // Fallback deep-link: usato quando manca MISTRAL_API_KEY / l'AI fallisce E
   // nessuna voce del catalogo corrisponde. Invece di rimostrare i preset
@@ -581,6 +582,9 @@ export default function Home({
   };
 
   const dismissNotif = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id));
+  // Stabile: passata a DetailSheet come onClose. Un'arrow inline cambierebbe
+  // identità a ogni render facendo ri-eseguire l'effect (listener/scroll-lock).
+  const closeDetail = React.useCallback(() => setDetailItem(null), []);
 
   // Feed = only rows coming from the API layer. Mock deals must never be
   // mixed into the live feed: they carry invented prices indistinguishable
@@ -1271,7 +1275,7 @@ export default function Home({
         </div>
 
         {/* ── Detail sheet (dettaglio in-app al tap su una card) ── */}
-        <DetailSheet item={detailItem} onClose={() => setDetailItem(null)} />
+        <DetailSheet item={detailItem} onClose={closeDetail} />
       </main>
     </>
   );

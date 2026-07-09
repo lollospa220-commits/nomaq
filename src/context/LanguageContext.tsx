@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { translations, Lang, TranslationKey } from '@/i18n/translations';
 
@@ -18,15 +18,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Cambiare lingua = navigare allo stesso path nell'altro locale (l'URL è la
   // fonte di verità). scroll:false per non saltare in cima allo switch.
-  const setLang = (next: Lang) => {
+  const setLang = useCallback((next: Lang) => {
     if (!router || next === lang) return;
     router.push(router.asPath, router.asPath, { locale: next, scroll: false });
-  };
+  }, [router, lang]);
 
-  const t = (key: TranslationKey) => translations[lang][key] ?? translations.it[key] ?? key;
+  const t = useCallback(
+    (key: TranslationKey) => translations[lang][key] ?? translations.it[key] ?? key,
+    [lang]
+  );
+
+  // value memoizzato: `t` è consumato da quasi ogni componente → senza memo un
+  // render del provider ri-renderizzerebbe l'intero albero anche a lingua invariata.
+  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

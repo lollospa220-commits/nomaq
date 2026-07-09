@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 
 export interface Profile {
@@ -98,13 +98,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => sub?.subscription?.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!authAvailable) return { error: 'AUTH_UNAVAILABLE' };
     const { error } = await authClient.signInWithPassword({ email, password });
     return { error: error ? error.message : null };
-  };
+  }, []);
 
-  const signUp = async (fullName: string, email: string, password: string) => {
+  const signUp = useCallback(async (fullName: string, email: string, password: string) => {
     if (!authAvailable) return { error: 'AUTH_UNAVAILABLE', needsConfirmation: false };
     const { data, error } = await authClient.signUp({
       email,
@@ -125,18 +125,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     return { error: null, needsConfirmation: !data?.session };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (authAvailable) await authClient.signOut();
     setUser(null);
     setProfile(null);
-  };
+  }, []);
+
+  // value memoizzato: evita di ri-renderizzare tutti i consumer di useAuth a
+  // ogni render del provider quando user/profile/loading non sono cambiati.
+  const value = useMemo(
+    () => ({ user, profile, loading, authAvailable, signIn, signUp, signOut }),
+    [user, profile, loading, signIn, signUp, signOut]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{ user, profile, loading, authAvailable, signIn, signUp, signOut }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

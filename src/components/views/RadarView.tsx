@@ -186,29 +186,35 @@ function RadarView({ flights, simulatedDrops }: { flights: FeedItem[]; simulated
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  // Drop simulati da E2E (?drops=id:prezzo): mappati sulla stessa forma
-  // FeedItem delle righe reali, così condividono le card e i testid.
-  const simMapped: FeedItem[] = simulatedDrops.map((s) => {
-    const to = String(s.destination || '').split('→')[0].trim() || s.destination;
-    const drop = Math.max(0, (s.oldPrice ?? 0) - (s.newPrice ?? 0));
-    return {
-      id: s.id, type: 'flight', destination: to, price: s.newPrice, originalPrice: s.oldPrice,
-      dropAmount: drop, airline: s.airline || 'Airline', date: s.date || '',
-      image: null, booking_url: '#', observedAt: Date.now(),
-    };
-  });
+  // Partizionamento del catalogo (drop / upcoming / today) memoizzato: dipende
+  // solo da flights+simulatedDrops, non da nowTick (tick ogni 60s) né da
+  // travelers/dropdown — prima veniva ricalcolato (sort + Set) a ogni render.
+  const { dropped, upcoming, today } = React.useMemo(() => {
+    // Drop simulati da E2E (?drops=id:prezzo): mappati sulla stessa forma
+    // FeedItem delle righe reali, così condividono le card e i testid.
+    const simMapped: FeedItem[] = simulatedDrops.map((s) => {
+      const to = String(s.destination || '').split('→')[0].trim() || s.destination;
+      const drop = Math.max(0, (s.oldPrice ?? 0) - (s.newPrice ?? 0));
+      return {
+        id: s.id, type: 'flight', destination: to, price: s.newPrice, originalPrice: s.oldPrice,
+        dropAmount: drop, airline: s.airline || 'Airline', date: s.date || '',
+        image: null, booking_url: '#', observedAt: Date.now(),
+      };
+    });
 
-  const onlyFlights = flights.filter((f) => f.type === 'flight' && f.price != null);
-  const dropped = [...simMapped, ...onlyFlights.filter((f) => (f.dropAmount ?? 0) > 0)]
-    .sort((a, b) => (b.dropAmount ?? 0) - (a.dropAmount ?? 0));
-  const droppedIds = new Set(dropped.map((f) => f.id));
-  // Il catalogo reale ha poche destinazioni fisse: le due sezioni sotto
-  // ripartiscono ciò che resta (nessun drop questo ciclo) per data/prezzo,
-  // non duplicano "ourPicks" — ogni card mostra comunque il SUO prezzo reale.
-  const remaining = onlyFlights.filter((f) => !droppedIds.has(f.id));
-  const upcoming = [...remaining].sort((a, b) => (a.price ?? 0) - (b.price ?? 0)).slice(0, 3);
-  const upcomingIds = new Set(upcoming.map((f) => f.id));
-  const today = remaining.filter((f) => !upcomingIds.has(f.id)).slice(0, 3);
+    const onlyFlights = flights.filter((f) => f.type === 'flight' && f.price != null);
+    const droppedList = [...simMapped, ...onlyFlights.filter((f) => (f.dropAmount ?? 0) > 0)]
+      .sort((a, b) => (b.dropAmount ?? 0) - (a.dropAmount ?? 0));
+    const droppedIds = new Set(droppedList.map((f) => f.id));
+    // Il catalogo reale ha poche destinazioni fisse: le due sezioni sotto
+    // ripartiscono ciò che resta (nessun drop questo ciclo) per data/prezzo,
+    // non duplicano "ourPicks" — ogni card mostra comunque il SUO prezzo reale.
+    const remaining = onlyFlights.filter((f) => !droppedIds.has(f.id));
+    const upcomingList = [...remaining].sort((a, b) => (a.price ?? 0) - (b.price ?? 0)).slice(0, 3);
+    const upcomingIds = new Set(upcomingList.map((f) => f.id));
+    const todayList = remaining.filter((f) => !upcomingIds.has(f.id)).slice(0, 3);
+    return { dropped: droppedList, upcoming: upcomingList, today: todayList };
+  }, [flights, simulatedDrops]);
 
   const ddBtn = 'flex items-center justify-between gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-nomaq-navy shadow-soft w-full lg:w-auto lg:min-w-[200px] hover:border-nomaq-indigo/30 transition-colors';
   const ddPanel = 'absolute left-0 top-[calc(100%+8px)] z-30 bg-white rounded-2xl shadow-card border border-slate-100 p-4 animate-fade-in';

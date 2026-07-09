@@ -25,25 +25,23 @@ const FeedCard = React.memo(function FeedCard({
   const cleanTag = rawTag.replace(/^[^\w\s]+\s*/, '').trim();
 
   const cardRef = React.useRef<HTMLDivElement>(null);
-  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = React.useState(false);
 
+  // Spotlight via CSS custom properties scritte con un ref: NIENTE setState a
+  // ogni mousemove (prima ri-renderizzava la card memoizzata decine di volte al
+  // secondo, moltiplicato per l'intera griglia). Zero re-render, zero jank.
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setMousePosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+    el.style.setProperty('--my', `${e.clientY - rect.top}px`);
   };
 
   return (
     <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="feed-card backdrop-blur-md animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group relative"
+      className="feed-card animate-slide-up rounded-2xl cursor-pointer flex flex-col overflow-hidden w-full h-full group relative"
       data-testid="feed-item"
       data-id={item.id}
       role="button"
@@ -61,17 +59,17 @@ const FeedCard = React.memo(function FeedCard({
         }
       }}
     >
-      {/* Spotlight Effect (Mouse Tracking Glow) */}
+      {/* Spotlight Effect (Mouse Tracking Glow) — posizione da var CSS --mx/--my */}
       <div
         className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-10 mix-blend-overlay"
         style={{
-          background: `radial-gradient(800px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(255, 255, 255, 0.4), transparent 40%)`,
+          background: 'radial-gradient(800px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.4), transparent 40%)',
         }}
       />
       <div
         className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-10"
         style={{
-          background: `radial-gradient(400px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(124, 58, 237, 0.15), transparent 40%)`,
+          background: 'radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(124, 58, 237, 0.15), transparent 40%)',
         }}
       />
 
