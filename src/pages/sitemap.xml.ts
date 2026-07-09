@@ -10,12 +10,18 @@ type Entry = { path: string; changefreq: string; priority: string };
 const ENTRIES: Entry[] = [
   { path: '/', changefreq: 'daily', priority: '1.0' },
   { path: '/soggiorna', changefreq: 'daily', priority: '0.9' },
+  { path: '/drops', changefreq: 'daily', priority: '0.8' },
   { path: '/waitlist', changefreq: 'weekly', priority: '0.8' },
   { path: '/note-legali', changefreq: 'monthly', priority: '0.3' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
   { path: '/termini', changefreq: 'monthly', priority: '0.3' },
   { path: '/cookie-policy', changefreq: 'monthly', priority: '0.3' },
 ];
+
+// lastmod calcolato una sola volta al cold-start (≈ momento del deploy), non a
+// ogni richiesta: una data che cambia ogni giorno su pagine statiche è un
+// segnale rumoroso e poco affidabile per i crawler.
+const BUILD_DATE = new Date().toISOString().split('T')[0];
 
 function generateSiteMap(lastmod: string) {
   // Ogni pagina esiste in it (default, senza prefisso) e en (/en): la loc punta
@@ -45,8 +51,7 @@ export default function SiteMap() {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const lastmod = new Date().toISOString().split('T')[0];
-  const sitemap = generateSiteMap(lastmod);
+  const sitemap = generateSiteMap(BUILD_DATE);
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/xml; charset=utf-8');

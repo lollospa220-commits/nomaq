@@ -715,10 +715,14 @@ export default function Home({
   }
   const jsonLd = { '@context': 'https://schema.org', '@graph': jsonLdGraph };
   const seoMeta = (SEO_META[currentTab] || SEO_META['vola-vola'])[lang];
+  // /profilo è la pagina di login/account: nessun valore SEO ed è specifica per
+  // utente → noindex (crawlabile ma fuori dall'indice). Le altre tab hanno meta
+  // curati e restano indicizzabili.
+  const tabNoindex = noindex || currentTab === 'profilo';
 
   return (
     <>
-      <SEO title={seoMeta.title} description={seoMeta.description} noindex={noindex} />
+      <SEO title={seoMeta.title} description={seoMeta.description} noindex={tabNoindex} />
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#4F46E5" />

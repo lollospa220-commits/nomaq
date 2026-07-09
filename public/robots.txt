@@ -1,9 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /_next/
-Disallow: /drops
-Disallow: /salvati
-Disallow: /profilo
-
-Sitemap: https://nomaq-chi.vercel.app/sitemap.xml

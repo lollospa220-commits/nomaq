@@ -161,7 +161,7 @@ export default function WaitlistPage() {
                   className="p-5"
                 >
                   <div className="mb-3">
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+                    <label htmlFor="waitlist-email" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
                       La tua email
                     </label>
                     <input

@@ -208,6 +208,11 @@ const it = {
   yourProfile: 'Il tuo profilo',
   logout: 'Esci',
 
+  /* ── 404 ── */
+  notFoundTitle: 'Pagina non trovata',
+  notFoundBody: 'Non siamo riusciti a trovare la rotta o la pagina che stai cercando.',
+  notFoundCta: 'Torna alla Home',
+
   /* ── Waitlist ── */
   waitlistHeroA: 'Sii il primo a',
   waitlistHeroB: 'viaggiare più smart',
@@ -436,6 +441,11 @@ const en: Record<TranslationKey, string> = {
   memberSince: 'Member since',
   yourProfile: 'Your profile',
   logout: 'Log out',
+
+  /* ── 404 ── */
+  notFoundTitle: 'Page not found',
+  notFoundBody: "We couldn't find the route or page you're looking for.",
+  notFoundCta: 'Back to home',
 
   /* ── Waitlist ── */
   waitlistHeroA: 'Be the first to',
