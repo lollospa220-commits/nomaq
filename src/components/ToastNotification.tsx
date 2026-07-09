@@ -1,8 +1,10 @@
 import React from 'react';
 import { TrendingDown } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 /* ── Toast Notification ── */
 export default function ToastNotification({ notif, onDismiss }: { notif: any; onDismiss: (id: string) => void }) {
+  const { t } = useLanguage();
   React.useEffect(() => {
     const timer = setTimeout(() => onDismiss(notif.id), 5000);
     return () => clearTimeout(timer);
@@ -19,7 +21,7 @@ export default function ToastNotification({ notif, onDismiss }: { notif: any; on
         <TrendingDown className="w-5 h-5 text-nomaq-indigo" strokeWidth={2.5} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-bold text-nomaq-indigo mb-0.5">⚡ DROP DETECTED</div>
+        <div className="text-xs font-bold text-nomaq-indigo mb-0.5">⚡ {t('dropDetected')}</div>
         <div className="text-sm text-nomaq-navy font-medium leading-tight">{notif.message}</div>
       </div>
       <button

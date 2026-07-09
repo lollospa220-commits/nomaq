@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 /**
  * Selettore di intervallo date (Andata → Ritorno) con calendario a tendina,
@@ -9,8 +10,6 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-reac
  * onChange scatta solo quando l'intervallo è completo (andata + ritorno).
  */
 
-const WEEKDAYS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-
 // ISO 'YYYY-MM-DD' ↔ Date LOCALE (mai toISOString: sfaserebbe di un giorno
 // vicino alla mezzanotte per via del fuso UTC).
 const toISO = (d: Date) =>
@@ -19,8 +18,8 @@ const fromISO = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d);
 };
-const fmtShort = (iso: string | undefined) =>
-  iso ? fromISO(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : null;
+const fmtShort = (iso: string | undefined | null, localeTag: string) =>
+  iso ? fromISO(iso).toLocaleDateString(localeTag, { day: 'numeric', month: 'short' }) : null;
 
 export default function DateRangePicker({
   departure,
@@ -33,6 +32,19 @@ export default function DateRangePicker({
   minDate?: string;
   onChange: (departure: string, returnDate: string) => void;
 }) {
+  const { t, lang } = useLanguage();
+  const localeTag = lang === 'en' ? 'en-GB' : 'it-IT';
+  const fmt = (iso?: string | null) => fmtShort(iso, localeTag);
+  // Iniziali dei giorni (lun→dom) localizzate via Intl: nessun hardcoding IT/EN.
+  const WEEKDAYS = React.useMemo(() => {
+    const monday = new Date(2024, 0, 1); // 1 gen 2024 = lunedì
+    const fmtW = new Intl.DateTimeFormat(localeTag, { weekday: 'narrow' });
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return fmtW.format(d);
+    });
+  }, [localeTag]);
   const [open, setOpen] = React.useState(false);
   const [start, setStart] = React.useState<string | null>(departure || null);
   const [end, setEnd] = React.useState<string | null>(returnDate || null);
@@ -95,7 +107,7 @@ export default function DateRangePicker({
   };
 
   const monthLabel = view
-    .toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+    .toLocaleDateString(localeTag, { month: 'long', year: 'numeric' })
     .replace(/^\w/, (c) => c.toUpperCase());
 
   // Griglia del mese (settimana da lunedì).
@@ -112,8 +124,8 @@ export default function DateRangePicker({
   const minMonth = fromISO(todayIso);
   const atMinMonth = y < minMonth.getFullYear() || (y === minMonth.getFullYear() && m <= minMonth.getMonth());
 
-  const depLabel = fmtShort(departure) || 'Andata';
-  const retLabel = fmtShort(returnDate) || 'Ritorno';
+  const depLabel = fmt(departure) || t('dateDepartureShort');
+  const retLabel = fmt(returnDate) || t('dateReturnShort');
 
   // Fine "effettiva" per l'anteprima range durante l'hover.
   const previewEnd = end || (start && hover && hover > start ? hover : null);
@@ -123,14 +135,14 @@ export default function DateRangePicker({
       <button
         type="button"
         onClick={() => (open ? setOpen(false) : openPicker())}
-        aria-label="Seleziona andata e ritorno"
+        aria-label={t('datePickerAria')}
         data-testid="date-range-trigger"
         className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-full px-3.5 py-1.5 border border-white/20 backdrop-blur-md outline-none transition-colors"
       >
         <CalendarIcon className="w-3.5 h-3.5 text-white/70 flex-shrink-0" strokeWidth={1.75} />
-        <span className={fmtShort(departure) ? '' : 'text-white/50'}>{depLabel}</span>
+        <span className={fmt(departure) ? '' : 'text-white/50'}>{depLabel}</span>
         <span className="text-white/40">→</span>
-        <span className={fmtShort(returnDate) ? '' : 'text-white/50'}>{retLabel}</span>
+        <span className={fmt(returnDate) ? '' : 'text-white/50'}>{retLabel}</span>
       </button>
 
       {open && (
@@ -144,7 +156,7 @@ export default function DateRangePicker({
               type="button"
               onClick={() => !atMinMonth && setView(new Date(y, m - 1, 1))}
               disabled={atMinMonth}
-              aria-label="Mese precedente"
+              aria-label={t('prevMonthAria')}
               className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4 text-nomaq-navy" />
@@ -153,7 +165,7 @@ export default function DateRangePicker({
             <button
               type="button"
               onClick={() => setView(new Date(y, m + 1, 1))}
-              aria-label="Mese successivo"
+              aria-label={t('nextMonthAria')}
               className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
             >
               <ChevronRight className="w-4 h-4 text-nomaq-navy" />
@@ -204,16 +216,16 @@ export default function DateRangePicker({
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
             <span className="text-[11px] text-slate-500">
               {start ? (
-                end ? `${fmtShort(start)} → ${fmtShort(end)}`
-                    : `${fmtShort(start)} → scegli il ritorno`
-              ) : 'Scegli la partenza'}
+                end ? `${fmt(start)} → ${fmt(end)}`
+                    : `${fmt(start)} → ${t('datePickChooseReturn')}`
+              ) : t('datePickChooseDeparture')}
             </span>
             <button
               type="button"
               onClick={() => { setStart(null); setEnd(null); setHover(null); }}
               className="text-[11px] font-semibold text-nomaq-indigo hover:underline"
             >
-              Azzera
+              {t('dateResetBtn')}
             </button>
           </div>
         </div>

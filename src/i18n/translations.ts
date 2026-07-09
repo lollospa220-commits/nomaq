@@ -74,6 +74,24 @@ const it = {
   indicativeShort: 'Prezzo indicativo',
   aiPrivacyNotice: 'Il testo è elaborato da un fornitore AI (Mistral, UE): evita di inserire dati personali non necessari.',
 
+  /* ── Ricerca / controlli home ── */
+  skipToContent: 'Salta al contenuto',
+  originPlaceholder: 'Da dove parti?',
+  originAriaLabel: 'Aeroporto di partenza',
+  refreshDealsBtn: 'Aggiorna',
+  refreshingDealsBtn: 'Cerco…',
+  resultsForLabel: 'Risultati per',
+  legalLinksLabel: 'Link legali',
+  datePickerAria: 'Seleziona andata e ritorno',
+  dateDepartureShort: 'Andata',
+  dateReturnShort: 'Ritorno',
+  prevMonthAria: 'Mese precedente',
+  nextMonthAria: 'Mese successivo',
+  datePickChooseReturn: 'scegli il ritorno',
+  datePickChooseDeparture: 'Scegli la partenza',
+  dateResetBtn: 'Azzera',
+  dropDetected: 'CALO RILEVATO',
+
   /* ── FAQ ── */
   faqTitle: 'Domande frequenti',
   faq1q: 'Come trova Nomaq le migliori offerte di volo?',
@@ -307,6 +325,24 @@ const en: Record<TranslationKey, string> = {
   priceDisclaimer: "Indicative market price: the final total is confirmed on the partner's site at the time of booking.",
   indicativeShort: 'Indicative price',
   aiPrivacyNotice: 'Your text is processed by an AI provider (Mistral, EU): avoid entering unnecessary personal data.',
+
+  /* ── Search / home controls ── */
+  skipToContent: 'Skip to content',
+  originPlaceholder: 'Where from?',
+  originAriaLabel: 'Departure airport',
+  refreshDealsBtn: 'Refresh',
+  refreshingDealsBtn: 'Searching…',
+  resultsForLabel: 'Results for',
+  legalLinksLabel: 'Legal links',
+  datePickerAria: 'Select departure and return',
+  dateDepartureShort: 'Outbound',
+  dateReturnShort: 'Return',
+  prevMonthAria: 'Previous month',
+  nextMonthAria: 'Next month',
+  datePickChooseReturn: 'choose the return',
+  datePickChooseDeparture: 'Choose the departure',
+  dateResetBtn: 'Reset',
+  dropDetected: 'DROP DETECTED',
 
   /* ── FAQ ── */
   faqTitle: 'Frequently asked questions',

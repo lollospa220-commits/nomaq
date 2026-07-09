@@ -734,7 +734,7 @@ export default function Home({
 
       {/* WCAG 2.4.1 — skip link: first focusable element, jumps past the nav. */}
       <a href="#main-content" className="skip-link">
-        Salta al contenuto
+        {t('skipToContent')}
       </a>
 
       <main id="main-content" className="min-h-screen relative z-0" data-testid="app-root">
@@ -992,12 +992,12 @@ export default function Home({
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Da dove parti?"
+                      placeholder={t('originPlaceholder')}
                       value={customOrigin}
                       onChange={(e) => onOriginChange(e.target.value)}
                       onFocus={() => setShowOriginSug(true)}
                       onBlur={() => setTimeout(() => setShowOriginSug(false), 150)}
-                      aria-label="Aeroporto di partenza"
+                      aria-label={t('originAriaLabel')}
                       data-testid="origin-input"
                       className="bg-white/10 hover:bg-white/20 focus:bg-white/20 text-white text-xs font-medium rounded-full px-4 py-1.5 border border-white/20 backdrop-blur-md outline-none transition-colors w-32 md:w-44 placeholder-white/50"
                     />
@@ -1039,10 +1039,10 @@ export default function Home({
                     {isRefreshingDeals ? (
                       <>
                         <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                        Cerco...
+                        {t('refreshingDealsBtn')}
                       </>
                     ) : (
-                      'Aggiorna'
+                      t('refreshDealsBtn')
                     )}
                   </button>
 
@@ -1114,7 +1114,7 @@ export default function Home({
                 <div className="mb-3" data-testid="search-results">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Search className="w-4 h-4 text-nomaq-violet" strokeWidth={1.5} />
-                    <span className="text-sm font-semibold text-nomaq-navy">Risultati per “{activeSearch}”</span>
+                    <span className="text-sm font-semibold text-nomaq-navy">{t('resultsForLabel')} “{activeSearch}”</span>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...searchFlights, ...searchHotels].map((item) => (
@@ -1239,7 +1239,7 @@ export default function Home({
           {/* ── Footer legale (tutti i tab) — dentro il foglio chiaro così resta
               leggibile anche sopra il globo scuro della home ── */}
           <footer className="mt-10 pb-4 px-5 text-center" data-testid="legal-footer">
-            <nav className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs ${isDarkBackground ? 'text-white/85 text-on-globe' : 'text-slate-500'}`} aria-label="Link legali">
+            <nav className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs ${isDarkBackground ? 'text-white/85 text-on-globe' : 'text-slate-500'}`} aria-label={t('legalLinksLabel')}>
               <Link href="/note-legali" className="hover:text-nomaq-indigo transition-colors">{t('footerLegal')}</Link>
               <span aria-hidden="true">·</span>
               <Link href="/termini" className="hover:text-nomaq-indigo transition-colors">{t('footerTerms')}</Link>
