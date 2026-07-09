@@ -100,13 +100,6 @@
     box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
   }
 
-  .glass-dark {
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
   .glassmorphism {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(24px);
@@ -244,17 +237,6 @@
     transform: scale(1.05);
   }
 
-  /* ── Drop badge (preserved for test compat) ── */
-  .drop-badge {
-    background: rgba(237, 233, 254, 1);
-    color: #7C3AED;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 8px;
-    letter-spacing: 0.01em;
-  }
-
   /* ── Safe area ── */
   .pb-safe {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
@@ -381,11 +363,6 @@
       radial-gradient(ellipse 40% 40% at 50% 90%, rgba(237, 233, 254, 0.5) 0%, transparent 70%);
   }
 
-  /* ── Hero gradient (preserved) ── */
-  .bg-hero-gradient {
-    background: linear-gradient(180deg, rgba(79, 70, 229, 0.04) 0%, transparent 100%);
-  }
-
   .text-gradient-violet {
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
     -webkit-background-clip: text;
@@ -393,34 +370,7 @@
     background-clip: text;
   }
 
-  /* Legacy */
-  .text-gradient-orange {
-    background: linear-gradient(135deg, #FF6B00, #FF8533);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* ── Scroll snap ── */
-  .snap-y-mandatory {
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .snap-start {
-    scroll-snap-align: start;
-  }
-
   /* ── Animations ── */
-  .pulse-orange {
-    animation: pulseOrange 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulseOrange {
-    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.4); }
-    50% { opacity: 0.9; box-shadow: 0 0 0 8px rgba(255, 107, 0, 0); }
-  }
-
   .fade-in {
     animation: fadeIn 0.5s ease-out;
   }
@@ -468,22 +418,6 @@
     0% { background-position: 0% 50%; }
     100% { background-position: 200% 50%; }
   }
-
-  /* ── Animated Orbs (Background depth) ── */
-  .orb {
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.8;
-    z-index: -1;
-    pointer-events: none;
-    animation: floatOrb 8s ease-in-out infinite;
-  }
-  @keyframes floatOrb {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-30px) scale(1.1); }
-  }
-  .orb-1 { background: radial-gradient(circle, rgba(124, 58, 237, 0.6) 0%, rgba(124, 58, 237, 0) 70%); width: 500px; height: 500px; top: -100px; left: -100px; }
-  .orb-2 { background: radial-gradient(circle, rgba(79, 70, 229, 0.6) 0%, rgba(79, 70, 229, 0) 70%); width: 600px; height: 600px; bottom: -200px; right: -150px; animation-delay: -4s; }
 
   /* ── Magic Search Bar Glow ── */
   .search-bar-glow {

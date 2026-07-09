@@ -3,7 +3,7 @@ import SEO from '@/components/SEO';
 import Link from 'next/link';
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { MapPin, Clock, ChevronDown, Search, Plane, Hotel, Globe, Sparkles, ArrowRight, Snowflake, Tag, Palmtree, Wand2, Map, Landmark } from 'lucide-react';
+import { MapPin, Clock, ChevronDown, Search, Plane, Sparkles, ArrowRight, Snowflake, Palmtree, Wand2, Landmark } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppState, TabId } from '@/context/AppState';
 import { TranslationKey } from '@/i18n/translations';
@@ -205,7 +205,8 @@ export default function Home({
         destination: `Cerca voli per ${q}`,
         description: `Apri la ricerca voli per ${q} su Kiwi.com e trova le date migliori.`,
         price: null, originalPrice: null, airline: 'Kiwi.com',
-        image: img, booking_url: buildKiwiDeepLink('napoli', q), tag: 'CERCA',
+        // affilId incluso: prima il link di fallback non tracciava la commissione.
+        image: img, booking_url: buildKiwiDeepLink('napoli', q, kiwiAffiliateId || undefined), tag: 'CERCA',
       }],
       hotels: [{
         id: `fallback-hotel-${q}`, type: 'hotel',
@@ -541,9 +542,12 @@ export default function Home({
 
   const currentTab = activeTab;
   const currentSaved = savedItems;
-  // Home (vola-vola, non in modalità piano) mostra il globo scuro dietro:
-  // lo sheet è trasparente e i testi "nudi" (titolo FAQ, footer) diventano chiari.
-  const isDarkBackground = true;
+  // Sfondo scuro (globo) SOLO sulla home hero (vola-vola, non in modalità piano):
+  // lì lo sheet è trasparente e i testi "nudi" (titolo FAQ, footer) diventano
+  // chiari. Sulle altre view (tema chiaro) resta scuro/leggibile. Prima era
+  // hardcoded `true` → footer bianco su sfondo chiaro sulle altre tab, e i rami
+  // a tema chiaro (orb, gradiente) erano codice morto. Coerente con nav/logo.
+  const isDarkBackground = currentTab === 'vola-vola' && !tripPlan;
 
   const handleSimulateDrop = () => {
     const allFeed = currentTab === 'vola-vola' ? deals : currentTab === 'soggiorna' ? hotels : feedItems;
@@ -1102,15 +1106,13 @@ export default function Home({
             </div>
           )}
 
-          {/* Wrapper con sfondo solido per il contenuto sotto la Hero section.
-              Questo garantisce che il testo scuro sia leggibile allo scroll, coprendo il globo. */}
-          <div className={`relative z-10 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16 ${isDarkBackground ? 'bg-transparent' : 'bg-gradient-to-b from-white/40 to-white/80 backdrop-blur-[60px] backdrop-saturate-[200]'}`}>
-            {!isDarkBackground && (
-              <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-t-[32px] z-[-1]">
-                <div className="orb orb-1"></div>
-                <div className="orb orb-2"></div>
-              </div>
-            )}
+          {/* Wrapper del contenuto sotto la Hero. Sempre trasparente: sulla home
+              lascia intravedere il globo, sulle altre tab (tema chiaro) il
+              contenuto siede sullo sfondo mesh del body. Il colore dei testi
+              "nudi" (footer, FAQ) è gestito per-tab da isDarkBackground. Prima il
+              ramo chiaro aggiungeva un pannello sfumato + orb che, sulle tab dove
+              il wrapper contiene solo il footer, comparivano come una banda viola. */}
+          <div className="relative z-10 rounded-t-[32px] pt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] pb-24 lg:pb-16">
 
           {/* ── AI search summary + suggested package + destination results ──
               Area DEDICATA alla barra di ricerca: separata da "Selezionati per
@@ -1303,10 +1305,13 @@ export async function getServerSideProps(context: any) {
   let flights: any[] = [];
   let hotels: any[] = [];
 
-  const userAgent = context.req.headers['user-agent'] || '';
+  // isE2E si attiva SOLO tramite query param espliciti. Prima si attivava anche
+  // se lo user-agent conteneva 'node'/'undici' → crawler/bot/link-preview che
+  // usano quei client HTTP ricevevano il FEED DI TEST FINTO (Roma/Paris/London)
+  // invece dei contenuti reali: danno SEO e di correttezza.
   const isE2E = Object.keys(query).some((key) =>
     ['feed', 'feed_mod', 'saved', 'drops', 'notifications', 'email', 'error', 'desktop'].includes(key)
-  ) || userAgent.toLowerCase().includes('node') || userAgent.toLowerCase().includes('undici');
+  );
 
   if (isE2E) {
     const testFeed = [
