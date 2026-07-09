@@ -397,9 +397,13 @@ function normalizeTripPlan(plan: any): AiTripResult {
     startDate: plan.meta.startDate || undefined,
     endDate: plan.meta.endDate || undefined,
     dateLabel: String(plan.meta.dateLabel || ''),
-    nights: num(plan.meta.nights, Math.max(1, (plan.days?.length || 2) - 1)),
-    days: num(plan.meta.days, plan.days?.length || 1),
-    travelers: num(plan.meta.travelers, 1) || 1,
+    // nights/days SEMPRE ≥ 1: se il modello manda 0, num() lo terrebbe (0 è
+    // finito, il fallback non scatta) e priceTotal = pricePerNight × 0 = 0.
+    nights: Math.max(1, num(plan.meta.nights, Math.max(1, (plan.days?.length || 2) - 1))),
+    days: Math.max(1, num(plan.meta.days, plan.days?.length || 1)),
+    // travelers clampato a [1,9] già alla normalizzazione: così anche il link
+    // hotel (group_adults) è protetto, non solo il volo. Evita group_adults=-3.
+    travelers: Math.min(9, Math.max(1, Math.round(num(plan.meta.travelers, 1) || 1))),
     budget: plan.meta.budget != null ? num(plan.meta.budget) : null,
   };
 

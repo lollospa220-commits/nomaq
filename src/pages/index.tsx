@@ -172,6 +172,10 @@ export default function Home({
   // Monotonic id per search: a stale response must never overwrite the
   // result of a newer search fired while it was still in flight.
   const searchSeqRef = React.useRef(0);
+  // Stesso pattern per il caricamento dei "deal" (origine/date): cambiando
+  // rapidamente origine o date, una risposta più lenta non deve sovrascrivere
+  // la griglia con tariffe che non corrispondono più alla selezione corrente.
+  const dealsSeqRef = React.useRef(0);
 
   const handleNavigate = (id: TabId) => {
     setActiveTab(id);
@@ -394,17 +398,22 @@ export default function Home({
   // coerente (stessa rotta/date). Normalizzate con formatFlight per la UI.
   const loadDeals = async (originIata: string, dep: string, ret: string) => {
     if (!originIata || !dep || !ret) return;
+    const seq = ++dealsSeqRef.current;
     setIsRefreshingDeals(true);
     try {
       const res = await fetch(`/api/custom-flights?origin=${encodeURIComponent(originIata)}&departure=${dep}&returnDate=${ret}`);
       if (res.ok) {
         const data = await res.json();
+        if (seq !== dealsSeqRef.current) return; // un caricamento più recente ha preso il posto
         if (Array.isArray(data) && data.length > 0) setDeals(data.map(formatFlight));
       }
     } catch (err) {
+      if (seq !== dealsSeqRef.current) return;
       console.error('Failed to fetch custom deals', err);
     } finally {
-      setIsRefreshingDeals(false);
+      // Solo la richiesta corrente spegne lo spinner: una risposta stale non
+      // deve azzerarlo mentre una più recente è ancora in volo.
+      if (seq === dealsSeqRef.current) setIsRefreshingDeals(false);
     }
   };
 

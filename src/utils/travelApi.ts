@@ -18,17 +18,44 @@ const RAPIDAPI_SEARCH_LOCATION_URL = 'https://tripadvisor16.p.rapidapi.com/api/v
 // feed recovers quickly.
 const FULL_TTL_MS = 10 * 60 * 1000;
 const EMPTY_TTL_MS = 30 * 1000;
-type CacheEntry = { expiresAt: number; data: any[] };
+// Si memorizza la PROMISE, non il valore risolto: N richieste concorrenti sulla
+// stessa chiave condividono un solo round-trip upstream (coalescing) invece di
+// chiamare produce() ciascuna — proprio lo scenario di picco che moltiplicava
+// le chiamate. Su errore la voce viene sfrattata (mai cache dei fallimenti).
+type CacheEntry = { expiresAt: number; data: Promise<any[]> };
 const resultCache = new Map<string, CacheEntry>();
+
+// Le chiavi live (origin-dest-date) sono guidate dall'input utente: senza
+// pruning la Map crescerebbe finché l'isolato non viene riciclato (memory DoS).
+let lastPrune = Date.now();
+function prune(now: number) {
+  if (now - lastPrune < FULL_TTL_MS) return;
+  lastPrune = now;
+  for (const [key, entry] of resultCache) {
+    if (now >= entry.expiresAt) resultCache.delete(key);
+  }
+}
 
 async function withCache(key: string, produce: () => Promise<any[]>): Promise<any[]> {
   const now = Date.now();
+  prune(now);
   const hit = resultCache.get(key);
   if (hit && now < hit.expiresAt) return hit.data;
-  const data = await produce();
-  const ttl = Array.isArray(data) && data.length > 0 ? FULL_TTL_MS : EMPTY_TTL_MS;
-  resultCache.set(key, { expiresAt: now + ttl, data });
-  return data;
+
+  const promise = produce();
+  // Inserimento ottimistico con TTL pieno: i chiamanti concorrenti agganciano
+  // subito questa promise. Al termine si riallinea il TTL (breve se vuoto) o si
+  // sfratta la voce se la produce ha fallito, così il prossimo tentativo riprova.
+  resultCache.set(key, { expiresAt: now + FULL_TTL_MS, data: promise });
+  try {
+    const data = await promise;
+    const ttl = Array.isArray(data) && data.length > 0 ? FULL_TTL_MS : EMPTY_TTL_MS;
+    resultCache.set(key, { expiresAt: Date.now() + ttl, data: Promise.resolve(data) });
+    return data;
+  } catch (err) {
+    if (resultCache.get(key)?.data === promise) resultCache.delete(key);
+    throw err;
+  }
 }
 
 // Mix of European LCC routes (easyJet is on Duffel via Direct Connect;
@@ -106,7 +133,15 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
     // Se la riga passa esplicitamente codici e date, usali. Altrimenti ricava.
     const destCode = item.dest_code || resolveDestCode(item);
     const originCode = item.origin_code || resolveOriginCode(item);
-    
+
+    // Accetta una data solo se è un ISO REALE: item.departure_date/return_date
+    // potrebbero arrivare malformati da righe cache Supabase → new Date()/
+    // toISOString() lancerebbe RangeError e, siccome getAffiliateLink è chiamato
+    // in .map senza try/catch per-item, un singolo record avvelenato farebbe 500
+    // l'intera risposta.
+    const okISO = (s: any): s is string =>
+      typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(`${s}T00:00:00Z`).getTime());
+
     // Le righe Travelpayouts codificano la data reale di partenza nell'id
     // (flight-tp-XXX-YYYY-MM-DD): usala, così il link apre la stessa data
     // mostrata sulla card anche quando la riga arriva dalla cache Supabase.
@@ -115,7 +150,7 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
       : null;
     const fallbackDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
-    const departureDate = item.departure_date || (tpMatch && tpMatch[1] > today ? tpMatch[1] : fallbackDate);
+    const departureDate = (okISO(item.departure_date) ? item.departure_date : '') || (tpMatch && tpMatch[1] > today ? tpMatch[1] : fallbackDate);
     
     // Rileva se è una riga live (tariffa reale con date/tipo espliciti) o un deal
     // statico/pacchetto (senza date → si deriva un ritorno dalle "notti"). Le
@@ -123,7 +158,7 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
     // return_date sono davvero solo andata e il link NON deve inventare un ritorno.
     const isLive = typeof item.id === 'string' && (item.id.startsWith('flight-tp-') || item.id.startsWith('live-flight-') || item.id.startsWith('flight-custom-'));
 
-    let returnDate = item.return_date || '';
+    let returnDate = okISO(item.return_date) ? item.return_date : '';
     if (!isLive && !returnDate) {
       // Per i deal statici del catalogo (es. Weekend a Barcellona), calcola la data di ritorno
       const text = `${item.description || ''} ${item.date_info || ''} ${item.nights || ''}`;
@@ -941,11 +976,13 @@ async function computeRealHotels() {
       { geoId: '293922', name: 'Maldive', country: 'Maldive', image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80', color: '#00b4d8', tag: 'PARADISE' },
     ];
 
-    const allFetchedHotels: any[] = [];
     const checkInDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const checkOutDate = new Date(Date.now() + 67 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    for (const dest of destinations) {
+    // Destinazioni in PARALLELO (prima era un for…await sequenziale: worst case
+    // ~8s × N). Ogni fetch è indipendente → il tempo totale = la più lenta, non
+    // la somma. Ogni destinazione risolve in una card o null (poi filtrata).
+    const rows = await Promise.all(destinations.map(async (dest) => {
       try {
         const url = `${RAPIDAPI_HOTELS_URL}?geoId=${dest.geoId}&checkIn=${checkInDate}&checkOut=${checkOutDate}&pageNumber=1&currency=EUR`;
         const res = await fetch(url, {
@@ -956,7 +993,7 @@ async function computeRealHotels() {
           }
         });
 
-        if (!res.ok) continue;
+        if (!res.ok) return null;
         const json = await res.json();
         const hotelData = Array.isArray(json?.data?.data) ? json.data.data : [];
 
@@ -971,7 +1008,7 @@ async function computeRealHotels() {
           if (price == null) continue;
           if (!best || price < best.price) best = { hotel, price };
         }
-        if (!best) continue;
+        if (!best) return null;
 
         const hotelName = best.hotel?.title || best.hotel?.name || 'Hotel';
         const dateStr = new Date(checkInDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
@@ -999,11 +1036,13 @@ async function computeRealHotels() {
         const rawStars = Number(best.hotel?.hotelClass ?? best.hotel?.starRating);
         if (Number.isFinite(rawStars) && rawStars > 0) row.stars = Math.round(rawStars);
 
-        allFetchedHotels.push(row);
+        return row;
       } catch (err) {
         console.warn(`Failed fetching hotels for ${dest.name} via RapidAPI:`, err);
+        return null;
       }
-    }
+    }));
+    const allFetchedHotels: any[] = rows.filter(Boolean);
 
     if (allFetchedHotels.length > 0) {
       await cleanupGeneratedRows('hotels', ['hotel-rapid-%']);

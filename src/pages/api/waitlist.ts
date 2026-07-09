@@ -51,8 +51,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .insert([{ email: trimmed }]);
 
       if (error) {
+        // Duplicato (unique violation): NON rivelarlo. Rispondere 409 "già
+        // registrata" trasforma l'endpoint in un oracolo di enumerazione
+        // (chiunque può sapere se un indirizzo è iscritto → membership
+        // disclosure). Rispondiamo come per un inserimento riuscito: idempotente
+        // e privacy-preserving.
         if (error.code === '23505') {
-          return res.status(409).json({ error: 'Questa email è già registrata alla nostra waitlist!' });
+          return res.status(201).json({ success: true });
         }
         console.error('[waitlist] POST error:', error.message);
         return res.status(500).json({ error: 'Si è verificato un errore interno.' });
