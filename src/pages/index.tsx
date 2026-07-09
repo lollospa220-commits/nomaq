@@ -167,6 +167,9 @@ export default function Home({
   const { user, profile } = useAuth();
   const router = useRouter();
   const [isMounted, setIsMounted] = React.useState(false);
+  // Il globo WebGL (three.js) monta solo quando il browser è idle: l'init GPU è
+  // costosa e non deve competere col primo rendering interattivo (TBT/INP).
+  const [globeReady, setGlobeReady] = React.useState(false);
   const [aiQuery, setAiQuery] = React.useState('');
   const [isSearching, setIsSearching] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
@@ -436,6 +439,15 @@ export default function Home({
   }, [deals, flights, hotels]);
 
   const queryObj = query || {};
+
+  // Rinvia il mount del globo a quando il browser è idle (fallback setTimeout).
+  React.useEffect(() => {
+    const w = window as any;
+    const ric: (cb: () => void) => number = w.requestIdleCallback || ((cb: () => void) => window.setTimeout(cb, 250));
+    const cic: (id: number) => void = w.cancelIdleCallback || window.clearTimeout;
+    const id = ric(() => setGlobeReady(true));
+    return () => cic(id);
+  }, []);
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -771,7 +783,7 @@ export default function Home({
                 aria-hidden="true"
                 style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
               />
-              <GlobeGL />
+              {globeReady && <GlobeGL />}
             </>
           )}
 

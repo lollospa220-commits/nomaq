@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import SEO from '@/components/SEO';
 import React from 'react';
+import Image from 'next/image';
 import { Share2, ArrowRight, Check, TrendingDown, Bell, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
@@ -120,26 +121,32 @@ export default function WaitlistPage() {
           </div>
 
           <div className="max-w-md mx-auto px-5 pt-12 pb-8 relative">
-            {/* Logo */}
+            {/* Logo — width/height espliciti per riservare lo spazio (niente CLS) */}
             <div className="flex items-center mb-10">
-              <img
+              <Image
                 src="/images/logo.png"
                 alt="Nomaq"
+                width={168}
+                height={56}
+                priority
                 className="h-14 w-auto object-contain"
-                loading="eager"
               />
             </div>
 
-            {/* Live counter badge — solo conteggio reale; niente badge se 0 */}
-            {count > 0 && (
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold text-nomaq-indigo"
-                style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.15)' }}
-              >
-                <span className="w-2 h-2 bg-nomaq-indigo rounded-full animate-pulse" />
-                {count.toLocaleString()} {count === 1 ? 'persona già in lista' : 'persone già in lista'}
-              </div>
-            )}
+            {/* Live counter badge — solo conteggio reale; niente badge se 0. Lo
+                slot riserva sempre l'altezza così l'apparizione post-fetch del
+                badge non spinge giù headline e form (niente CLS). */}
+            <div className="min-h-[36px] mb-6">
+              {count > 0 && (
+                <div
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-nomaq-indigo"
+                  style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.15)' }}
+                >
+                  <span className="w-2 h-2 bg-nomaq-indigo rounded-full animate-pulse" />
+                  {count.toLocaleString()} {count === 1 ? 'persona già in lista' : 'persone già in lista'}
+                </div>
+              )}
+            </div>
 
             {/* Headline */}
             <h1 className="font-display text-4xl text-nomaq-navy leading-tight mb-4">

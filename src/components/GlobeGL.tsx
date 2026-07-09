@@ -58,7 +58,7 @@ export default function GlobeGL() {
       // Texture self-hostata (vedi public/textures/README.md): la CSP di prod
       // (img-src) non consente unpkg.com — da CDN la texture veniva bloccata
       // in produzione. In locale si evita anche la dipendenza da rete esterna.
-      .globeImageUrl('/textures/earth-night.jpg')
+      .globeImageUrl('/textures/earth-night-2k.jpg')
       .showAtmosphere(true)
       .atmosphereColor('#8b7ff0')
       .atmosphereAltitude(0.22)

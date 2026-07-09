@@ -1,6 +1,8 @@
 # Texture del globo
 
-`earth-night.jpg` — mappa notturna della Terra ("Black Marble", luci notturne).
+`earth-night-2k.jpg` — mappa notturna della Terra ("Black Marble", luci notturne).
+Ridimensionata a 2048×1024 (~196 KB) dall'originale 4096×2048 (~698 KB): a video
+il globo è ~800px e scurito, il 4K era impercettibile ma pesava sul download.
 
 - **Fonte immagine**: NASA Earth Observatory / Visible Earth ("Earth at Night").
   Le immagini NASA sono di **pubblico dominio** (non soggette a copyright);
