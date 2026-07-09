@@ -3,6 +3,7 @@ import { X, Plane, Hotel, Star, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import SmartImage from '@/components/SmartImage';
 import { getDestinationImage } from '@/utils/destinationImages';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 /**
  * Scheda dettaglio in-app aperta al tap su una card: mostra i dati completi e
@@ -12,6 +13,9 @@ import { getDestinationImage } from '@/utils/destinationImages';
  */
 export default function DetailSheet({ item, onClose }: { item: any | null; onClose: () => void }) {
   const { t } = useLanguage();
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  // Focus trap + ripristino focus al trigger (WCAG 2.4.3 / 2.1.2).
+  useFocusTrap(dialogRef, !!item);
 
   React.useEffect(() => {
     if (!item) return;
@@ -42,11 +46,13 @@ export default function DetailSheet({ item, onClose }: { item: any | null; onClo
       data-testid="detail-sheet"
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={item.destination}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full lg:max-w-lg bg-white rounded-t-[28px] lg:rounded-[28px] overflow-hidden shadow-[0_-10px_60px_rgba(0,0,0,0.35)] lg:shadow-[0_30px_80px_rgba(0,0,0,0.4)] max-h-[92vh] flex flex-col animate-slide-up"
+        className="relative w-full lg:max-w-lg bg-white rounded-t-[28px] lg:rounded-[28px] overflow-hidden shadow-[0_-10px_60px_rgba(0,0,0,0.35)] lg:shadow-[0_30px_80px_rgba(0,0,0,0.4)] max-h-[92vh] flex flex-col animate-slide-up focus:outline-none"
       >
         <div className="relative h-52 lg:h-60 flex-shrink-0">
           <SmartImage

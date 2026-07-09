@@ -821,7 +821,7 @@ export default function Home({
                 {/* Foreground */}
                 <div className="relative z-10 flex flex-col items-center text-center">
                   {/* Eyebrow */}
-                  <p className="text-violet-300/70 text-[11px] font-medium uppercase tracking-[0.2em] mb-3 select-none" data-testid="home-greeting">
+                  <p className="text-violet-200 text-on-globe text-[11px] font-medium uppercase tracking-[0.2em] mb-3 select-none" data-testid="home-greeting">
                     {greeting}
                   </p>
                   {/* Titolo */}
@@ -829,7 +829,7 @@ export default function Home({
                     {t('headline')}<span className="italic text-violet-400">?</span>
                   </h1>
                   {/* Tagline */}
-                  <p className="text-slate-300 text-sm lg:text-base leading-relaxed max-w-md mb-7">
+                  <p className="text-slate-200 text-on-globe text-sm lg:text-base leading-relaxed max-w-md mb-7">
                     {t('heroTagline')}
                   </p>
 
@@ -926,7 +926,7 @@ export default function Home({
 
                   {/* AI trip generation status */}
                   {isSearching && (
-                    <div className="flex items-center justify-center gap-2 mt-4 text-xs font-semibold text-nomaq-violet animate-pulse" data-testid="trip-loading">
+                    <div className="flex items-center justify-center gap-2 mt-4 text-xs font-semibold text-nomaq-violet animate-pulse" data-testid="trip-loading" role="status" aria-live="polite">
                       <ThreeSparklesIcon className="w-4 h-4" />
                       {t('tripLoading')}
                     </div>
@@ -1112,7 +1112,7 @@ export default function Home({
               Area DEDICATA alla barra di ricerca: separata da "Selezionati per
               te" (griglia deals), non la altera mai. ── */}
           {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage || searchFlights.length > 0 || searchHotels.length > 0) && (
-            <div className="px-5 lg:px-6 mb-4" data-testid="ai-search-result">
+            <div className="px-5 lg:px-6 mb-4" data-testid="ai-search-result" role="status" aria-live="polite">
               {aiSummary && (
                 <div className="nomaq-card bg-nomaq-lavender/90 backdrop-blur-md border-nomaq-indigo/15 p-4 flex items-start gap-3 mb-3">
                   <ThreeSparklesIcon className="w-4 h-4 text-nomaq-indigo flex-shrink-0 mt-0.5" />
@@ -1238,6 +1238,8 @@ export default function Home({
             <div
               className="fixed top-4 left-4 right-4 z-50 space-y-2 max-w-sm mx-auto"
               data-testid="toast-container"
+              role="status"
+              aria-live="polite"
             >
               {notifications.map((notif) => (
                 <ToastNotification key={notif.id} notif={notif} onDismiss={dismissNotif} />

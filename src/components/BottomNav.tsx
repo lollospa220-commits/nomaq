@@ -73,11 +73,7 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
                 >
                   <Icon
                     className={`w-[18px] h-[18px] transition-all duration-200 ${
-                      isActive
-                        ? isConcierge
-                          ? 'text-nomaq-indigo'
-                          : 'text-nomaq-indigo'
-                        : 'text-slate-400'
+                      isActive ? 'text-nomaq-indigo' : 'text-slate-500'
                     }`}
                     strokeWidth={isActive ? 2.5 : 1.8}
                   />
@@ -85,7 +81,7 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
 
                 {hasBadge && (
                   <span
-                    className="absolute -top-0.5 -right-1 bg-electric-orange text-white text-[8px] font-black min-w-[15px] h-[15px] flex items-center justify-center rounded-full px-0.5"
+                    className="absolute -top-0.5 -right-1 bg-[#C2410C] text-white text-[10px] font-bold min-w-[16px] h-[16px] flex items-center justify-center rounded-full px-0.5"
                     data-testid="drops-badge"
                     aria-label={`${notificationsCount} notifiche`}
                   >
@@ -95,11 +91,7 @@ export default function BottomNav({ activeTab: propActiveTab, notificationsCount
 
                 <span
                   className={`text-[9px] font-semibold transition-all duration-200 leading-none ${
-                    isActive
-                      ? isConcierge
-                        ? 'text-nomaq-indigo'
-                        : 'text-nomaq-indigo'
-                      : 'text-slate-400'
+                    isActive ? 'text-nomaq-indigo' : 'text-slate-500'
                   }`}
                 >
                   {displayLabel}

@@ -29,6 +29,7 @@ export default function FaqSection({ isDarkBackground }: { isDarkBackground?: bo
               key={i}
               onClick={() => setOpen(isOpen ? null : i)}
               aria-expanded={isOpen}
+              aria-controls={`faq-answer-${i}`}
               className="nomaq-card backdrop-blur-md text-left p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow duration-200"
             >
               <span className="w-7 h-7 rounded-full bg-nomaq-lavender text-nomaq-indigo flex items-center justify-center flex-shrink-0 text-xs font-bold">
@@ -37,6 +38,7 @@ export default function FaqSection({ isDarkBackground }: { isDarkBackground?: bo
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-bold text-nomaq-navy leading-snug">{faq.q}</span>
                 <span
+                  id={`faq-answer-${i}`}
                   className={`block text-xs text-slate-500 leading-relaxed mt-1 ${isOpen ? '' : 'line-clamp-1'}`}
                 >
                   {faq.a}
