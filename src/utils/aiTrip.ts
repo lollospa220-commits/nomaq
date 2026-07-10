@@ -230,6 +230,10 @@ function pickDestIata(rawFlights: any[]): string | null {
 }
 
 const num = (v: any, fallback = 0): number => {
+  // null/'' → fallback: Number(null)===0 e Number('')===0 sono finiti e
+  // scavalcherebbero il default (es. rating null diventerebbe 0.0 invece di 4.5).
+  // num(null) senza fallback esplicito resta 0 (default invariato per gli altri usi).
+  if (v == null || v === '') return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 };

@@ -99,6 +99,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ]);
 
         if (insertError) {
+          // Doppio tap / stessa card duplicata → due INSERT concorrenti (la
+          // SELECT precedente non è atomica): la unique violation è un successo
+          // idempotente, non un 500. Stesso pattern di api/waitlist.ts.
+          if (insertError.code === '23505') {
+            return res.status(201).json({ action: 'added', itemId });
+          }
           console.error('[saved] INSERT error:', insertError.message);
           return res.status(500).json({ error: 'Si è verificato un errore interno.' });
         }

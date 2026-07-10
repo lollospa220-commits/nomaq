@@ -166,7 +166,13 @@ export const isConfigured =
   supabaseAnonKey &&
   !supabaseUrl.includes('placeholder') &&
   !supabaseUrl.includes('dummy') &&
-  !supabaseUrl.includes('YOUR_');
+  !supabaseUrl.includes('YOUR_') &&
+  // Stessa validazione anche sulla anon key: con URL reale ma key placeholder
+  // (config parziale) createClient verrebbe costruito con una key non valida →
+  // ogni query 401, invece del fallback sicuro sul mock.
+  !supabaseAnonKey.includes('placeholder') &&
+  !supabaseAnonKey.includes('dummy') &&
+  !supabaseAnonKey.includes('YOUR_');
 
 export const supabase = isConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey)

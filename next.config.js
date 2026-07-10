@@ -86,12 +86,18 @@ const nextConfig = {
         // Asset statici versionati per contenuto (texture globo, logo, favicon):
         // cache immutabile lunga. Se aggiorni un asset, cambia il nome del file.
         source: '/:dir(textures|images)/:path*',
+        // locale:false come per gli header di sicurezza: con l'i18n attivo Next
+        // prefissa il source col locale (/:nextInternalLocale(it|en)/…) e gli
+        // asset (serviti senza prefisso) non matcherebbero → header mai applicato
+        // e cache lunga persa (asset rivalidati a ogni navigazione).
+        locale: false,
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
       {
         source: '/favicon.svg',
+        locale: false,
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
