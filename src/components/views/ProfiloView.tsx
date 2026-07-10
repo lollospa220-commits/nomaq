@@ -5,23 +5,15 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function ProfiloView({
   initialCount,
-  initialError,
-  initialSubmitted,
-  initialEmail,
-  isE2E,
 }: {
   initialCount?: number;
-  initialError?: string | null;
-  initialSubmitted?: boolean;
-  initialEmail?: string;
-  isE2E?: boolean;
 } = {}) {
   const { t, lang } = useLanguage();
   const { user, profile, signIn, signUp, signOut } = useAuth();
 
-  const [email, setEmail] = React.useState(initialEmail || '');
-  const [submitted, setSubmitted] = React.useState(initialSubmitted || false);
-  const [error, setError] = React.useState<string | null>(initialError || null);
+  const [email, setEmail] = React.useState('');
+  const [submitted, setSubmitted] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [count, setCount] = React.useState(initialCount ?? 0);
 
@@ -194,13 +186,11 @@ export default function ProfiloView({
   }
 
   /* ── Not logged in: auth + waitlist ──
-     Rendered even while the session is loading so SSR always contains
-     the waitlist form (E2E tests parse server HTML only). */
+     Rendered even while the session is loading so SSR always contains the
+     waitlist form for crawlers and first paint. */
   return (
     <div className="px-5 pb-4 space-y-5 animate-fade-in" data-testid="profile-view">
-      {/* Auth Card (hidden in E2E mode: tests expect the waitlist email input
-          to be the first input[type=email] in the profile view) */}
-      {!isE2E && (
+      {/* Auth Card */}
       <div className="nomaq-card backdrop-blur-md p-5 mt-2">
         <div className="text-center mb-4">
           <h2 className="font-display text-xl text-nomaq-navy mb-1 flex items-center justify-center gap-2">
@@ -295,7 +285,6 @@ export default function ProfiloView({
           </button>
         </div>
       </div>
-      )}
 
       {/* Waitlist Hero */}
       <div className="flex flex-col items-center pt-2 mb-2 text-center">

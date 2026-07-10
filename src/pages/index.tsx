@@ -46,12 +46,6 @@ const TripPlanView = dynamic(() => import('@/components/views/TripPlanView'));
 // pagina /soggiorna resta renderizzata server-side per la SEO.
 const StaysView = dynamic(() => import('@/components/views/StaysView'));
 
-// DropsView legacy: renderizzata SOLO nel ramo E2E (in prod il tab Drops usa
-// RadarView) → chunk separato, così non pesa mai sul bundle degli utenti reali.
-const DropsView = dynamic(() => import('@/components/views/DropsViewLegacy'));
-
-
-
 
 /* ─────────────────────────────────────────────
    MAIN PAGE
@@ -82,15 +76,6 @@ const POPULAR_DESTINATIONS: { city: string; country: string }[] = [
 
 const normalizeSearch = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-
-// Parole troppo generiche per contare come match: da sole farebbero
-// "corrispondere" quasi ogni voce del catalogo senza dire nulla di utile.
-// A livello di modulo: costante pura, nessun motivo di ricrearla a ogni render.
-const SEARCH_STOPWORDS = new Set([
-  'a', 'ai', 'al', 'alla', 'con', 'da', 'dei', 'del', 'di', 'e', 'i', 'il',
-  'in', 'la', 'le', 'lo', 'per', 'sotto', 'un', 'una', 'vacanza', 'vacanze',
-  'volo', 'voli', 'weekend', 'the', 'to', 'for',
-]);
 
 // Titolo + description per tab: ogni tab è una route SSR distinta (initialTab
 // impostato in getServerSideProps) → l'HTML iniziale che Google indicizza porta
@@ -150,25 +135,17 @@ const SEO_META: Record<string, Record<'it' | 'en', SeoEntry>> = {
 };
 
 export default function Home({
-  query,
   resolvedUrl,
-  isE2E,
   noindex,
   initialFlights,
   initialHotels,
-  initialSimulatedDrops,
-  initialNotifications,
   initialWaitlistCount,
-  initialWaitlistError,
-  initialWaitlistSubmitted,
-  initialWaitlistEmail,
   kiwiAffiliateId,
 }: any) {
   const { activeTab, setActiveTab, savedItems, toggleSaveItem } = useAppState();
   const { t, lang } = useLanguage();
   const { user, profile } = useAuth();
   const router = useRouter();
-  const [isMounted, setIsMounted] = React.useState(false);
   // Il globo WebGL (three.js) monta solo quando il browser è idle: l'init GPU è
   // costosa e non deve competere col primo rendering interattivo (TBT/INP).
   const [globeReady, setGlobeReady] = React.useState(false);
@@ -225,34 +202,6 @@ export default function Home({
     };
   };
 
-  // Fallback locale AI-less: confronta singole parole significative (non l'intera
-  // frase) contro il catalogo reale; su zero match usa le card deep-link sopra.
-  const localFilter = (searchQuery: string) => {
-    const tokens = searchQuery
-      .toLowerCase()
-      .split(/[^\p{L}\p{N}]+/u)
-      .filter((w) => w.length >= 3 && !SEARCH_STOPWORDS.has(w));
-
-    const matches = (item: any) => {
-      if (tokens.length === 0) return true;
-      const haystack = `${item.destination} ${item.description} ${item.country || ''}`.toLowerCase();
-      return tokens.some((tok) => haystack.includes(tok));
-    };
-
-    const filteredFlights = allFlights.filter(matches);
-    const filteredHotels = allHotels.filter(matches);
-
-    if (filteredFlights.length === 0 && filteredHotels.length === 0) {
-      const fb = buildFallbackCards(searchQuery);
-      setFlights(fb.flights);
-      setHotels(fb.hotels);
-      setAiSummary(t('noExactMatch'));
-    } else {
-      setFlights(filteredFlights);
-      setHotels(filteredHotels);
-    }
-  };
-
   const handleSearch = async (searchQuery: string) => {
     const seq = ++searchSeqRef.current;
     setIsSearching(true);
@@ -264,19 +213,8 @@ export default function Home({
       setTripPlan(null);
       setSearchFlights([]);
       setSearchHotels([]);
-      // La barra di ricerca NON tocca "Selezionati per te" (deals). In E2E il
-      // feed filtrabile va comunque ripristinato.
-      if (isE2E) { setFlights(allFlights); setHotels(allHotels); }
+      // La barra di ricerca NON tocca "Selezionati per te" (deals).
       setActiveSearch('');
-      setIsSearching(false);
-      return;
-    }
-
-    // Deterministic path for E2E: no external AI calls in tests
-    if (isE2E) {
-      setTripPlan(null);
-      localFilter(trimmed);
-      setActiveSearch(trimmed);
       setIsSearching(false);
       return;
     }
@@ -333,18 +271,12 @@ export default function Home({
       if (seq !== searchSeqRef.current) return;
       setTripPlan(null);
       setAiPackage(null);
-      if (isE2E) {
-        // In E2E il fallback filtra il feed (comportamento atteso dai test).
-        setAiSummary('');
-        localFilter(trimmed);
-      } else {
-        // Reale: mai toccare "Selezionati per te". Card deep-link Kiwi/Booking
-        // per il luogo cercato nell'area risultati dedicata.
-        const fb = buildFallbackCards(trimmed);
-        setSearchFlights(fb.flights);
-        setSearchHotels(fb.hotels);
-        setAiSummary(t('noExactMatch'));
-      }
+      // Mai toccare "Selezionati per te". Card deep-link Kiwi/Booking per il
+      // luogo cercato nell'area risultati dedicata.
+      const fb = buildFallbackCards(trimmed);
+      setSearchFlights(fb.flights);
+      setSearchHotels(fb.hotels);
+      setAiSummary(t('noExactMatch'));
     }
 
     if (seq !== searchSeqRef.current) return;
@@ -352,8 +284,11 @@ export default function Home({
     setIsSearching(false);
   };
 
-  const [notifications, setNotifications] = React.useState<any[]>(initialNotifications || []);
-  const [simulatedDrops, setSimulatedDrops] = React.useState<any[]>(initialSimulatedDrops || []);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  // Drops iniettati nel Radar. Nessun generatore attivo lato client oggi
+  // (il "simula drop" era scaffolding E2E, ora rimosso): resta come punto di
+  // innesto per i futuri alert reali di price-drop. RadarView gestisce l'array vuoto.
+  const [simulatedDrops] = React.useState<any[]>([]);
 
   // allFlights/allHotels hold the full catalog; flights/hotels hold the
   // (possibly search-filtered) displayed subset. Keeping them separate means
@@ -440,8 +375,6 @@ export default function Home({
     return out;
   }, [deals, flights, hotels]);
 
-  const queryObj = query || {};
-
   // Rinvia il mount del globo a quando il browser è idle (fallback setTimeout).
   React.useEffect(() => {
     const w = window as any;
@@ -452,8 +385,6 @@ export default function Home({
   }, []);
 
   React.useEffect(() => {
-    setIsMounted(true);
-
     // I dati arrivano già via initialFlights/initialHotels (props SSR): rifetch
     // solo se le props sono vuote (upstream fallito in SSR), evitando 2 fetch +
     // 2 render ridondanti a ogni caricamento.
@@ -492,7 +423,6 @@ export default function Home({
   // così "Selezionati per te" mostra da subito card coerenti con Kiwi
   // (rotta/date/prezzo). Le date si calcolano nel client (niente mismatch SSR).
   React.useEffect(() => {
-    if (isE2E) return;
     const today = new Date();
     setTodayIso(today.toISOString().slice(0, 10));
     let daysToFri = (5 - today.getDay() + 7) % 7;
@@ -506,54 +436,6 @@ export default function Home({
     loadDeals('NAP', dep, ret);
   }, []);
 
-  React.useEffect(() => {
-    if (!isMounted || feedItems.length === 0) return;
-
-    // Parse query state for E2E tests
-    if (queryObj.saved) {
-      queryObj.saved.split(',').forEach((id: string) => toggleSaveItem(id));
-    }
-    if (queryObj.drops) {
-      const drops: any[] = [];
-      queryObj.drops.split(',').forEach((d: string) => {
-        const [itemId, priceStr] = d.split(':');
-        const item = feedItems.find((i) => i.id === itemId);
-        if (item) {
-          const newPrice = Number(priceStr);
-          drops.push({
-            id: `drop-${itemId}-test`,
-            destination: `${item.destination} → Milano`,
-            oldPrice: item.price,
-            newPrice,
-            dropPercent: Math.round(((item.price - newPrice) / item.price) * 100),
-            airline: 'Test Airline',
-            date: 'Test',
-            timeAgo: 'just now',
-            isNew: true,
-          });
-        }
-      });
-      setSimulatedDrops(drops);
-    }
-    if (queryObj.notifications) {
-      queryObj.notifications.split(',').forEach((n: string) => {
-        const [id, itemId, priceStr] = n.split(':');
-        const item = feedItems.find((i) => i.id === itemId);
-        if (item) {
-          const newPrice = Number(priceStr);
-          const dp = Math.round(((item.price - newPrice) / item.price) * 100);
-          setNotifications((prev) => [
-            ...prev,
-            { id, itemId, oldPrice: item.price, newPrice, dropPercentage: dp, message: `Price drop! ${item.destination} ora €${newPrice} (-${dp}%)` },
-          ]);
-        }
-      });
-    }
-    if (queryObj.email) {
-      setActiveTab('profilo');
-    }
-  }, [isMounted, feedItems]);
-
   const currentTab = activeTab;
   const currentSaved = savedItems;
   // Sfondo scuro (globo) SOLO sulla home hero (vola-vola, non in modalità piano):
@@ -562,42 +444,6 @@ export default function Home({
   // hardcoded `true` → footer bianco su sfondo chiaro sulle altre tab, e i rami
   // a tema chiaro (orb, gradiente) erano codice morto. Coerente con nav/logo.
   const isDarkBackground = currentTab === 'vola-vola' && !tripPlan;
-
-  const handleSimulateDrop = () => {
-    const allFeed = currentTab === 'vola-vola' ? deals : currentTab === 'soggiorna' ? hotels : feedItems;
-    // Escludi le card senza prezzo numerico (es. card di fallback "Cerca …"):
-    // il calcolo del drop simulato produrrebbe altrimenti NaN.
-    const pool = (allFeed.length > 0 ? allFeed : feedItems).filter((i: any) => typeof i.price === 'number');
-    if (pool.length === 0) return;
-    const item = pool[Math.floor(Math.random() * pool.length)];
-    const dropAmount = Math.floor(Math.random() * 60) + 20;
-    const newPrice = Math.max(1, item.price - dropAmount);
-    const dp = Math.round(((item.price - newPrice) / item.price) * 100);
-    const notifId = `notif-${Date.now()}`;
-
-    setSimulatedDrops((prev) => [
-      {
-        id: `drop-${Date.now()}`,
-        destination: `${item.destination} → Milano`,
-        oldPrice: item.price,
-        newPrice,
-        dropPercent: dp,
-        airline: 'Nomaq Radar',
-        date: 'Prossimi mesi',
-        timeAgo: 'ora',
-        isNew: true,
-      },
-      ...prev,
-    ]);
-
-    setNotifications((prev) => [
-      ...prev,
-      {
-        id: notifId,
-        message: `Drop: ${item.destination} ora solo €${newPrice}! Era €${item.price} (-${dp}%)`,
-      },
-    ]);
-  };
 
   const dismissNotif = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id));
   // Stabile: passata a DetailSheet come onClose. Un'arrow inline cambierebbe
@@ -610,9 +456,9 @@ export default function Home({
   // "prices don't match" complaints).
   // "Selezionati per te" (vola-vola) legge dallo stato dedicato `deals`
   // (indipendente dalla ricerca). Fallback al feed SSR/refetch se i deal live
-  // non sono ancora pronti/vuoti. In E2E resta sul feed filtrabile `flights`.
+  // non sono ancora pronti/vuoti.
   const feedByTab = currentTab === 'vola-vola'
-    ? (isE2E ? flights : (deals.length > 0 ? deals : flights))
+    ? (deals.length > 0 ? deals : flights)
     : hotels;
 
   // Vista del feed = filtro prezzo + ordinamento. Non muta feedByTab.
@@ -772,7 +618,7 @@ export default function Home({
         {/* ── Desktop top navbar ── */}
         <DesktopNav activeTab={currentTab} onNavigate={handleNavigate} isDarkBackground={currentTab === 'vola-vola' && !tripPlan} />
 
-        <div className={`mx-auto ${queryObj.desktop === 'true' ? 'max-w-4xl' : 'max-w-md lg:max-w-6xl'}`}>
+        <div className="mx-auto max-w-md lg:max-w-6xl">
           {/* Sfondo scuro + Globo SOLO sulla home hero (vola-vola senza piano).
               Le altre view (Radar/Soggiorna/Concierge/Profilo) e il piano viaggio
               sono disegnate per il tema chiaro (card bianche, titoli text-nomaq-navy
@@ -801,7 +647,7 @@ export default function Home({
           </div>
 
           {/* ── Stays view (soggiorna) — reference design ── */}
-          {currentTab === 'soggiorna' && !isE2E && (
+          {currentTab === 'soggiorna' && (
             <StaysView
               hotels={activeSearch && searchHotels.length > 0 ? searchHotels : feedByTab}
               activeSearch={activeSearch}
@@ -816,7 +662,7 @@ export default function Home({
           )}
 
           {/* ── AI-generated trip plan (replaces the home feed) ── */}
-          {currentTab === 'vola-vola' && tripPlan && !isE2E && (
+          {currentTab === 'vola-vola' && tripPlan && (
             <TripPlanView
               key={tripPlan.__seq || 0}
               plan={tripPlan}
@@ -832,8 +678,8 @@ export default function Home({
             />
           )}
 
-          {/* ── Home view header (vola-vola; soggiorna only in E2E) ── */}
-          {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
+          {/* ── Home view header (vola-vola) ── */}
+          {currentTab === 'vola-vola' && !tripPlan && (
             <div className="px-5 lg:px-6 mb-5">
               {/* Hero: ora trasparente, fa vedere il GlobeGL fisso sul retro. */}
               <div className="relative mb-8 lg:mb-14 px-5 py-12 lg:px-10 lg:py-20">
@@ -1131,7 +977,7 @@ export default function Home({
           {/* ── AI search summary + suggested package + destination results ──
               Area DEDICATA alla barra di ricerca: separata da "Selezionati per
               te" (griglia deals), non la altera mai. ── */}
-          {!isE2E && currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage || searchFlights.length > 0 || searchHotels.length > 0) && (
+          {currentTab === 'vola-vola' && !tripPlan && activeSearch && (aiSummary || aiPackage || searchFlights.length > 0 || searchHotels.length > 0) && (
             <div className="px-5 lg:px-6 mb-4" data-testid="ai-search-result" role="status" aria-live="polite">
               {aiSummary && (
                 <div className="nomaq-card bg-nomaq-lavender/90 backdrop-blur-md border-nomaq-indigo/15 p-4 flex items-start gap-3 mb-3">
@@ -1174,8 +1020,8 @@ export default function Home({
             </div>
           )}
 
-          {/* ── Feed (vola-vola; soggiorna only in E2E) ── */}
-          {((currentTab === 'vola-vola' && (!tripPlan || isE2E)) || (currentTab === 'soggiorna' && isE2E)) && (
+          {/* ── Feed (vola-vola) ── */}
+          {currentTab === 'vola-vola' && !tripPlan && (
             <>
               {/* Grid collage 2x2 container */}
               <div
@@ -1218,15 +1064,9 @@ export default function Home({
             </>
           )}
 
-          {/* ── Radar (Drops) — reference design; legacy view kept for E2E ── */}
+          {/* ── Radar (Drops) — reference design ── */}
           {currentTab === 'drops' && (
-            isE2E ? (
-              <div className="mx-auto w-full max-w-md lg:max-w-2xl lg:pt-8">
-                <DropsView simulatedDrops={simulatedDrops} isE2E={isE2E} onSimulateDrop={handleSimulateDrop} />
-              </div>
-            ) : (
-              <RadarView flights={allFlights} simulatedDrops={simulatedDrops} />
-            )
+            <RadarView flights={allFlights} simulatedDrops={simulatedDrops} />
           )}
 
           {/* ── Concierge (Salvati slot — E2E compatible) ── */}
@@ -1243,13 +1083,7 @@ export default function Home({
           {/* ── Profilo ── */}
           {currentTab === 'profilo' && (
             <div className="mx-auto w-full max-w-md lg:max-w-2xl lg:pt-8">
-              <ProfiloView
-                initialCount={initialWaitlistCount}
-                initialError={initialWaitlistError}
-                initialSubmitted={initialWaitlistSubmitted}
-                initialEmail={initialWaitlistEmail}
-                isE2E={isE2E}
-              />
+              <ProfiloView initialCount={initialWaitlistCount} />
             </div>
           )}
 
@@ -1309,131 +1143,25 @@ export async function getServerSideProps(context: any) {
   else if (pathname === '/salvati') initialTab = 'salvati';
   else if (pathname === '/profilo' || pathname === '/waitlist') initialTab = 'profilo';
 
-  // Parse saved items from query
-  let initialSavedItems: string[] = [];
-  if (query.saved) {
-    initialSavedItems = query.saved.split(',').filter(Boolean);
-  }
+  // Saved items sono risolti client-side (AppState): niente da seedare in SSR.
+  const initialSavedItems: string[] = [];
 
   // Load flights and hotels
   let flights: any[] = [];
   let hotels: any[] = [];
 
-  // isE2E si attiva SOLO tramite query param espliciti. Prima si attivava anche
-  // se lo user-agent conteneva 'node'/'undici' → crawler/bot/link-preview che
-  // usano quei client HTTP ricevevano il FEED DI TEST FINTO (Roma/Paris/London)
-  // invece dei contenuti reali: danno SEO e di correttezza.
-  const isE2E = Object.keys(query).some((key) =>
-    ['feed', 'feed_mod', 'saved', 'drops', 'notifications', 'email', 'error', 'desktop'].includes(key)
-  );
-
-  if (isE2E) {
-    const testFeed = [
-      { id: 'flight-roma', type: 'flight', destination: 'Roma', price: 120, description: 'Direct flight to the historic capital of Italy, Roma.', image: 'roma.jpg' },
-      { id: 'flight-paris', type: 'flight', destination: 'Paris', price: 150, description: 'Fly to Paris and explore the City of Light.', image: 'paris.jpg' },
-      { id: 'hotel-london', type: 'hotel', destination: 'London Cozy Inn', price: 200, description: 'A cozy boutique hotel in the heart of London.', image: 'london.jpg' },
-      { id: 'hotel-tokyo', type: 'hotel', destination: 'Tokyo Suite', price: 350, description: 'Luxury suite with stunning Tokyo skyline views.', image: 'tokyo.jpg' },
-      { id: 'flight-ny', type: 'flight', destination: 'New York City', price: 400, description: 'Non-stop flight to JFK NYC. Experience the Big Apple!', image: 'nyc.jpg' }
-    ];
-    flights = testFeed.filter((item) => item.type === 'flight');
-    hotels = testFeed.filter((item) => item.type === 'hotel');
-  } else {
-    try {
-      // Parallelo: il TTFB della home = max(voli, hotel) invece della somma.
-      [flights, hotels] = await Promise.all([fetchRealFlights(), fetchRealHotels()]);
-    } catch (e) {
-      console.error('Failed to load flights/hotels in getServerSideProps', e);
-    }
+  try {
+    // Parallelo: il TTFB della home = max(voli, hotel) invece della somma.
+    [flights, hotels] = await Promise.all([fetchRealFlights(), fetchRealHotels()]);
+  } catch (e) {
+    console.error('Failed to load flights/hotels in getServerSideProps', e);
   }
 
   // Map to common formats for server-side render. originalPrice and rating
   // pass through only when a real value exists: inventing a markup or a
   // rating here would show fake discounts/stars on every card.
-  let formattedFlights = flights.map(formatFlight);
-  let formattedHotels = hotels.map(formatHotel);
-
-  // Handle empty feed override for tests
-  if (query.feed === 'empty') {
-    formattedFlights = [];
-    formattedHotels = [];
-  }
-
-  // Parse and apply feed modifications from E2E driver
-  // Clone del feed originale prima delle modifiche E2E. Calcolato SOLO quando un
-  // parametro di query E2E lo richiede: prima il deep-clone dell'intero feed
-  // girava a OGNI richiesta di produzione.
-  const originalFeedItems = (query.feed_mod || query.drops || query.notifications)
-    ? JSON.parse(JSON.stringify([...formattedFlights, ...formattedHotels]))
-    : [];
-
-  if (query.feed_mod) {
-    query.feed_mod.split(';').forEach((mod: string) => {
-      const [id, field, value] = mod.split(':');
-      const flight = formattedFlights.find((f: any) => f.id === id);
-      if (flight) {
-        if (field === 'price') flight.price = Number(value);
-        else if (field === 'destination') flight.destination = value;
-        else if (field === 'description') flight.description = value;
-        else if (field === 'image') {
-          flight.image = (value === 'null' || value === 'undefined') ? null : value;
-        }
-      }
-      const hotel = formattedHotels.find((h: any) => h.id === id);
-      if (hotel) {
-        if (field === 'price') hotel.price = Number(value);
-        else if (field === 'destination') hotel.destination = value;
-        else if (field === 'description') hotel.description = value;
-        else if (field === 'image') {
-          hotel.image = (value === 'null' || value === 'undefined') ? null : value;
-        }
-      }
-    });
-  }
-
-  // Parse drops query state
-  const feedItems = [...formattedFlights, ...formattedHotels];
-  let initialSimulatedDrops: any[] = [];
-  if (query.drops) {
-    query.drops.split(',').forEach((d: string) => {
-      const [itemId, priceStr] = d.split(':');
-      const item = originalFeedItems.find((i: any) => i.id === itemId);
-      if (item) {
-        const newPrice = Number(priceStr);
-        initialSimulatedDrops.push({
-          id: `drop-${itemId}-test`,
-          destination: `${item.destination} → Milano`,
-          oldPrice: item.price,
-          newPrice,
-          dropPercent: Math.round(((item.price - newPrice) / item.price) * 100),
-          airline: 'Test Airline',
-          date: 'Test',
-          timeAgo: 'just now',
-          isNew: true,
-        });
-      }
-    });
-  }
-
-  // Parse notifications query state
-  let initialNotifications: any[] = [];
-  if (query.notifications) {
-    query.notifications.split(',').forEach((n: string) => {
-      const [id, itemId, priceStr] = n.split(':');
-      const item = originalFeedItems.find((i: any) => i.id === itemId);
-      if (item) {
-        const newPrice = Number(priceStr);
-        const dp = Math.round(((item.price - newPrice) / item.price) * 100);
-        initialNotifications.push({
-          id,
-          itemId,
-          oldPrice: item.price,
-          newPrice,
-          dropPercentage: dp,
-          message: `Price drop! ${item.destination} is now €${newPrice} (${dp}% off)`,
-        });
-      }
-    });
-  }
+  const formattedFlights = flights.map(formatFlight);
+  const formattedHotels = hotels.map(formatHotel);
 
   // Load waitlist count from Supabase — SOLO il conteggio reale, nessuna base
   // fittizia (mostrare "reali + 2847" era falso social proof, art. 21 Cod. Consumo).
@@ -1449,30 +1177,16 @@ export async function getServerSideProps(context: any) {
     console.error('Failed to load waitlist count in getServerSideProps', e);
   }
 
-  // Handle email submission from E2E waitlist test
-  let initialWaitlistError: string | null = null;
-  let initialWaitlistSubmitted = false;
-  let initialWaitlistEmail = '';
-  if (query.email) {
-    initialWaitlistSubmitted = true;
-    initialWaitlistEmail = String(query.email);
-  }
-  if (query.error) {
-    initialWaitlistError = String(query.error);
-  }
-
   // Let the CDN cache the anonymous shell — greeting, saved items and auth are
   // all resolved client-side, so the server HTML is identical for every
-  // anonymous visitor. Never cache E2E / query-param-driven variants.
-  if (!isE2E && Object.keys(query).length === 0 && context.res) {
+  // anonymous visitor. Le richieste con query-param non vengono mai cachate.
+  if (Object.keys(query).length === 0 && context.res) {
     context.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
   }
 
   return {
     props: {
-      query,
       resolvedUrl,
-      isE2E,
       // noindex sui deploy di PREVIEW Vercel (mai in produzione): evita che gli
       // URL *.vercel.app di anteprima creino contenuti duplicati su Google.
       noindex: process.env.VERCEL_ENV === 'preview',
@@ -1480,12 +1194,7 @@ export async function getServerSideProps(context: any) {
       initialSavedItems,
       initialFlights: formattedFlights,
       initialHotels: formattedHotels,
-      initialSimulatedDrops,
-      initialNotifications,
       initialWaitlistCount: waitlistCount,
-      initialWaitlistError,
-      initialWaitlistSubmitted,
-      initialWaitlistEmail,
       // Affiliate marker is inherently public (it ends up in outbound URLs);
       // exposing it lets the client build tracked Kiwi deep links for Radar.
       kiwiAffiliateId: process.env.KIWI_AFFILIATE_ID || '',
