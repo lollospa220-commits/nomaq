@@ -17,10 +17,22 @@ import type { FeedItem } from '@/types/domain';
 // finge funzionante mostrando una città diversa da quella davvero cercata.
 const REAL_ORIGIN_LABEL = 'Milano';
 
-function RadarBadges({ item, small = false }: { item: FeedItem; small?: boolean }) {
+// Base del calo = ultima osservazione reale (priorPrice). Sulle righe reali
+// original_price è impostato = price (per nascondere il barrato nel feed home),
+// quindi NON è la base giusta: darebbe barrato "era = ora" e una % gonfiata
+// (drop/price invece di drop/prior). Ritorna null se non c'è un calo reale.
+function dropBase(item: FeedItem): number | null {
+  const base = item.priorPrice ?? item.originalPrice ?? 0;
+  const price = item.price ?? 0;
   const drop = item.dropAmount ?? 0;
-  if (drop <= 0 || !item.originalPrice) return null;
-  const pct = Math.round((drop / item.originalPrice) * 100);
+  return drop > 0 && base > price ? base : null;
+}
+
+function RadarBadges({ item, small = false }: { item: FeedItem; small?: boolean }) {
+  const base = dropBase(item);
+  if (base == null) return null;
+  const drop = item.dropAmount ?? 0;
+  const pct = Math.round((drop / base) * 100);
   const cls = small ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
   return (
     <div className={`absolute z-10 flex gap-1.5 ${small ? 'top-2 left-2' : 'top-3 left-3'}`}>
@@ -73,6 +85,7 @@ function openBooking(item: FeedItem, travelers = 1) {
 
 function RadarBigCard({ item, nowTick, travelers }: { item: FeedItem; nowTick: number | null; travelers: number }) {
   const { t } = useLanguage();
+  const base = dropBase(item);
   return (
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -102,8 +115,8 @@ function RadarBigCard({ item, nowTick, travelers }: { item: FeedItem; nowTick: n
           <FreshnessBadge observedAt={item.observedAt} nowTick={nowTick} />
         </div>
         <div className="text-right flex-shrink-0">
-          {!!item.dropAmount && item.originalPrice && (
-            <div className="text-slate-400 text-xs line-through leading-none mb-1">€{item.originalPrice}</div>
+          {base != null && (
+            <div className="text-slate-400 text-xs line-through leading-none mb-1">€{base}</div>
           )}
           <div className="text-2xl font-extrabold text-nomaq-navy leading-none"><span className="text-xs text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>€{item.price}</div>
           {/* Trasparenza per-card: come nel DetailSheet, il prezzo è indicativo
@@ -117,6 +130,7 @@ function RadarBigCard({ item, nowTick, travelers }: { item: FeedItem; nowTick: n
 
 function RadarCompactCard({ item, nowTick, travelers }: { item: FeedItem; nowTick: number | null; travelers: number }) {
   const { t } = useLanguage();
+  const base = dropBase(item);
   return (
     <div
       className="group nomaq-card bg-white/70 backdrop-blur-md rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-stretch"
@@ -147,8 +161,8 @@ function RadarCompactCard({ item, nowTick, travelers }: { item: FeedItem; nowTic
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="text-right">
-            {!!item.dropAmount && item.originalPrice && (
-              <div className="text-slate-400 text-xs line-through leading-none mb-1">€{item.originalPrice}</div>
+            {base != null && (
+              <div className="text-slate-400 text-xs line-through leading-none mb-1">€{base}</div>
             )}
             <div className="text-lg font-extrabold text-nomaq-navy leading-none"><span className="text-[10px] text-slate-400 font-medium mr-0.5">{t('fromPrice')}</span>€{item.price}</div>
             <div className="text-[9px] text-slate-400 font-medium mt-1">{t('indicativeShort')}</div>
