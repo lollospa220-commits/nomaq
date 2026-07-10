@@ -6,6 +6,14 @@ import SmartImage from '@/components/SmartImage';
 import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
 import { getDestinationImage } from '@/utils/destinationImages';
 
+// Parola-chiave per tipo di soggiorno, iniettata nella query AI quando il tipo
+// non è "all" (prima lo stato stayType non veniva mai letto → select inerte).
+const STAY_TYPE_QUERY: Record<string, TranslationKey> = {
+  hotel: 'typeHotel',
+  apartment: 'typeApartment',
+  bnb: 'typeBnb',
+};
+
 function StaysView({
   hotels,
   activeSearch,
@@ -58,6 +66,14 @@ function StaysView({
     }
   }, [checkIn, checkOut, guests]);
 
+  // Ricerca: se è scelto un tipo di soggiorno specifico lo aggiunge alla query
+  // AI (prima stayType non veniva mai letto → la select non filtrava nulla).
+  const runSearch = () => {
+    const d = dest.trim();
+    const typeKey = STAY_TYPE_QUERY[stayType];
+    onSearch(d && typeKey ? `${d} ${t(typeKey)}` : dest);
+  };
+
   const fieldBase = 'flex items-center gap-2 px-3 py-2.5 min-w-0';
   const labelCls = 'text-[10px] font-semibold text-slate-400 uppercase tracking-wide block';
   const valueCls = 'w-full bg-transparent text-sm font-semibold text-nomaq-navy outline-none';
@@ -104,7 +120,7 @@ function StaysView({
                 type="text"
                 value={dest}
                 onChange={(e) => setDest(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && onSearch(dest)}
+                onKeyDown={(e) => e.key === 'Enter' && runSearch()}
                 placeholder="Napoli, Italia"
                 className={valueCls}
                 data-testid="stays-destination"
@@ -177,7 +193,7 @@ function StaysView({
             </div>
           </div>
           <button
-            onClick={() => onSearch(dest)}
+            onClick={runSearch}
             disabled={isSearching}
             data-testid="stays-search-btn"
             aria-label={t('destLabel')}

@@ -115,7 +115,18 @@ export default function GlobeGL() {
       controls.autoRotate = false;
       if (typeof globe.pauseAnimation === 'function') globe.pauseAnimation();
 
-      try { globe.renderer().dispose(); } catch { /* noop */ }
+      // Rilascio esplicito delle risorse GPU: dispose() da solo NON libera il
+      // contesto WebGL (serve forceContextLoss) né geometrie/materiali/texture
+      // della scena. Senza, ogni remount (cambio tab / apertura piano viaggio)
+      // lascia un contesto vivo → memoria GPU crescente e, sotto tab-switching
+      // intenso, "Too many active WebGL contexts".
+      try {
+        const r = globe.renderer();
+        r.dispose();
+        r.forceContextLoss();
+      } catch { /* noop */ }
+      // _destructor (globe.gl): svuota la scena + dispose di controls e renderer.
+      try { globe._destructor?.(); } catch { /* noop */ }
       while (el.firstChild) el.removeChild(el.firstChild);
     };
   }, []);

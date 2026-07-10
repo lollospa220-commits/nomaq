@@ -109,11 +109,15 @@ export default function ProfiloView({
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: 'Nomaq Drop', text: 'Ho trovato un\'offerta pazzesca su Nomaq!', url: 'https://nomaq.app' });
-    } else {
-      navigator.clipboard.writeText('https://nomaq.app');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // .catch: annullando lo share sheet nativo la Promise rigetta con
+      // AbortError; senza gestione è un unhandled rejection a ogni "annulla".
+      navigator.share({ title: 'Nomaq Drop', text: 'Ho trovato un\'offerta pazzesca su Nomaq!', url: 'https://nomaq.app' }).catch(() => {});
+    } else if (navigator.clipboard) {
+      // Mostra "copiato" solo a scrittura riuscita; guardia su clipboard assente
+      // (contesti non sicuri/webview) per non lanciare un TypeError sincrono.
+      navigator.clipboard.writeText('https://nomaq.app')
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+        .catch(() => {});
     }
   };
 
