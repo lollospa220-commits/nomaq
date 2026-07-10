@@ -4,32 +4,22 @@ import React from 'react';
 import Image from 'next/image';
 import { Share2, ArrowRight, Check, TrendingDown, Bell, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
+import { TranslationKey } from '@/i18n/translations';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 // Cosa offre davvero Nomaq — nessuna promessa di funzioni non ancora attive
 // (niente monitoraggio 24/7 per-utente né alert via email di price drop: la
 // waitlist raccoglie solo l'email per avvisare all'apertura del servizio).
-const FEATURES = [
-  {
-    icon: TrendingDown,
-    title: 'Cali di prezzo',
-    desc: 'Il Radar confronta le tariffe dei nostri partner ed evidenzia quelle più basse e i cali che rileva.',
-    color: '#4F46E5',
-  },
-  {
-    icon: MapPin,
-    title: 'Voli e soggiorni',
-    desc: 'Voli e strutture dai partner selezionati, con prezzi indicativi da confrontare. Il prezzo finale è sul sito del partner.',
-    color: '#3B82F6',
-  },
-  {
-    icon: Bell,
-    title: 'Ti avvisiamo all’apertura',
-    desc: 'Lascia la tua email: ti scriviamo appena Nomaq è disponibile. Gratis, zero spam, cancellati quando vuoi.',
-    color: '#7C3AED',
-  },
+// Testi via chiavi i18n: risolti con t() in render (IT/EN da locale URL).
+const FEATURES: { icon: React.ElementType; titleKey: TranslationKey; descKey: TranslationKey; color: string }[] = [
+  { icon: TrendingDown, titleKey: 'wlFeat1Title', descKey: 'wlFeat1Desc', color: '#4F46E5' },
+  { icon: MapPin, titleKey: 'wlFeat2Title', descKey: 'wlFeat2Desc', color: '#3B82F6' },
+  { icon: Bell, titleKey: 'wlFeat3Title', descKey: 'wlFeat3Desc', color: '#7C3AED' },
 ];
 
 export default function WaitlistPage() {
+  const { t, lang } = useLanguage();
   const [email, setEmail] = React.useState('');
   const [submitted, setSubmitted] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -54,9 +44,9 @@ export default function WaitlistPage() {
     e.preventDefault();
     setError(null);
     const trimmed = email.trim();
-    if (!trimmed) { setError('Inserisci la tua email per continuare'); return; }
+    if (!trimmed) { setError(t('waitlistErrEmpty')); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) { setError('Formato email non valido'); return; }
+    if (!emailRegex.test(trimmed)) { setError(t('waitlistErrInvalid')); return; }
 
     try {
       const res = await fetch('/api/waitlist', {
@@ -68,22 +58,22 @@ export default function WaitlistPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Si è verificato un errore');
+        setError(data.error || t('waitlistErrGeneric'));
         return;
       }
       setSubmitted(true);
       setEmail(trimmed);
       setCount((prev) => prev + 1);
     } catch (err) {
-      setError('Impossibile connettersi al server. Riprova.');
+      setError(t('waitlistErrConn'));
     }
   };
 
   const handleShare = () => {
-    const shareText = 'Sto aspettando Nomaq: confronta tariffe di voli e hotel e pianifica il viaggio con l’AI. Entra in lista d’attesa!';
+    const shareText = t('wlShareText');
     const shareUrl = 'https://nomaq.app';
     if (navigator.share) {
-      navigator.share({ title: 'Nomaq — Voli e hotel al prezzo giusto', text: shareText, url: shareUrl });
+      navigator.share({ title: t('wlShareTitle'), text: shareText, url: shareUrl });
     } else {
       navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
       setCopied(true);
@@ -93,10 +83,7 @@ export default function WaitlistPage() {
 
   return (
     <>
-      <SEO
-        title="Nomaq — Entra in lista d'attesa"
-        description="Nomaq confronta tariffe indicative di voli e hotel dai partner selezionati e aiuta a pianificare il viaggio con l'AI. Lascia la tua email e ti avvisiamo all'apertura."
-      />
+      <SEO title={t('wlSeoTitle')} description={t('wlSeoDesc')} />
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#4F46E5" />
@@ -121,8 +108,8 @@ export default function WaitlistPage() {
           </div>
 
           <div className="max-w-md mx-auto px-5 pt-12 pb-8 relative">
-            {/* Logo — width/height espliciti per riservare lo spazio (niente CLS) */}
-            <div className="flex items-center mb-10">
+            {/* Logo + switcher lingua — width/height espliciti per riservare lo spazio (niente CLS) */}
+            <div className="flex items-center justify-between mb-10">
               <Image
                 src="/images/logo.png"
                 alt="Nomaq"
@@ -131,6 +118,7 @@ export default function WaitlistPage() {
                 priority
                 className="h-14 w-auto object-contain"
               />
+              <LanguageSwitcher isDarkBackground={false} />
             </div>
 
             {/* Live counter badge — solo conteggio reale; niente badge se 0. Lo
@@ -143,20 +131,20 @@ export default function WaitlistPage() {
                   style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.15)' }}
                 >
                   <span className="w-2 h-2 bg-nomaq-indigo rounded-full animate-pulse" />
-                  {count.toLocaleString()} {count === 1 ? 'persona già in lista' : 'persone già in lista'}
+                  {count.toLocaleString(lang === 'en' ? 'en-GB' : 'it-IT')} {count === 1 ? t('wlCountOne') : t('wlCountMany')}
                 </div>
               )}
             </div>
 
             {/* Headline */}
             <h1 className="font-display text-4xl text-nomaq-navy leading-tight mb-4">
-              Voli e hotel,<br />
+              {t('wlHeadlineA')}<br />
               <span className="text-gradient-violet">
-                al prezzo giusto.
+                {t('wlHeadlineB')}
               </span>
             </h1>
             <p className="text-slate-500 text-base leading-relaxed mb-8">
-              Nomaq confronta le tariffe di voli e hotel dai partner selezionati e ti aiuta a pianificare il viaggio con l&rsquo;AI. Lascia la tua email: ti avvisiamo appena apriamo.
+              {t('wlSubtitle')}
             </p>
 
             {/* Main CTA Form */}
@@ -169,13 +157,13 @@ export default function WaitlistPage() {
                 >
                   <div className="mb-3">
                     <label htmlFor="waitlist-email" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-                      La tua email
+                      {t('wlEmailLabel')}
                     </label>
                     <input
                       type="email"
                       id="waitlist-email"
                       data-testid="waitlist-email-input"
-                      placeholder="la.tua@email.com"
+                      placeholder={t('wlEmailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-4 py-3.5 rounded-2xl text-nomaq-navy text-sm placeholder-slate-400 transition-all"
@@ -197,10 +185,10 @@ export default function WaitlistPage() {
                     data-testid="waitlist-submit"
                     className="w-full py-4 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 bg-gradient-indigo shadow-button"
                   >
-                    Entra in lista d&rsquo;attesa <ArrowRight className="w-4 h-4" />
+                    {t('wlSubmit')} <ArrowRight className="w-4 h-4" />
                   </button>
                   <p className="text-center text-xs text-slate-400 mt-3">
-                    Gratis. Zero spam. Cancellati quando vuoi.
+                    {t('wlReassurance')}
                   </p>
                 </form>
               ) : (
@@ -208,9 +196,9 @@ export default function WaitlistPage() {
                   <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
                     <Check className="w-8 h-8 text-nomaq-mint" strokeWidth={2.5} />
                   </div>
-                  <h3 className="font-display text-xl text-nomaq-navy mb-2">Sei dentro! 🎉</h3>
+                  <h3 className="font-display text-xl text-nomaq-navy mb-2">{t('wlSuccessTitle')}</h3>
                   <p className="text-slate-500 text-sm mb-4">
-                    Ti scriveremo a <span className="font-semibold text-nomaq-navy">{email}</span> appena Nomaq è disponibile.
+                    {t('wlSuccessPre')} <span className="font-semibold text-nomaq-navy">{email}</span> {t('wlSuccessPost')}
                   </p>
 
                   {/* Share CTA */}
@@ -222,10 +210,10 @@ export default function WaitlistPage() {
                     style={{ border: '2px solid #4F46E5', color: '#4F46E5', background: 'transparent' }}
                   >
                     <Share2 className="w-4 h-4" />
-                    {copied ? '✓ Link copiato!' : 'Condividi Nomaq'}
+                    {copied ? t('linkCopied') : t('wlShareBtn')}
                   </button>
                   <p className="text-center text-xs text-slate-400 mt-3">
-                    Aiutaci a spargere la voce
+                    {t('wlShareHint')}
                   </p>
                 </div>
               )}
@@ -236,10 +224,10 @@ export default function WaitlistPage() {
         {/* ── FEATURES ── */}
         <section className="px-5 py-6 max-w-md mx-auto">
           <h2 className="font-display text-2xl text-nomaq-navy mb-5 text-center">
-            Cosa fa <span className="text-gradient-violet">Nomaq</span>
+            {t('wlWhatPre')} <span className="text-gradient-violet">Nomaq</span> {t('wlWhatPost')}
           </h2>
           <div className="space-y-4">
-            {FEATURES.map(({ icon: Icon, title, desc, color }, idx) => (
+            {FEATURES.map(({ icon: Icon, titleKey, descKey, color }, idx) => (
               <div
                 key={idx}
                 className="nomaq-card flex gap-4 p-5 rounded-2xl"
@@ -251,8 +239,8 @@ export default function WaitlistPage() {
                   <Icon className="w-6 h-6" style={{ color }} strokeWidth={2} />
                 </div>
                 <div>
-                  <div className="font-bold text-nomaq-navy text-sm mb-1">{title}</div>
-                  <div className="text-slate-500 text-xs leading-relaxed">{desc}</div>
+                  <div className="font-bold text-nomaq-navy text-sm mb-1">{t(titleKey)}</div>
+                  <div className="text-slate-500 text-xs leading-relaxed">{t(descKey)}</div>
                 </div>
               </div>
             ))}
@@ -262,22 +250,22 @@ export default function WaitlistPage() {
         {/* ── BOTTOM CTA ── */}
         <section className="px-5 py-8 pb-16 max-w-md mx-auto text-center">
           <div className="rounded-3xl p-6 bg-gradient-indigo shadow-button">
-            <div className="text-white/80 text-sm font-medium mb-1">Nomaq sta arrivando.</div>
-            <div className="text-white font-display text-xl mb-4">Sii tra i primi a provarlo.</div>
+            <div className="text-white/80 text-sm font-medium mb-1">{t('wlBottomEyebrow')}</div>
+            <div className="text-white font-display text-xl mb-4">{t('wlBottomTitle')}</div>
             <Link
               href="#waitlist-email"
               className="inline-flex items-center gap-2 bg-white text-nomaq-indigo font-bold text-sm px-6 py-3.5 rounded-2xl transition-all"
               style={{ boxShadow: '0 4px 16px rgba(15,23,42,0.15)' }}
             >
-              Entra gratis <ArrowRight className="w-4 h-4" />
+              {t('wlBottomCta')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           <p className="text-slate-400 text-xs mt-6">
             © 2026 Nomaq ·{' '}
-            <Link href="/privacy" className="underline hover:text-nomaq-navy">Privacy</Link> ·{' '}
-            <Link href="/termini" className="underline hover:text-nomaq-navy">Termini</Link> ·{' '}
-            <Link href="/cookie-policy" className="underline hover:text-nomaq-navy">Cookie</Link>
+            <Link href="/privacy" className="underline hover:text-nomaq-navy">{t('footerPrivacy')}</Link> ·{' '}
+            <Link href="/termini" className="underline hover:text-nomaq-navy">{t('footerTerms')}</Link> ·{' '}
+            <Link href="/cookie-policy" className="underline hover:text-nomaq-navy">{t('footerCookies')}</Link>
           </p>
         </section>
       </main>
