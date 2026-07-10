@@ -145,15 +145,19 @@ function getAffiliateLink(item: any, type: 'flight' | 'hotel'): string {
     const okISO = (s: any): s is string =>
       typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(`${s}T00:00:00Z`).getTime());
 
-    // Le righe Travelpayouts codificano la data reale di partenza nell'id
-    // (flight-tp-XXX-YYYY-MM-DD): usala, così il link apre la stessa data
-    // mostrata sulla card anche quando la riga arriva dalla cache Supabase.
-    const tpMatch = typeof item.id === 'string'
-      ? item.id.match(/^(?:flight-tp|flight-custom)-[A-Z]{3}-(\d{4}-\d{2}-\d{2})$/)
-      : null;
+    // La data reale di partenza vive nella colonna departure_date, persistita
+    // sia sulle righe Travelpayouts del feed sia sulle "flight-custom" live (non
+    // più codificata nell'id: così l'id delle card tp è stabile e i preferiti
+    // sopravvivono ai cicli di fetch). Le righe custom sono live e possono avere
+    // una partenza odierna (ricerca same-day) → si usa la data così com'è; per
+    // le righe tp rilette dalla cache una data ormai passata (volo già partito)
+    // va scartata a favore di una data futura di default, come il vecchio guard.
     const fallbackDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
-    const departureDate = (okISO(item.departure_date) ? item.departure_date : '') || (tpMatch && tpMatch[1] > today ? tpMatch[1] : fallbackDate);
+    const isCustomRow = typeof item.id === 'string' && item.id.startsWith('flight-custom-');
+    const departureDate = okISO(item.departure_date) && (isCustomRow || item.departure_date > today)
+      ? item.departure_date
+      : fallbackDate;
     
     // Rileva se è una riga live (tariffa reale con date/tipo espliciti) o un deal
     // statico/pacchetto (senza date → si deriva un ritorno dalle "notti"). Le
@@ -405,12 +409,16 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
       const dateStr = new Date(departureDay).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
       const duration = formatDurationMinutes(cheapest?.duration);
 
-      // La data reale di partenza è codificata nell'id (flight-tp-XXX-YYYY-MM-DD)
-      // perché la tabella flights non ha altre colonne dove salvarla: così
-      // getAffiliateLink costruisce il deep link Kiwi sulla stessa data anche
-      // per le righe rilette dalla cache Supabase.
+      // Id STABILE per destinazione (nessuna data nell'id). L'id è la chiave con
+      // cui i preferiti sono persistiti in saved_items: con la data (della
+      // tariffa più economica) codificata nell'id, ogni ciclo di fetch — e ogni
+      // cambio mese — generava un id nuovo, così la card salvata perdeva il
+      // cuore pieno e in DB restava un item_id orfano. La data reale di partenza
+      // viaggia ora nella colonna departure_date (persistita su Supabase), da
+      // cui getAffiliateLink ricostruisce il deep link Kiwi sulla stessa data
+      // anche per le righe rilette dalla cache.
       const row: any = {
-        id: `flight-tp-${dest.code}-${departureDay}`,
+        id: `flight-tp-${dest.code}`,
         destination: dest.name,
         country: dest.country,
         dest_code: dest.code,
@@ -420,6 +428,7 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
         image: getDestinationImage(dest.name, `${dest.code}-${departureDay}`),
         airline: airlineName,
         date_info: `${dateStr} (Solo andata)`,
+        departure_date: departureDay,
         tag: dest.tag,
         color: dest.color,
       };

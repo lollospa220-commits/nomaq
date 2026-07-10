@@ -1,0 +1,35 @@
+-- Migrazione: aggiunge la colonna departure_date alla tabella public.flights.
+--
+-- CONTESTO (bug preferiti orfani)
+-- Le card Travelpayouts avevano id "flight-tp-<IATA>-<YYYY-MM-DD>", con la data
+-- della tariffa più economica codificata NELL'id. Quella data cambia tra i cicli
+-- di fetch (e a ogni inizio mese, perché il feed guarda "il mese prossimo"),
+-- quindi l'id cambiava di continuo. Poiché i preferiti sono persistiti per
+-- item_id nella tabella saved_items, quando l'id cambiava la card salvata
+-- perdeva il cuore pieno e in saved_items restava un item_id orfano.
+--
+-- FIX (lato codice, in src/utils/travelApi.ts)
+--   * id STABILE per destinazione: "flight-tp-<IATA>" (senza data);
+--   * la data reale di partenza viene spostata in questa colonna departure_date;
+--   * getAffiliateLink ricostruisce il deep link Kiwi da departure_date (non più
+--     via regex sull'id), sia per le righe fresh sia per quelle rilette dalla
+--     cache Supabase.
+--
+-- ORDINE DI RILASCIO: eseguire QUESTA migrazione su Supabase PRIMA di deployare
+-- il codice. L'upsert delle righe tp ora include departure_date; se la colonna
+-- non esiste ancora l'upsert fallisce (viene solo loggato come warning, ma la
+-- cache Supabase non si aggiornerebbe finché la colonna non c'è).
+--
+-- Idempotente: rieseguibile senza effetti collaterali.
+alter table public.flights
+  add column if not exists departure_date date;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- OPZIONALE (pulizia orfani già presenti). Le righe qui sotto NON sono
+-- necessarie al fix: rimuovono solo i preferiti già orfani salvati col vecchio
+-- id datato "flight-tp-<IATA>-<YYYY-MM-DD>", che non corrispondono più a nessuna
+-- card e quindi non mostrano comunque il cuore pieno. Sono commentate perché
+-- cancellano dati utente: decommentare ed eseguire solo se si vuole ripulire.
+--
+-- delete from public.saved_items
+--  where item_id ~ '^flight-tp-[A-Z]{3}-[0-9]{4}-[0-9]{2}-[0-9]{2}$';
