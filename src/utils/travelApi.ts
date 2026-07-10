@@ -543,7 +543,11 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
       }
 
       const row: any = {
-        id: `flight-custom-${dest.code}-${departureDate}`,
+        // origine + ritorno nell'id: senza, cambiando SOLO l'origine (stessa
+        // dest+data) la card avrebbe id identico → apparirebbe già salvata e il
+        // toggle colliderebbe tra rotte diverse. departure_date/origin_code/
+        // return_date restano campi espliciti → deep-link Kiwi corretto comunque.
+        id: `flight-custom-${origin}-${dest.code}-${departureDate}-${ret || 'ow'}`,
         type: 'flight',
         destination: dest.name,
         country: dest.country,
@@ -780,10 +784,16 @@ async function computeRealFlights() {
   // mostrato questo ciclo (fail safe verso "niente drop", mai verso un drop finto).
   let priorPriceByDest = new Map<string, number>();
   try {
-    const { data: priorRows } = await supabase.from('flights').select('destination,price');
+    const { data: priorRows } = await supabase.from('flights').select('id,destination,price');
     (priorRows || []).forEach((r: any) => {
+      // SOLO osservazioni reali precedenti (righe TP/Duffel/live), MAI le righe
+      // seed hardcoded (flight-tokyo/flight-ny…): condividono il nome-destinazione
+      // con le rotte reali (Tokyo/New York) e il loro prezzo inventato falserebbe
+      // il drop (prior seed 541 vs prezzo reale 500 → "Drop €41" fittizio).
+      const id = String(r?.id || '');
+      const isRealObservation = id.startsWith('flight-tp-') || id.startsWith('flight-duffel-') || id.startsWith('live-flight-');
       const p = Number(r?.price);
-      if (r?.destination && Number.isFinite(p)) priorPriceByDest.set(r.destination, p);
+      if (isRealObservation && r?.destination && Number.isFinite(p)) priorPriceByDest.set(r.destination, p);
     });
   } catch (err) {
     console.warn('Could not read prior flight prices for drop-tracking:', err);
