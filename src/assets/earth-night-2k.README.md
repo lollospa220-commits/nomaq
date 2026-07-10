@@ -15,5 +15,10 @@ il globo è ~800px e scurito, il 4K era impercettibile ma pesava sul download.
   e servirla in prima parte evita richieste di terze parti dal browser
   dell'utente (privacy) e dipendenze di runtime da CDN.
 
-Nota cache: gli asset in `/textures` sono serviti con cache immutabile di 1 anno
-(vedi `headers()` in `next.config.js`) — se sostituisci la texture, cambia nome al file.
+Nota cache: il file è **importato come modulo** in `GlobeGL.tsx`
+(`import earthTexture from '@/assets/earth-night-2k.jpg'`), quindi Turbopack lo
+emette sotto `/_next/static/media/…<hash>.jpg` e Vercel lo serve con
+`Cache-Control: public, max-age=31536000, immutable`. L'hash di contenuto busta
+la cache in automatico: se sostituisci la texture NON serve rinominarla a mano.
+(I file in `/public` non ottengono l'immutable: Vercel ne gestisce la cache
+ignorando gli header custom — motivo per cui la texture vive qui e non lì.)

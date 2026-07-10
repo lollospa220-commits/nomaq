@@ -1,6 +1,11 @@
 import React from 'react';
 import Globe from 'globe.gl';
 import * as THREE from 'three';
+// Import statico dell'asset (invece di /public): Turbopack lo emette sotto
+// /_next/static/media con hash di contenuto → Vercel lo serve con Cache-Control
+// immutable per un anno. I file in /public restano invece a max-age=0 perché
+// Vercel ne gestisce la cache ignorando gli header custom di next.config.
+import earthTexture from '@/assets/earth-night-2k.jpg';
 
 /**
  * Globo WebGL (Globe.gl / three.js) in stile "dark mode premium":
@@ -55,10 +60,10 @@ export default function GlobeGL() {
       .width(el.clientWidth)
       .height(el.clientHeight)
       .backgroundColor('rgba(0,0,0,0)')
-      // Texture self-hostata (vedi public/textures/README.md): la CSP di prod
-      // (img-src) non consente unpkg.com — da CDN la texture veniva bloccata
-      // in produzione. In locale si evita anche la dipendenza da rete esterna.
-      .globeImageUrl('/textures/earth-night-2k.jpg')
+      // Texture self-hostata importata come modulo (vedi import in cima): same-
+      // origin (CSP img-src 'self' ok; da unpkg.com era bloccata in prod) e
+      // servita da /_next/static con cache immutable.
+      .globeImageUrl(earthTexture.src)
       .showAtmosphere(true)
       .atmosphereColor('#8b7ff0')
       .atmosphereAltitude(0.22)
