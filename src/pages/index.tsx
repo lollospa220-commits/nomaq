@@ -112,7 +112,7 @@ const SEO_META: Record<string, Record<'it' | 'en', SeoEntry>> = {
       description: "The Nomaq Radar compares partner fares and highlights the price drops it detects. Indicative prices; the final price is on the partner's site.",
     },
   },
-  salvati: {
+  concierge: {
     it: {
       title: 'Concierge AI di viaggio — Nomaq',
       description: 'Il Concierge AI di Nomaq pianifica il viaggio perfetto: ristoranti, itinerari, trasporti, su misura per te.',
@@ -362,18 +362,6 @@ export default function Home({
   // Invia il TESTO digitato (l'handler API risolve città/codice → IATA), così
   // funziona anche per città fuori dalla lista curata dell'autocomplete.
   const refreshDeals = () => loadDeals(customOrigin.trim() || customOriginIata, customDeparture, customReturn);
-  // feedItems è derivato da deals+flights+hotels (dedup per id): copre i lookup
-  // di salvataggio/Concierge anche per le card live di "Selezionati per te".
-  const feedItems = React.useMemo(() => {
-    // NB: `Map` qui è l'icona lucide-react (import in cima), non il costruttore:
-    // dedup con Set + array per non collidere con quell'import.
-    const seen = new Set<string>();
-    const out: any[] = [];
-    for (const it of [...deals, ...flights, ...hotels]) {
-      if (it && it.id && !seen.has(it.id)) { seen.add(it.id); out.push(it); }
-    }
-    return out;
-  }, [deals, flights, hotels]);
 
   // Rinvia il mount del globo a quando il browser è idle (fallback setTimeout).
   React.useEffect(() => {
@@ -414,7 +402,7 @@ export default function Home({
     const pathname = resolvedUrl ? resolvedUrl.split('?')[0] : '';
     if (pathname === '/soggiorna') setActiveTab('soggiorna');
     else if (pathname === '/drops') setActiveTab('drops');
-    else if (pathname === '/salvati') setActiveTab('salvati');
+    else if (pathname === '/concierge') setActiveTab('concierge');
     else if (pathname === '/profilo' || pathname === '/waitlist') setActiveTab('profilo');
   }, []);
 
@@ -1069,14 +1057,10 @@ export default function Home({
             <RadarView flights={allFlights} simulatedDrops={simulatedDrops} />
           )}
 
-          {/* ── Concierge (Salvati slot — E2E compatible) ── */}
-          {currentTab === 'salvati' && (
+          {/* ── Concierge ── */}
+          {currentTab === 'concierge' && (
             <div className="mx-auto w-full max-w-md lg:max-w-2xl lg:pt-8">
-              <ConciergeView
-                savedIds={currentSaved}
-                allItems={feedItems}
-                onUnsave={toggleSaveItem}
-              />
+              <ConciergeView />
             </div>
           )}
 
@@ -1140,7 +1124,7 @@ export async function getServerSideProps(context: any) {
   let initialTab: TabId = 'vola-vola';
   if (pathname === '/soggiorna') initialTab = 'soggiorna';
   else if (pathname === '/drops') initialTab = 'drops';
-  else if (pathname === '/salvati') initialTab = 'salvati';
+  else if (pathname === '/concierge') initialTab = 'concierge';
   else if (pathname === '/profilo' || pathname === '/waitlist') initialTab = 'profilo';
 
   // Saved items sono risolti client-side (AppState): niente da seedare in SSR.

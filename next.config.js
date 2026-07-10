@@ -22,6 +22,14 @@ const nextConfig = {
   reactStrictMode: true,
   // Non esporre la versione di Next (info-disclosure).
   poweredByHeader: false,
+  // /salvati è stata rinominata /concierge (il tab mostra il Concierge AI, non
+  // una lista "salvati"): 301 permanente per non rompere link/bookmark esistenti.
+  // Con l'i18n attivo Next applica il redirect anche alla variante /en.
+  async redirects() {
+    return [
+      { source: '/salvati', destination: '/concierge', permanent: true },
+    ];
+  },
   // i18n routing nativo (pages router): / = italiano, /en = inglese, entrambi
   // renderizzati server-side → indicizzabili da Google. localeDetection:false
   // per non redirigere in base all'Accept-Language (URL espliciti e stabili).

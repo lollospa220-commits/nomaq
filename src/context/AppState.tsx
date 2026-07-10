@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
-export type TabId = 'vola-vola' | 'soggiorna' | 'drops' | 'salvati' | 'profilo';
+export type TabId = 'vola-vola' | 'soggiorna' | 'drops' | 'concierge' | 'profilo';
 
 interface AppContextType {
   activeTab: TabId;

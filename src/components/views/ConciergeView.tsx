@@ -1,8 +1,8 @@
 import React from 'react';
-import { Sparkles, Utensils, Map, Languages, Ticket, Paperclip, Send, Heart } from 'lucide-react';
+import { Sparkles, Utensils, Map, Languages, Ticket, Paperclip, Send } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
-export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedIds: string[]; allItems: any[]; onUnsave: (id: string) => void }) {
+export default function ConciergeView() {
   const { t, lang } = useLanguage();
   const [chatInput, setChatInput] = React.useState('');
   const [messages, setMessages] = React.useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
@@ -11,7 +11,6 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
   // Synchronous guard: the `thinking` state updates in the next render, so a
   // rapid double-Enter could otherwise fire two requests.
   const sendingRef = React.useRef(false);
-  const saved = allItems.filter((i) => savedIds.includes(i.id));
 
   React.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -125,28 +124,6 @@ export default function ConciergeView({ savedIds, allItems, onUnsave }: { savedI
           </div>
         )}
         <div ref={chatEndRef} />
-      </div>
-
-      {/* Hidden SalvatiView for E2E test compatibility */}
-      <div style={{ display: 'none' }} aria-hidden="true" data-testid="salvati-list">
-        {saved.length === 0 ? (
-          <div data-testid="salvati-empty">
-            <p>No saved trips yet</p>
-          </div>
-        ) : (
-          saved.map((item) => (
-            <div key={item.id} data-testid={`saved-item-${item.id}`}>
-              <h4 className="truncate">{item.destination}</h4>
-              <button
-                data-testid={`unsave-btn-${item.id}`}
-                onClick={() => onUnsave(item.id)}
-                className="filled text-electric-orange"
-              >
-                <Heart className="w-4 h-4 fill-nomaq-violet text-nomaq-violet" />
-              </button>
-            </div>
-          ))
-        )}
       </div>
 
       {/* Chat Input Bar — su mobile resta sopra la BottomNav fissa (60px +

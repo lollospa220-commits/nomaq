@@ -9,7 +9,7 @@ export default function DesktopNav({ activeTab, onNavigate, isDarkBackground }: 
     { id: 'vola-vola', label: t('navFlights') },
     { id: 'soggiorna', label: t('navSoggiorna') },
     { id: 'drops', label: t('navDrops') },
-    { id: 'salvati', label: t('navConcierge') },
+    { id: 'concierge', label: t('navConcierge') },
     { id: 'profilo', label: t('navProfilo') },
   ];
   return (
