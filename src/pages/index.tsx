@@ -238,7 +238,11 @@ export default function Home({
       // ricerca è completamente separata e scrive solo su tripPlan / area
       // risultati ricerca (searchFlights/searchHotels) / riepilogo AI.
       if (data.mode === 'trip' && data.plan) {
-        // Itinerario AI a 360°: overlay che sostituisce la home.
+        // Itinerario AI a 360°: overlay che sostituisce la home. TripPlanView è
+        // reso SOLO su vola-vola: se la ricerca parte da un'altra tab (es.
+        // Soggiorna, che condivide handleSearch), porta l'utente lì — altrimenti
+        // il piano resterebbe invisibile e la ricerca sembrerebbe non fare nulla.
+        if (activeTab !== 'vola-vola') handleNavigate('vola-vola');
         setTripPlan({ ...data.plan, __seq: seq });
         setAiSummary('');
         setAiPackage(null);
@@ -344,13 +348,23 @@ export default function Home({
     setIsRefreshingDeals(true);
     try {
       const res = await fetch(`/api/custom-flights?origin=${encodeURIComponent(originIata)}&departure=${dep}&returnDate=${ret}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (seq !== dealsSeqRef.current) return; // un caricamento più recente ha preso il posto
-        if (Array.isArray(data) && data.length > 0) setDeals(data.map(formatFlight));
+      if (seq !== dealsSeqRef.current) return; // un caricamento più recente ha preso il posto
+      if (!res.ok) {
+        // 400 (origine non risolta), 429 (rate-limit), 500: NON lasciare i deal
+        // della selezione precedente — mostrerebbero rotta/date/deep-link Kiwi
+        // incoerenti coi selettori, con lo spinner spento a fingere successo.
+        setDeals([]);
+        console.error('Custom deals request failed:', res.status);
+        return;
       }
+      const data = await res.json();
+      if (seq !== dealsSeqRef.current) return;
+      // Anche una lista vuota sostituisce i deal (meglio il feed SSR generico che
+      // le card della selezione precedente): formatFlight normalizza per la UI.
+      if (Array.isArray(data)) setDeals(data.map(formatFlight));
     } catch (err) {
       if (seq !== dealsSeqRef.current) return;
+      setDeals([]);
       console.error('Failed to fetch custom deals', err);
     } finally {
       // Solo la richiesta corrente spegne lo spinner: una risposta stale non
