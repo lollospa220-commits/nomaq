@@ -2,6 +2,7 @@ import React from 'react';
 import { User, ArrowRight, Sparkles, Calendar, Settings, Tag, LogOut, CheckCircle2, Share2, PartyPopper } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import Image from 'next/image';
 
 export default function ProfiloView({
   initialCount,
@@ -144,9 +145,11 @@ export default function ProfiloView({
         <div className="nomaq-card backdrop-blur-md p-5" data-testid="profile-card">
           <div className="flex items-center gap-4">
             {profile?.avatar_url ? (
-              <img
+              <Image
                 src={profile.avatar_url}
                 alt={displayName}
+                width={64}
+                height={64}
                 className="w-16 h-16 rounded-full object-cover flex-shrink-0"
               />
             ) : (

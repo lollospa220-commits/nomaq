@@ -95,13 +95,13 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
-      {
-        source: '/favicon.svg',
+      ...['/favicon.png', '/favicon-32x32.png', '/apple-touch-icon.png'].map((source) => ({
+        source,
         locale: false,
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
-      },
+      })),
     ];
   },
 };

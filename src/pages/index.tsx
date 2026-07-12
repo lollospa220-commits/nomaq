@@ -631,7 +631,7 @@ export default function Home({
               <div
                 className="fixed inset-0 -z-[60]"
                 aria-hidden="true"
-                style={{ background: 'radial-gradient(ellipse 85% 60% at 50% -5%, #1b1540 0%, #0a0a1a 62%)' }}
+                style={{ background: 'radial-gradient(ellipse 110% 85% at 50% 42%, #0a1422 0%, #020408 78%)' }}
               />
               {globeReady && <GlobeGL />}
             </>

@@ -1,6 +1,7 @@
 import { TabId } from '@/context/AppState';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Image from 'next/image';
 
 /* Desktop top navbar */
 export default function DesktopNav({ activeTab, onNavigate, isDarkBackground }: { activeTab: TabId; onNavigate: (id: TabId) => void; isDarkBackground?: boolean }) {
@@ -18,11 +19,14 @@ export default function DesktopNav({ activeTab, onNavigate, isDarkBackground }: 
       data-testid="desktop-nav"
     >
       <div className="max-w-6xl mx-auto h-20 px-6 flex items-center justify-between">
-        <img
+        <Image
           src="/images/logo.png"
           alt="Nomaq"
+          width={150}
+          height={48}
           className={`h-12 w-auto object-contain cursor-pointer ${isDarkBackground ? 'brightness-0 invert' : ''}`}
           onClick={() => onNavigate('vola-vola')}
+          priority
         />
         <nav className="flex items-center gap-1" aria-label="Navigazione principale desktop">
           {items.map((item) => {
