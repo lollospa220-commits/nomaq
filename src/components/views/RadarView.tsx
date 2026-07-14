@@ -12,10 +12,10 @@ import type { FeedItem } from '@/types/domain';
    realmente osservato in questo ciclo di cache. ── */
 
 // Origine reale delle tariffe (vedi fetchTravelpayoutsFlights/Duffel in
-// travelApi.ts: origin è sempre 'MXP'). Il selettore città sotto resta
+// travelApi.ts: DEFAULT_FLIGHT_ORIGIN = 'NAP'). Il selettore città sotto resta
 // decorativo finché non esiste una ricerca per-origine reale — non lo si
 // finge funzionante mostrando una città diversa da quella davvero cercata.
-const REAL_ORIGIN_LABEL = 'Milano';
+const REAL_ORIGIN_LABEL = 'Napoli';
 
 // Base del calo = ultima osservazione reale (priorPrice). Sulle righe reali
 // original_price è impostato = price (per nascondere il barrato nel feed home),

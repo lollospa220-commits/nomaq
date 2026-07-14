@@ -66,7 +66,7 @@ async function withCache(key: string, produce: () => Promise<any[]>): Promise<an
 // Travelpayouts and Duffel fetchers.
 const FLIGHT_DESTINATIONS = [
   { code: 'BCN', name: 'Barcellona', country: 'Spagna', color: '#e05b7b', tag: 'WEEKEND' },
-  { code: 'LGW', name: 'Londra', country: 'Regno Unito', color: '#3a6fbf', tag: 'BEST PRICE' },
+  { code: 'STN', name: 'Londra', country: 'Regno Unito', color: '#3a6fbf', tag: 'LOW COST' },
   { code: 'LIS', name: 'Lisbona', country: 'Portogallo', color: '#e08030', tag: 'HOT DEAL' },
   { code: 'NRT', name: 'Tokyo', country: 'Giappone', color: '#e05b7b', tag: 'TOP PICK' },
   { code: 'JFK', name: 'New York', country: 'Stati Uniti', color: '#3a6fbf', tag: 'BEST PRICE' },
@@ -92,6 +92,37 @@ const IATA_AIRLINE_NAMES: Record<string, string> = {
   FZ: 'flydubai', EY: 'Etihad Airways', NO: 'Neos', OA: 'Olympic Air',
 };
 
+// Low-cost carriers da evidenziare esplicitamente nel feed (Travelpayouts le
+// espone, ma con "solo la più economica" spesso finivano fuori se un legacy
+// carrier era di pochi euro più basso o assente dalla cache del mese).
+const LCC_AIRLINE_CODES = new Set([
+  'FR', 'U2', 'W6', 'W4', 'VY', 'V7', 'HV', 'PC', 'EW', 'LS', 'XQ', 'XC',
+]);
+
+// Origine predefinita del feed home/Radar: Napoli (coerente con la UI) offre
+// più rotte Ryanair/easyJet rispetto al vecchio default MXP.
+const DEFAULT_FLIGHT_ORIGIN = 'NAP';
+
+function airlineLabel(code: string): string {
+  return IATA_AIRLINE_NAMES[code] || code || 'Compagnia n/d';
+}
+
+function isLccAirline(code: string): boolean {
+  return LCC_AIRLINE_CODES.has(String(code || '').toUpperCase());
+}
+
+function selectBestAndLccFares<T extends { price: number; airlineCode: string }>(
+  fares: T[],
+): { best: T | null; lcc: T | null } {
+  if (fares.length === 0) return { best: null, lcc: null };
+  const best = fares.reduce((min, f) => (f.price < min.price ? f : min), fares[0]);
+  const lccPool = fares.filter((f) => isLccAirline(f.airlineCode));
+  if (lccPool.length === 0) return { best, lcc: null };
+  const lcc = lccPool.reduce((min, f) => (f.price < min.price ? f : min), lccPool[0]);
+  if (lcc.airlineCode === best.airlineCode) return { best, lcc: null };
+  return { best, lcc };
+}
+
 function resolveDestCode(item: any): string | null {
   if (item.dest_code) return item.dest_code;
   const key = `${item.destination || ''} ${item.id || ''}`.toLowerCase();
@@ -101,7 +132,7 @@ function resolveDestCode(item: any): string | null {
     ['lisbona', 'LIS'], ['lis', 'LIS'],
     ['dubai', 'DXB'], ['dxb', 'DXB'],
     ['barcellona', 'BCN'], ['barcelona', 'BCN'], ['bcn', 'BCN'],
-    ['londra', 'LGW'], ['london', 'LGW'], ['lgw', 'LGW'],
+    ['londra', 'STN'], ['london', 'STN'], ['stn', 'STN'], ['lgw', 'LGW'],
     ['tokyo', 'NRT'], ['nrt', 'NRT'],
     ['sicilia', 'PMO'], ['parigi', 'CDG'], ['paris', 'CDG'],
     ['amsterdam', 'AMS'], ['ams', 'AMS'],
@@ -363,12 +394,46 @@ function formatDurationMinutes(minutes: any): string | null {
   return h === 0 ? `${m}m` : `${h}h ${m}m`;
 }
 
+function buildTravelpayoutsFlightRow(
+  dest: (typeof FLIGHT_DESTINATIONS)[number],
+  offer: any,
+  origin: string,
+  idSuffix: string,
+  tagOverride?: string,
+): any {
+  const price = Math.round(Number(offer.price));
+  const airlineCode = typeof offer?.airline === 'string' ? offer.airline.toUpperCase() : '';
+  const airlineName = airlineLabel(airlineCode);
+  const departureDay = offer.departure_at.slice(0, 10);
+  const dateStr = new Date(departureDay).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+  const duration = formatDurationMinutes(offer?.duration);
+  const originCity = originLabelForIata(origin) || origin;
+
+  const row: any = {
+    id: `flight-tp-${dest.code}${idSuffix}`,
+    destination: dest.name,
+    country: dest.country,
+    dest_code: dest.code,
+    origin_code: origin,
+    price,
+    original_price: price,
+    description: `Tariffa indicativa di mercato ${originCity} → ${dest.code} con ${airlineName}. Prezzo osservato di recente, soggetto a disponibilità; il prezzo finale è sul sito del partner.`,
+    image: getDestinationImage(dest.name, `${dest.code}-${departureDay}-${airlineCode || 'any'}`),
+    airline: airlineName,
+    date_info: `${dateStr} (Solo andata)`,
+    departure_date: departureDay,
+    tag: tagOverride || dest.tag,
+    color: dest.color,
+  };
+  if (duration) row.duration = duration;
+  return row;
+}
+
 // Travelpayouts Data API: prezzi reali di mercato (cache Aviasales) per le
-// stesse destinazioni della griglia. Una sola card per destinazione: la più
-// economica. Nessun original_price e nessun rating: non sono dati reali e la
-// UI nasconde barrato/stelle quando i campi sono assenti.
+// stesse destinazioni della griglia. Per ogni rotta: la tariffa più economica
+// +, se diversa, la migliore tra le low-cost (Ryanair, easyJet, Wizz, …).
 async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
-  // YYYY-MM del mese prossimo: la cache dei prezzi è più densa qualche settimana avanti.
+  const origin = DEFAULT_FLIGHT_ORIGIN;
   const now = new Date();
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const departureMonth = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
@@ -376,71 +441,49 @@ async function fetchTravelpayoutsFlights(token: string): Promise<any[]> {
   const perDestination = await Promise.all(FLIGHT_DESTINATIONS.map(async (dest) => {
     try {
       const params = new URLSearchParams({
-        origin: 'MXP',
+        origin,
         destination: dest.code,
         departure_at: departureMonth,
         one_way: 'true',
         direct: 'false',
         currency: 'eur',
         sorting: 'price',
-        limit: '3',
+        limit: '15',
         token,
       });
       const res = await fetch(`${TRAVELPAYOUTS_PRICES_URL}?${params.toString()}`, {
         signal: AbortSignal.timeout(10000),
       });
-      if (!res.ok) return null;
+      if (!res.ok) return [];
       const json = await res.json();
-      if (!json?.success) return null;
+      if (!json?.success) return [];
 
-      // Solo offerte con prezzo e data di partenza reali e parsabili.
       const offers = (Array.isArray(json?.data) ? json.data : []).filter((o: any) =>
         Number.isFinite(Number(o?.price)) && Number(o?.price) > 0 &&
         typeof o?.departure_at === 'string' && /^\d{4}-\d{2}-\d{2}/.test(o.departure_at));
-      if (offers.length === 0) return null;
+      if (offers.length === 0) return [];
 
-      // sorting=price dovrebbe già ordinare, ma scegli il minimo per sicurezza.
-      const cheapest = offers.reduce((min: any, o: any) => (Number(o.price) < Number(min.price) ? o : min), offers[0]);
+      type TpPick = { offer: any; price: number; airlineCode: string };
+      const normalized: TpPick[] = offers.map((o: any) => ({
+        offer: o,
+        price: Math.round(Number(o.price)),
+        airlineCode: typeof o?.airline === 'string' ? o.airline.toUpperCase() : '',
+      }));
+      const { best, lcc } = selectBestAndLccFares<TpPick>(normalized);
+      if (!best) return [];
 
-      const price = Math.round(Number(cheapest.price));
-      const airlineCode = typeof cheapest?.airline === 'string' ? cheapest.airline.toUpperCase() : '';
-      const airlineName = IATA_AIRLINE_NAMES[airlineCode] || airlineCode || 'Compagnia n/d';
-      const departureDay = cheapest.departure_at.slice(0, 10); // YYYY-MM-DD
-      const dateStr = new Date(departureDay).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
-      const duration = formatDurationMinutes(cheapest?.duration);
-
-      // Id STABILE per destinazione (nessuna data nell'id). L'id è la chiave con
-      // cui i preferiti sono persistiti in saved_items: con la data (della
-      // tariffa più economica) codificata nell'id, ogni ciclo di fetch — e ogni
-      // cambio mese — generava un id nuovo, così la card salvata perdeva il
-      // cuore pieno e in DB restava un item_id orfano. La data reale di partenza
-      // viaggia ora nella colonna departure_date (persistita su Supabase), da
-      // cui getAffiliateLink ricostruisce il deep link Kiwi sulla stessa data
-      // anche per le righe rilette dalla cache.
-      const row: any = {
-        id: `flight-tp-${dest.code}`,
-        destination: dest.name,
-        country: dest.country,
-        dest_code: dest.code,
-        price,
-        original_price: price, // colonna NOT NULL: = price ⇒ sconto 0 ⇒ barrato nascosto
-        description: `Tariffa indicativa di mercato MXP → ${dest.code} con ${airlineName}. Prezzo osservato di recente, soggetto a disponibilità; il prezzo finale è sul sito del partner.`,
-        image: getDestinationImage(dest.name, `${dest.code}-${departureDay}`),
-        airline: airlineName,
-        date_info: `${dateStr} (Solo andata)`,
-        departure_date: departureDay,
-        tag: dest.tag,
-        color: dest.color,
-      };
-      if (duration) row.duration = duration;
-      return row;
+      const rows: any[] = [buildTravelpayoutsFlightRow(dest, best.offer, origin, '')];
+      if (lcc) {
+        rows.push(buildTravelpayoutsFlightRow(dest, lcc.offer, origin, '-lcc', 'LOW COST'));
+      }
+      return rows;
     } catch (err) {
       console.warn(`Failed fetching Travelpayouts prices for ${dest.code}:`, err);
-      return null;
+      return [];
     }
   }));
 
-  return perDestination.filter(Boolean) as any[];
+  return perDestination.flat();
 }
 
 // Risolve una stringa di testo libero in un codice IATA tramite l'API di Travelpayouts
@@ -471,34 +514,42 @@ export async function resolveCityToIATA(cityName: string): Promise<string | null
 
 type FarePrecision = 'exact' | 'month';
 
+type CustomFarePick = {
+  best: LiveFare | null;
+  lcc: LiveFare | null;
+  precision: FarePrecision | null;
+};
+
 // Rilassamento onesto che PRESERVA il tipo di viaggio scelto per alzare l'hit-rate
-// di tariffe REALI senza inventare prezzi. La cache Travelpayouts per un A/R a
-// date esatte è rarissima → con la sola prima query quasi tutte le card
-// restavano "Cerca". Ordine: (1) A/R date esatte, (2) A/R nel mese, poi ripiego
-// (3) solo andata data esatta, (4) solo andata nel mese. Le tariffe A/R restano
-// A/R (link A/R) e le solo andata restano solo andata (link solo andata): il
-// tipo mostrato e il tipo su Kiwi coincidono sempre. `precision` = quanto aderisce
-// alle date scelte. null se nessun livello ha dati reali.
-async function fetchBestCustomFare(
+// di tariffe REALI senza inventare prezzi. Restituisce la migliore assoluta e,
+// se diversa, la migliore low-cost (Ryanair/easyJet/…) sulla stessa rotta.
+async function fetchBestCustomFares(
   origin: string,
   dest: string,
   departureDate: string,
   returnDate: string,
-): Promise<{ fare: LiveFare; precision: FarePrecision } | null> {
-  const depMonth = departureDate.slice(0, 7); // YYYY-MM
+): Promise<CustomFarePick> {
+  const depMonth = departureDate.slice(0, 7);
+  const pick = (fares: LiveFare[]): CustomFarePick => {
+    const { best, lcc } = selectBestAndLccFares(fares);
+    return { best, lcc, precision: best ? 'exact' : null };
+  };
+  const pickMonth = (fares: LiveFare[]): CustomFarePick => {
+    const { best, lcc } = selectBestAndLccFares(fares);
+    return { best, lcc, precision: best ? 'month' : null };
+  };
+
   if (returnDate) {
-    // Intento andata+ritorno: tieni l'A/R il più a lungo possibile.
-    const rtExact = await fetchLiveFares(origin, dest, 1, departureDate, returnDate);
-    if (rtExact[0]) return { fare: rtExact[0], precision: 'exact' };
-    const rtMonth = await fetchLiveFares(origin, dest, 1, depMonth, returnDate.slice(0, 7));
-    if (rtMonth[0]) return { fare: rtMonth[0], precision: 'month' };
+    const rtExact = await fetchLiveFares(origin, dest, 15, departureDate, returnDate);
+    if (rtExact.length > 0) return pick(rtExact);
+    const rtMonth = await fetchLiveFares(origin, dest, 15, depMonth, returnDate.slice(0, 7));
+    if (rtMonth.length > 0) return pickMonth(rtMonth);
   }
-  // Solo andata: intento OW dell'utente, o ultimo ripiego onesto per l'A/R.
-  const owExact = await fetchLiveFares(origin, dest, 1, departureDate, undefined);
-  if (owExact[0]) return { fare: owExact[0], precision: 'exact' };
-  const owMonth = await fetchLiveFares(origin, dest, 1, depMonth, undefined);
-  if (owMonth[0]) return { fare: owMonth[0], precision: 'month' };
-  return null;
+  const owExact = await fetchLiveFares(origin, dest, 15, departureDate, undefined);
+  if (owExact.length > 0) return pick(owExact);
+  const owMonth = await fetchLiveFares(origin, dest, 15, depMonth, undefined);
+  if (owMonth.length > 0) return pickMonth(owMonth);
+  return { best: null, lcc: null, precision: null };
 }
 
 // "Selezionati per te" LIVE: per l'origine e le date ESATTE scelte dall'utente,
@@ -518,79 +569,80 @@ export async function fetchCustomFlights(originIata: string, departureDate: stri
   const dateStr = new Date(departureDate).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
   const returnStr = ret ? new Date(ret).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }) : '';
 
+  const buildCustomRow = (
+    dest: (typeof FLIGHT_DESTINATIONS)[number],
+    fare: LiveFare | null,
+    precision: FarePrecision | null,
+    idSuffix: string,
+    tagOverride?: string,
+  ) => {
+    const price = fare ? fare.price : null;
+    const airlineName = fare ? fare.airline : 'Compagnia n/d';
+    const isRT = !!fare?.returnDay;
+    const monthLabel = new Date(departureDate).toLocaleDateString('it-IT', { month: 'long' });
+
+    let description: string;
+    let dateInfo: string;
+    if (!fare) {
+      description = `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri il partner per le migliori tariffe su queste date.`;
+      dateInfo = ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`;
+    } else if (precision === 'month') {
+      description = `${originCity} → ${dest.name} · da ${price}€ ${isRT ? 'A/R' : 'solo andata'} con ${airlineName} — tariffa più bassa reale di ${monthLabel}. Scegli le tue date sul sito del partner.`;
+      dateInfo = `${monthLabel} · ${isRT ? 'A/R' : 'solo andata'}`;
+    } else if (isRT) {
+      description = `${originCity} → ${dest.name} · A/R ${dateStr} – ${returnStr} · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`;
+      dateInfo = `${dateStr} – ${returnStr}`;
+    } else {
+      description = `${originCity} → ${dest.name} · ${dateStr} solo andata · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`;
+      dateInfo = `${dateStr} · solo andata`;
+    }
+
+    const row: any = {
+      id: `flight-custom-${origin}-${dest.code}-${departureDate}-${ret || 'ow'}${idSuffix}`,
+      type: 'flight',
+      destination: dest.name,
+      country: dest.country,
+      price,
+      original_price: price,
+      description,
+      image: getDestinationImage(dest.name, `${dest.code}-${departureDate}-${fare?.airlineCode || 'any'}`),
+      airline: airlineName,
+      date_info: dateInfo,
+      tag: tagOverride || dest.tag,
+      color: dest.color,
+      origin_code: origin,
+      dest_code: dest.code,
+      departure_date: departureDate,
+      return_date: fare && !isRT ? '' : ret,
+    };
+    if (fare?.duration) row.duration = fare.duration;
+    row.booking_url = getAffiliateLink(row, 'flight');
+    return row;
+  };
+
   const perDestination = await Promise.all(FLIGHT_DESTINATIONS.map(async (dest) => {
-    if (dest.code === origin) return null; // niente rotta città → stessa città
+    if (dest.code === origin) return [];
     try {
-      // Tariffa reale con rilassamento onesto (A/R esatte → A/R mese → solo
-      // andata esatta → solo andata mese): mai un prezzo per-data inventato.
-      const best = await fetchBestCustomFare(origin, dest.code, departureDate, ret);
-      const fare = best?.fare ?? null;
-      const precision = best?.precision ?? null;
-      const price = fare ? fare.price : null;
-      const airlineName = fare ? fare.airline : 'Compagnia n/d';
-      // La tariffa trovata è davvero A/R? Travelpayouts espone return_at SOLO
-      // sulle offerte andata+ritorno. Copy E link Kiwi derivano da qui: un
-      // prezzo di sola andata non finisce mai sotto un link A/R (che su Kiwi
-      // costerebbe ~il doppio) e viceversa → i due valori sono confrontabili.
-      const isRT = !!fare?.returnDay;
-      const monthLabel = new Date(departureDate).toLocaleDateString('it-IT', { month: 'long' });
+      const picks = await fetchBestCustomFares(origin, dest.code, departureDate, ret);
+      const rows: any[] = [];
 
-      let description: string;
-      let dateInfo: string;
-      if (!fare) {
-        description = `${originCity} → ${dest.name} · ${ret ? `A/R ${dateStr} – ${returnStr}` : dateStr}. Apri il partner per le migliori tariffe su queste date.`;
-        dateInfo = ret ? `${dateStr} – ${returnStr}` : `${dateStr} (Solo andata)`;
-      } else if (precision === 'month') {
-        description = `${originCity} → ${dest.name} · da ${price}€ ${isRT ? 'A/R' : 'solo andata'} con ${airlineName} — tariffa più bassa reale di ${monthLabel}. Scegli le tue date sul sito del partner.`;
-        dateInfo = `${monthLabel} · ${isRT ? 'A/R' : 'solo andata'}`;
-      } else if (isRT) {
-        description = `${originCity} → ${dest.name} · A/R ${dateStr} – ${returnStr} · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`;
-        dateInfo = `${dateStr} – ${returnStr}`;
-      } else {
-        description = `${originCity} → ${dest.name} · ${dateStr} solo andata · da ${price}€ con ${airlineName}. Prezzo reale di mercato, soggetto a disponibilità.`;
-        dateInfo = `${dateStr} · solo andata`;
+      if (picks.best || !picks.lcc) {
+        rows.push(buildCustomRow(dest, picks.best, picks.precision, ''));
       }
-
-      const row: any = {
-        // origine + ritorno nell'id: senza, cambiando SOLO l'origine (stessa
-        // dest+data) la card avrebbe id identico → apparirebbe già salvata e il
-        // toggle colliderebbe tra rotte diverse. departure_date/origin_code/
-        // return_date restano campi espliciti → deep-link Kiwi corretto comunque.
-        id: `flight-custom-${origin}-${dest.code}-${departureDate}-${ret || 'ow'}`,
-        type: 'flight',
-        destination: dest.name,
-        country: dest.country,
-        price,
-        // colonna/campo NOT NULL a valle: = price ⇒ sconto 0 ⇒ nessun barrato finto.
-        original_price: price,
-        description,
-        image: getDestinationImage(dest.name, `${dest.code}-${departureDate}`),
-        airline: airlineName,
-        date_info: dateInfo,
-        tag: dest.tag,
-        color: dest.color,
-        origin_code: origin,
-        dest_code: dest.code,
-        departure_date: departureDate,
-        // Link Kiwi solo andata SOLO quando abbiamo trovato davvero una tariffa
-        // solo andata (così prezzo e Kiwi sono confrontabili). Con tariffa A/R o
-        // senza tariffa ("Cerca") si onorano le date scelte dall'utente.
-        return_date: fare && !isRT ? '' : ret,
-      };
-      if (fare?.duration) row.duration = fare.duration;
-      // Link Kiwi (via getAffiliateLink): il tipo (A/R o solo andata) è già
-      // coerente col prezzo mostrato tramite return_date, quindi lo è anche il link.
-      row.booking_url = getAffiliateLink(row, 'flight');
-      return row;
+      if (picks.lcc) {
+        rows.push(buildCustomRow(dest, picks.lcc, picks.precision, '-lcc', 'LOW COST'));
+      }
+      if (rows.length === 0) {
+        rows.push(buildCustomRow(dest, null, null, ''));
+      }
+      return rows;
     } catch (err) {
       console.warn(`Failed fetching custom flights for ${dest.code}:`, err);
-      return null;
+      return [buildCustomRow(dest, null, null, '')];
     }
   }));
 
-  // Prima le card con prezzo reale (ordinate per prezzo), poi le eventuali
-  // "Cerca" senza tariffa in cache.
-  return (perDestination.filter(Boolean) as any[]).sort((a, b) => {
+  return perDestination.flat().sort((a, b) => {
     if (a.price == null && b.price == null) return 0;
     if (a.price == null) return 1;
     if (b.price == null) return -1;
@@ -791,7 +843,7 @@ async function computeRealFlights() {
   // restituito al chiamante: mai scritti su Supabase (schema flights intatto,
   // nessuna colonna nuova). Se la lettura fallisce, nessun drop viene
   // mostrato questo ciclo (fail safe verso "niente drop", mai verso un drop finto).
-  let priorPriceByDest = new Map<string, number>();
+  let priorPriceById = new Map<string, number>();
   try {
     const { data: priorRows } = await supabase.from('flights').select('id,destination,price');
     (priorRows || []).forEach((r: any) => {
@@ -802,7 +854,7 @@ async function computeRealFlights() {
       const id = String(r?.id || '');
       const isRealObservation = id.startsWith('flight-tp-') || id.startsWith('flight-duffel-') || id.startsWith('live-flight-');
       const p = Number(r?.price);
-      if (isRealObservation && r?.destination && Number.isFinite(p)) priorPriceByDest.set(r.destination, p);
+      if (isRealObservation && Number.isFinite(p)) priorPriceById.set(id, p);
     });
   } catch (err) {
     console.warn('Could not read prior flight prices for drop-tracking:', err);
@@ -811,7 +863,7 @@ async function computeRealFlights() {
   const withDropInfo = (rows: any[]) => {
     const observedAt = Date.now();
     return rows.map((r) => {
-      const prior = priorPriceByDest.get(r.destination);
+      const prior = priorPriceById.get(r.id);
       const hasDrop = typeof prior === 'number' && prior > r.price;
       return {
         ...r,
@@ -860,7 +912,7 @@ async function computeRealFlights() {
   }
 
   try {
-    const origin = 'MXP';
+    const origin = DEFAULT_FLIGHT_ORIGIN;
     const departureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Query all destinations in parallel: each offer_request takes seconds and

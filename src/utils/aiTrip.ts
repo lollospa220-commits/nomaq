@@ -573,7 +573,7 @@ async function normalizeDestination(parsed: any, lang?: string): Promise<AiTripR
   // stime, quindi il caso peggiore = comportamento attuale.
   const destIata = pickDestIata(rawFlights);
   const [fares, liveHotelsRaw] = await Promise.all([
-    destIata ? fetchLiveFares('MXP', destIata, 6).catch(() => []) : Promise.resolve([]),
+    destIata ? fetchLiveFares('NAP', destIata, 10).catch(() => []) : Promise.resolve([]),
     fetchLiveHotels(destination, 6).catch(() => []),
   ]);
 
