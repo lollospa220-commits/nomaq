@@ -101,7 +101,7 @@ const LCC_AIRLINE_CODES = new Set([
 
 // Origine predefinita del feed home/Radar: Napoli (coerente con la UI) offre
 // più rotte Ryanair/easyJet rispetto al vecchio default MXP.
-const DEFAULT_FLIGHT_ORIGIN = 'NAP';
+export const DEFAULT_FLIGHT_ORIGIN = 'NAP';
 
 function airlineLabel(code: string): string {
   return IATA_AIRLINE_NAMES[code] || code || 'Compagnia n/d';
@@ -140,8 +140,8 @@ function resolveDestCode(item: any): string | null {
     ['maldive', 'MLE'], ['maldives', 'MLE'], ['mle', 'MLE'],
   ];
   const hit = map.find(([k]) => key.includes(k));
-  // Nessun match → null: il chiamante costruisce una ricerca generica da MXP
-  // invece di linkare silenziosamente Tokyo (il vecchio fallback 'NRT').
+  // Nessun match → null: il chiamante costruisce una ricerca generica dall'origine
+  // predefinita invece di linkare silenziosamente Tokyo (il vecchio fallback 'NRT').
   return hit ? hit[1] : null;
 }
 
@@ -156,7 +156,7 @@ function resolveOriginCode(item: any): string {
   if (desc.includes('roma') || dest.includes('roma')) return 'ROM';
   if (desc.includes('milano') || dest.includes('milano')) return 'MIL';
   if (desc.includes('venezia') || dest.includes('venezia')) return 'VCE';
-  return 'MXP'; // default fallback
+  return DEFAULT_FLIGHT_ORIGIN;
 }
 
 // Helper to get affiliate link
@@ -973,8 +973,8 @@ async function computeRealFlights() {
           price,
           original_price: price, // colonna NOT NULL: = price ⇒ sconto 0 ⇒ barrato nascosto
           description: duration
-            ? `Volo reale MXP → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}. Durata: ${duration}.`
-            : `Volo reale MXP → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}.`,
+            ? `Volo reale ${origin} → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}. Durata: ${duration}.`
+            : `Volo reale ${origin} → ${dest.code} trovato via Duffel. Compagnia: ${airlineName}.`,
           image: getDestinationImage(dest.name, `${dest.code}-${offer.id}`),
           airline: airlineName,
           date_info: `${dateStr} (Solo andata)`,

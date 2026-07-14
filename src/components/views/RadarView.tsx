@@ -249,12 +249,12 @@ function RadarView({ flights, simulatedDrops }: { flights: FeedItem[]; simulated
         <p className="text-slate-500 text-sm lg:text-base">{t('dropsSubtitle')}</p>
       </div>
 
-      {/* Filtri. L'origine reale delle tariffe drop è sempre Milano/MXP (vedi
+      {/* Filtri. L'origine reale delle tariffe drop è Napoli (vedi
           REAL_ORIGIN_LABEL): mostriamo un'origine STATICA e onesta invece di un
-          menù città che non filtrava nulla (le card dicono comunque "Milano →").
-          I viaggiatori invece ora finiscono davvero nel link Kiwi (param adults). */}
+          menù città che non filtrava nulla. I viaggiatori finiscono nel link Kiwi
+          (param adults). */}
       <div className="flex flex-col lg:flex-row gap-3 mb-8">
-        {/* Origine reale (statica): le tariffe drop partono da Milano/MXP */}
+        {/* Origine reale (statica): le tariffe drop partono da Napoli */}
         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-nomaq-navy shadow-soft w-full lg:w-auto lg:min-w-[200px]">
           <MapPin className="w-4 h-4 text-nomaq-indigo" />
           {t('fromPrefix')} {REAL_ORIGIN_LABEL}

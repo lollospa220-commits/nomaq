@@ -8,3 +8,12 @@
  * precedenza e non serviranno modifiche al codice.
  */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://nomaq-chi.vercel.app').replace(/\/+$/, '');
+
+/** Hostname senza www — per testi legali e share che devono seguire il deploy attivo. */
+export const SITE_HOST = (() => {
+  try {
+    return new URL(SITE_URL).hostname.replace(/^www\./, '');
+  } catch {
+    return 'nomaq-chi.vercel.app';
+  }
+})();

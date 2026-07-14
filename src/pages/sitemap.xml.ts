@@ -12,6 +12,8 @@ const ENTRIES: Entry[] = [
   { path: '/soggiorna', changefreq: 'daily', priority: '0.9' },
   { path: '/drops', changefreq: 'daily', priority: '0.8' },
   { path: '/waitlist', changefreq: 'weekly', priority: '0.8' },
+  { path: '/concierge', changefreq: 'weekly', priority: '0.7' },
+  { path: '/profilo', changefreq: 'weekly', priority: '0.5' },
   { path: '/note-legali', changefreq: 'monthly', priority: '0.3' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
   { path: '/termini', changefreq: 'monthly', priority: '0.3' },

@@ -56,6 +56,8 @@ const it = {
   tripExtras: 'trasporti + extra',
   tellNomaq: 'Condividi con Nomaq budget, date e preferenze…',
   noOffers: 'Nessuna offerta disponibile',
+  hotelsDemoNotice:
+    'Anteprima limitata: il feed hotel reale si attiva appena la chiave RapidAPI è configurata in produzione. Le strutture qui sotto sono esempi illustrativi.',
   noExactMatch: 'Nessuna offerta già pronta per questa meta: apri la ricerca diretta qui sotto.',
   searchNow: 'Cerca',
   destinationsLabel: 'Destinazioni',
@@ -339,6 +341,8 @@ const en: Record<TranslationKey, string> = {
   tripExtras: 'transport + extras',
   tellNomaq: 'Share your budget, dates and preferences with Nomaq…',
   noOffers: 'No offers available',
+  hotelsDemoNotice:
+    'Limited preview: the live hotel feed activates once the RapidAPI key is configured in production. The stays below are illustrative samples.',
   noExactMatch: 'No ready-made deals for this destination: open a direct search below.',
   searchNow: 'Search',
   destinationsLabel: 'Destinations',

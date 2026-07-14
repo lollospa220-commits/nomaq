@@ -1,5 +1,6 @@
 import React from 'react';
 import LegalLayout, { LegalH2, LegalP, LegalUl } from '../components/LegalLayout';
+import { SITE_HOST } from '@/utils/siteUrl';
 
 export default function Privacy() {
   return (
@@ -11,7 +12,7 @@ export default function Privacy() {
     >
       <LegalH2 first>3.1 Titolare del trattamento</LegalH2>
       <LegalP>
-        Il trattamento dei dati raccolti tramite il Sito nomaq.app è effettuato da "il team di
+        Il trattamento dei dati raccolti tramite il Sito {SITE_HOST} è effettuato da "il team di
         Nomaq" (di seguito "Nomaq" o il "Titolare"). Contatto:{' '}
         <a href="mailto:nomaq061@gmail.com" className="text-nomaq-indigo font-semibold">
           nomaq061@gmail.com

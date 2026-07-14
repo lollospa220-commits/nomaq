@@ -3,6 +3,7 @@ import { User, ArrowRight, Sparkles, Calendar, Settings, Tag, LogOut, CheckCircl
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
+import { SITE_URL } from '@/utils/siteUrl';
 
 export default function ProfiloView({
   initialCount,
@@ -112,11 +113,11 @@ export default function ProfiloView({
     if (navigator.share) {
       // .catch: annullando lo share sheet nativo la Promise rigetta con
       // AbortError; senza gestione è un unhandled rejection a ogni "annulla".
-      navigator.share({ title: 'Nomaq Drop', text: 'Ho trovato un\'offerta pazzesca su Nomaq!', url: 'https://nomaq.app' }).catch(() => {});
+      navigator.share({ title: 'Nomaq Drop', text: 'Ho trovato un\'offerta pazzesca su Nomaq!', url: SITE_URL }).catch(() => {});
     } else if (navigator.clipboard) {
       // Mostra "copiato" solo a scrittura riuscita; guardia su clipboard assente
       // (contesti non sicuri/webview) per non lanciare un TypeError sincrono.
-      navigator.clipboard.writeText('https://nomaq.app')
+      navigator.clipboard.writeText(SITE_URL)
         .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
         .catch(() => {});
     }

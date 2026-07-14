@@ -1,5 +1,6 @@
 import React from 'react';
 import LegalLayout, { LegalH2, LegalP } from '../components/LegalLayout';
+import { SITE_HOST } from '@/utils/siteUrl';
 
 export default function NoteLegali() {
   return (
@@ -10,7 +11,7 @@ export default function NoteLegali() {
     >
       <LegalH2 first>1.1 Gestore del sito</LegalH2>
       <LegalP>
-        Il sito web nomaq.app ("Nomaq" o il "Sito") è gestito da un team di sviluppo indipendente
+        Il sito web {SITE_HOST} ("Nomaq" o il "Sito") è gestito da un team di sviluppo indipendente
         ("il team di Nomaq", "noi"), attualmente non costituito in forma societaria. Contatti:{' '}
         <a href="mailto:nomaq061@gmail.com" className="text-nomaq-indigo font-semibold">
           nomaq061@gmail.com

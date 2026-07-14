@@ -5,6 +5,7 @@ import { TranslationKey } from '@/i18n/translations';
 import SmartImage from '@/components/SmartImage';
 import ThreeSparklesIcon from '@/components/ThreeSparklesIcon';
 import { getDestinationImage } from '@/utils/destinationImages';
+import { isSeedOnlyHotelFeed } from '@/utils/feedMeta';
 
 // Parola-chiave per tipo di soggiorno, iniettata nella query AI quando il tipo
 // non è "all" (prima lo stato stayType non veniva mai letto → select inerte).
@@ -80,6 +81,7 @@ function StaysView({
 
   // "Featured" è il primo hotel del catalogo reale (search attiva o default):
   // niente più scheda finta con sconto inventato.
+  const hotelsAreDemo = isSeedOnlyHotelFeed(hotels);
   const featured = hotels[0] || null;
   const featuredDiscount = featured?.original_price && featured.original_price > featured.price
     ? Math.round(((featured.original_price - featured.price) / featured.original_price) * 100)
@@ -336,6 +338,16 @@ function StaysView({
           {t('seeAllStays')} <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {hotelsAreDemo && (
+        <div
+          className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs text-amber-900 leading-relaxed"
+          data-testid="hotels-demo-notice"
+          role="status"
+        >
+          {t('hotelsDemoNotice')}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3" data-testid="feed-container">
         {hotels.length === 0 ? (

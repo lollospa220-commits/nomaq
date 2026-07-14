@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { TranslationKey } from '@/i18n/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { SITE_URL } from '@/utils/siteUrl';
 
 // Cosa offre davvero Nomaq — nessuna promessa di funzioni non ancora attive
 // (niente monitoraggio 24/7 per-utente né alert via email di price drop: la
@@ -71,7 +72,7 @@ export default function WaitlistPage() {
 
   const handleShare = () => {
     const shareText = t('wlShareText');
-    const shareUrl = 'https://nomaq.app';
+    const shareUrl = SITE_URL;
     if (navigator.share) {
       navigator.share({ title: t('wlShareTitle'), text: shareText, url: shareUrl });
     } else {
